@@ -33,21 +33,14 @@ NOTE:
 
 - `lpc` implemented in rust, generates predictor file serialized with
   `serde_cbor`, that is, not compatible with traditional format in ecoz2.
-- `prd-show` displays predictor file generated with `lpc` above
+- `prd-show` displays predictor file generated with `lpc` above:
 
         $ cargo run lpc -P 36 -W 45 -O 15 -f ../ecoz2-whale-cb/HBSe_20161221T010133/HBSe_20161221T010133.wav
-            Finished dev [optimized + debuginfo] target(s) in 0.04s
-             Running `target/debug/ecoz2 lpc -P 36 -W 45 -O 15 -f ../ecoz2-whale-cb/HBSe_20161221T010133/HBSe_20161221T010133.wav`
         Signal loaded: ../ecoz2-whale-cb/HBSe_20161221T010133/HBSe_20161221T010133.wav
         num_samples: 18368474  sample_rate: 32000  bits_per_sample: 16  sample_format = Int
         lpa_on_signal: p=36 numSamples=18368474 sampleRate=32000 winSize=1440 offset=480 t=38265
-          5000 frames processed
-          10000 frames processed
           15000 frames processed
-          20000 frames processed
-          25000 frames processed
           30000 frames processed
-          35000 frames processed
           38265 frames processed
         predictor.prd saved.  Class: '_':  38265 vector sequences
         
@@ -57,7 +50,7 @@ NOTE:
         Predictor loaded: predictor.prd
          class_name = '_' prediction_order: 36 sequences: 38265
 
-- `sgn-show` implemented in rust.
+- `sgn-show` implemented in rust:
 
         $ cargo run -- sgn-show -f ../ecoz2-whale-cb/HBSe_20161221T010133/HBSe_20161221T010133.wav
             Finished dev [optimized + debuginfo] target(s) in 0.12s
@@ -66,7 +59,7 @@ NOTE:
         num_samples: 18368474  sample_rate: 32000  bits_per_sample: 16  sample_format = Int
     
 - `vq-learn` links with C code. Note in particular that the predictor files
-  for input need to come from the traditional `lpc` program.
+  for input need to come from the traditional `lpc` program:
   
         $ cargo run -- vq-learn data/predictors/HBSe_20161221T010133/HBSe_20161221T010133.prd 
         Codebook generation:
