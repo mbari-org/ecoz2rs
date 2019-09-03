@@ -1,0 +1,10 @@
+[package]
+name = "sgn"
+version = "0.1.0"
+
+[dependencies]
+
+structopt = { version = "0.3", features = [ "paw" ] }
+paw = "1.0"
+
+hound = "3.4.0"

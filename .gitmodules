@@ -1,0 +1,3 @@
+[submodule "ecoz2"]
+	path = ecoz2
+	url = https://github.com/ecoz2/ecoz2.git
