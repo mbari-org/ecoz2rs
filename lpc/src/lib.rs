@@ -102,6 +102,7 @@ impl LPAnalyzer {
         }
     }
 
+    #[inline]
     pub fn process_frame(&mut self, samples: &[i32], mut vector: &mut [f64]) -> bool {
         self.fill_frame(&samples);
         self.remove_mean();
@@ -132,12 +133,14 @@ impl LPAnalyzer {
         }
     }
 
+    #[inline]
     fn fill_frame(&mut self, from: &[i32]) {
         for (n, elem) in self.frame.iter_mut().enumerate() {
             *elem = f64::from(from[n]);
         }
     }
 
+    #[inline]
     fn remove_mean(&mut self) {
         let sum: f64 = self.frame.iter().sum();
         let mean = sum / self.frame.len() as f64;
@@ -146,12 +149,14 @@ impl LPAnalyzer {
         }
     }
 
+    #[inline]
     fn preemphasis(&mut self) {
         for n in (1..self.frame.len()).rev() {
             self.frame[n] -= 0.95 * self.frame[n - 1];
         }
     }
 
+    #[inline]
     fn apply_hamming(&mut self) {
         for (elem, h) in self.frame.iter_mut().zip(&self.hamming) {
             *elem *= *h
@@ -183,24 +188,24 @@ pub fn lpa_on_signal(
     let mut lpa = LPAnalyzer::new(p, win_size);
 
     // total number of frames:
-    let mut t = (num_samples - (win_size - offset)) / offset;
+    let mut num_frames = (num_samples - (win_size - offset)) / offset;
     // discard last section if incomplete:
-    if (t - 1) * offset + win_size > num_samples {
-        t -= 1;
+    if (num_frames - 1) * offset + win_size > num_samples {
+        num_frames -= 1;
     }
 
     println!(
-        "lpa_on_signal: p={} numSamples={} sampleRate={} winSize={} offset={} t={}",
-        p, num_samples, sample_rate, win_size, offset, t
+        "lpa_on_signal: p={} numSamples={} sampleRate={} winSize={} offset={} num_frames={}",
+        p, num_samples, sample_rate, win_size, offset, num_frames
     );
 
-    let mut vectors = vec![vec![0f64; p + 1]; t];
+    let mut vectors = vec![vec![0f64; p + 1]; num_frames];
 
     // perform linear prediction to each frame:
     let mut frames_processed = 0;
 
-    for (tt, mut vector) in vectors.iter_mut().enumerate() {
-        let signal_from = tt * offset;
+    for (t, mut vector) in vectors.iter_mut().enumerate() {
+        let signal_from = t * offset;
         let signal_to = signal_from + win_size;
         let samples = &signal[signal_from..signal_to];
 
@@ -219,6 +224,7 @@ pub fn lpa_on_signal(
     Some(vectors)
 }
 
+#[inline]
 fn lpca(x: &[f64], p: usize, r: &mut [f64], rc: &mut [f64], a: &mut [f64]) -> (i32, f64) {
     let n = x.len();
 
