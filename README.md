@@ -1,7 +1,9 @@
 # ECOZ2 in Rust
 
 I'm doing this mainly for learning purposes, and not, at least for the time
-being, intending to do a complete translation.
+being, intending to do a complete translation\
+(rewriting stuff is in general
+[not advisable](https://www.joelonsoftware.com/2000/04/06/things-you-should-never-do-part-i/).
 
 ## Linking with C
 
@@ -123,3 +125,6 @@ c:
     lpc -P 36 -W 45 -O 15   0.78s user 0.12s system 98% cpu 0.912 total
     
 So, 2.9secs vs. < ~1sec.
+
+----
+`lpc/src/libpar.rs`: initial attempt to parallelize the LP analysis 
