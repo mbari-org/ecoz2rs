@@ -1,12 +1,13 @@
-extern crate structopt;
-use structopt::StructOpt;
-
 extern crate serde;
-use serde::Deserialize;
+extern crate structopt;
 
 use std::error::Error;
 use std::fs::File;
 use std::path::PathBuf;
+use std::process;
+
+use serde::Deserialize;
+use structopt::StructOpt;
 
 #[derive(StructOpt, Debug)]
 pub struct CsvShowOpts {
@@ -15,23 +16,10 @@ pub struct CsvShowOpts {
     file: PathBuf,
 }
 
-pub fn main_csv_show(opts: CsvShowOpts) {
-    let CsvShowOpts { file } = opts;
-
-    let filename: &str = file.to_str().unwrap();
-
-    let s = read_selections(&filename);
-    println!("Selections loaded: {}, s={:?}", filename, s);
-}
-
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
-struct Record {
+pub struct Instance {
     selection: i32,
-
-    view: String,
-
-    channel: i32,
 
     #[serde(rename = "Begin Time (s)")]
     begin_time: f32,
@@ -39,20 +27,39 @@ struct Record {
     #[serde(rename = "End Time (s)")]
     end_time: f32,
 
-    #[serde(rename = "Low Freq (Hz)")]
-    low_freq: f32,
-
-    #[serde(rename = "High Freq (Hz)")]
-    high_freq: f32,
+    #[serde(rename = "Type")]
+    type_: String,
 }
 
-pub fn read_selections(filename: &str) -> Result<(), Box<dyn Error>> {
+pub fn main_csv_show(opts: CsvShowOpts) {
+    let CsvShowOpts { file } = opts;
+
+    let filename: &str = file.to_str().unwrap();
+
+    match load_instances(&filename) {
+        Ok(instances) => {
+            for instance in instances {
+                println!("{:?}", instance);
+            }
+        }
+        Err(err) => {
+            println!("{}", err);
+            process::exit(1);
+        }
+    }
+}
+
+pub fn load_instances(filename: &str) -> Result<Vec<Instance>, Box<dyn Error>> {
     let file = File::open(filename)?;
     let mut rdr = csv::ReaderBuilder::new().delimiter(b'\t').from_reader(file);
 
-    for result in rdr.deserialize() {
-        let record: Record = result?;
-        println!("{:?}", record);
-    }
-    Ok(())
+    let instances: Vec<Instance> = rdr
+        .deserialize()
+        .map(|result| {
+            let instance: Instance = result.unwrap();
+            instance
+        })
+        .collect::<Vec<_>>();
+
+    Ok(instances)
 }
