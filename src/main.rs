@@ -1,11 +1,11 @@
-extern crate structopt;
-use structopt::StructOpt;
-
 extern crate csvutil;
 extern crate lpc;
 extern crate prd;
 extern crate sgn;
+extern crate structopt;
 extern crate vq;
+
+use structopt::StructOpt;
 
 #[derive(StructOpt, Debug)]
 #[structopt(name = "ecoz2", about = "ECOZ System")]
@@ -13,8 +13,8 @@ enum Ecoz {
     #[structopt(about = "Basic csv selection info")]
     CsvShow(csvutil::CsvShowOpts),
 
-    #[structopt(about = "Basic info about signal file")]
-    SgnShow(sgn::SgnShowOpts),
+    #[structopt(about = "Signal operations")]
+    Sgn(sgn::SgnMainOpts),
 
     #[structopt(about = "Linear prediction coding")]
     Lpc(lpc::LpcOpts),
@@ -32,8 +32,8 @@ fn main() {
             csvutil::main_csv_show(opts);
         }
 
-        Ecoz::SgnShow(opts) => {
-            sgn::main_sgn_show(opts);
+        Ecoz::Sgn(opts) => {
+            sgn::main(opts);
         }
 
         Ecoz::Lpc(opts) => {

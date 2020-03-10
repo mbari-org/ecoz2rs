@@ -1,7 +1,23 @@
-extern crate structopt;
-use std::path::PathBuf;
-use structopt::StructOpt;
 extern crate hound;
+extern crate structopt;
+
+use std::path::PathBuf;
+
+use structopt::StructOpt;
+use EcozSgnCommand::Show;
+
+#[derive(StructOpt, Debug)]
+pub struct SgnMainOpts {
+    #[structopt(subcommand)]
+    cmd: EcozSgnCommand,
+}
+
+#[derive(StructOpt, Debug)]
+#[structopt(name = "sgn", about = "Signal operations")]
+enum EcozSgnCommand {
+    #[structopt(about = "Basic signal info")]
+    Show(SgnShowOpts),
+}
 
 #[derive(StructOpt, Debug)]
 pub struct SgnShowOpts {
@@ -10,7 +26,13 @@ pub struct SgnShowOpts {
     file: PathBuf,
 }
 
-pub fn main_sgn_show(opts: SgnShowOpts) {
+pub fn main(opts: SgnMainOpts) {
+    match opts.cmd {
+        Show(opts) => sgn_show(opts),
+    }
+}
+
+pub fn sgn_show(opts: SgnShowOpts) {
     let SgnShowOpts { file } = opts;
 
     let filename: &str = file.to_str().unwrap();
