@@ -11,6 +11,7 @@ sgn = { path = "sgn" }
 lpc = { path = "lpc" }
 prd = { path = "prd" }
 vq = { path = "vq" }
+csvutil = { path = "csvutil" }
 
 # https://stackoverflow.com/a/34054833/830737
 [profile.dev]
