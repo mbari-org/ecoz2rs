@@ -17,5 +17,6 @@ serde = { version = "1.0", features = ["derive"] }
 serde_cbor = "0.10"
 
 prd = { path = "../prd" }
+utl = { path = "../utl" }
 
 libc = "0.2.62"

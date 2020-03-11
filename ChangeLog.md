@@ -1,5 +1,9 @@
 2020-03
 
+- adjust `vq-learn` to scan all `.prd` files under a given directory
+
+       cargo run -- vq-learn -P 36 -e 0.0005 MARS_20161221_000046_SongSession_16kHz_HPF5HzNorm_labels/data/predictors/TRAIN
+
 - implement `sgn extract` to extract segments from a given signal
 
        cargo run -- sgn extract \ 
