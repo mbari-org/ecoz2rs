@@ -2,6 +2,7 @@ extern crate libc;
 extern crate structopt;
 extern crate utl;
 
+use std::error::Error;
 use std::ffi::CString;
 use std::path::Path;
 use std::path::PathBuf;
@@ -10,6 +11,7 @@ use libc::c_char;
 use libc::c_double;
 use libc::c_int;
 use structopt::StructOpt;
+use EcozVqCommand::Learn;
 
 extern "C" {
     fn vq_learn(
@@ -19,6 +21,21 @@ extern "C" {
         predictor_filenames: *const *const c_char,
         num_predictors: c_int,
     );
+}
+
+#[derive(StructOpt, Debug)]
+pub struct VqMainOpts {
+    #[structopt(subcommand)]
+    cmd: EcozVqCommand,
+}
+
+#[derive(StructOpt, Debug)]
+#[structopt(name = "sgn", about = "VQ operations")]
+enum EcozVqCommand {
+    #[structopt(about = "Codebook training")]
+    Learn(VqLearnOpts),
+    //    #[structopt(about = "VQ quantize ...")]
+    //    Quantize(VqQuantizeOpts),
 }
 
 #[derive(StructOpt, Debug)]
@@ -41,7 +58,18 @@ pub struct VqLearnOpts {
     predictor_filenames: Vec<PathBuf>,
 }
 
-pub fn main_vq_learn(opts: VqLearnOpts) {
+pub fn main(opts: VqMainOpts) {
+    let res = match opts.cmd {
+        Learn(opts) => main_vq_learn(opts),
+        // ... TODO quantize
+    };
+
+    if let Err(err) = res {
+        println!("{}", err);
+    }
+}
+
+pub fn main_vq_learn(opts: VqLearnOpts) -> Result<(), Box<dyn Error>> {
     let VqLearnOpts {
         prediction_order,
         epsilon,
@@ -100,4 +128,6 @@ pub fn main_vq_learn(opts: VqLearnOpts) {
             num_actual_predictors,
         );
     }
+
+    Ok(())
 }

@@ -22,8 +22,8 @@ enum Ecoz {
     #[structopt(about = "Show predictor")]
     PrdShow(prd::PrdShowOpts),
 
-    #[structopt(about = "Codebook training")]
-    VqLearn(vq::VqLearnOpts),
+    #[structopt(about = "VQ operations")]
+    Vq(vq::VqMainOpts),
 }
 
 fn main() {
@@ -44,8 +44,8 @@ fn main() {
             prd::main_prd_show(opts);
         }
 
-        Ecoz::VqLearn(opts) => {
-            vq::main_vq_learn(opts);
+        Ecoz::Vq(opts) => {
+            vq::main(opts);
         }
     }
 }
