@@ -1,5 +1,12 @@
 2020-03
 
+- add `vq quantize`
+  TODO: remove some C warnings
+
+       cargo run -- vq quantize --codebook  data/codebooks/_/eps_0.0005_M_0002.cbook \
+            MARS_20161221_000046_SongSession_16kHz_HPF5HzNorm_labels/data/predictors/TRAIN
+       
+       
 - adjust `vq` also as command with subcommands
 - adjust `vq-learn` to scan all `.prd` files under a given directory
 

@@ -15,6 +15,8 @@ fn main() {
             "../ecoz2/src/lpc/prd.c",
             "../ecoz2/src/lpc/ref2raas.c",
             "../ecoz2/src/vq/vq_learn.c",
+            "../ecoz2/src/vq/vq_quantize.c",
+            "../ecoz2/src/hmm/symbol.c",
             "../ecoz2/src/vq/vq.c",
             "../ecoz2/src/vq/distortion.c",
             "../ecoz2/src/vq/report.c",
@@ -22,5 +24,5 @@ fn main() {
             "../ecoz2/src/vq/inertia.c",
             "../ecoz2/src/vq/quantize.c",
         ])
-        .compile("vq_learn");
+        .compile("ecoz_lib");
 }
