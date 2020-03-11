@@ -7,6 +7,7 @@ fn main() {
         .flag("-Wall")
         .include("../ecoz2/src/include")
         .include("../ecoz2/src/sgn")
+        .include("../ecoz2/src/hmm")
         .files(&[
             "../ecoz2/src/utl/fileutil.c",
             "../ecoz2/src/utl/list.c",
@@ -16,13 +17,23 @@ fn main() {
             "../ecoz2/src/lpc/ref2raas.c",
             "../ecoz2/src/vq/vq_learn.c",
             "../ecoz2/src/vq/vq_quantize.c",
-            "../ecoz2/src/hmm/symbol.c",
             "../ecoz2/src/vq/vq.c",
             "../ecoz2/src/vq/distortion.c",
             "../ecoz2/src/vq/report.c",
             "../ecoz2/src/vq/sigma.c",
             "../ecoz2/src/vq/inertia.c",
             "../ecoz2/src/vq/quantize.c",
+            "../ecoz2/src/hmm/hmm.c",
+            "../ecoz2/src/hmm/hmm_learn.c",
+            "../ecoz2/src/hmm/hmm_adjustb.c",
+            "../ecoz2/src/hmm/hmm_file.c",
+            "../ecoz2/src/hmm/hmm_refinement.c",
+            "../ecoz2/src/hmm/hmm_log_prob.c",
+            "../ecoz2/src/hmm/hmm_genQopt.c",
+            "../ecoz2/src/hmm/hmm_estimateB.c",
+            "../ecoz2/src/hmm/hmm_gen.c",
+            "../ecoz2/src/hmm/distr.c",
+            "../ecoz2/src/hmm/symbol.c",
         ])
-        .compile("ecoz_lib");
+        .compile("ecoz2_lib");
 }

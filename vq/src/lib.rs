@@ -4,7 +4,6 @@ extern crate utl;
 
 use std::error::Error;
 use std::ffi::CString;
-use std::path::Path;
 use std::path::PathBuf;
 
 use libc::c_char;
@@ -102,12 +101,12 @@ pub fn main_vq_learn(opts: VqLearnOpts) -> Result<(), Box<dyn Error>> {
     })
     .unwrap();
 
-    let actual_predictor_filenames = get_actual_predictor_filenames(predictor_filenames)?;
+    let actual_predictor_filenames = utl::get_actual_filenames(predictor_filenames, ".prd")?;
 
     let num_actual_predictors = actual_predictor_filenames.len() as c_int;
     println!("num_actual_predictors: {}", num_actual_predictors);
 
-    let c_strings: Vec<CString> = to_cstrings(actual_predictor_filenames);
+    let c_strings: Vec<CString> = utl::to_cstrings(actual_predictor_filenames);
 
     unsafe {
         let c_predictor_filenames: Vec<*const c_char> = c_strings
@@ -139,12 +138,12 @@ pub fn main_vq_quantize(opts: VqQuantizeOpts) -> Result<(), Box<dyn Error>> {
 
     let codebook_c_string = CString::new(codebook.to_str().unwrap()).unwrap();
 
-    let actual_predictor_filenames = get_actual_predictor_filenames(predictor_filenames)?;
+    let actual_predictor_filenames = utl::get_actual_filenames(predictor_filenames, ".prd")?;
 
     let num_actual_predictors = actual_predictor_filenames.len() as c_int;
     println!("num_actual_predictors: {}", num_actual_predictors);
 
-    let c_strings: Vec<CString> = to_cstrings(actual_predictor_filenames);
+    let c_strings: Vec<CString> = utl::to_cstrings(actual_predictor_filenames);
 
     unsafe {
         let c_predictor_filenames: Vec<*const c_char> = c_strings
@@ -164,32 +163,4 @@ pub fn main_vq_quantize(opts: VqQuantizeOpts) -> Result<(), Box<dyn Error>> {
     }
 
     Ok(())
-}
-
-fn get_actual_predictor_filenames(
-    predictor_filenames: Vec<PathBuf>,
-) -> Result<Vec<PathBuf>, Box<dyn Error>> {
-    let list = if predictor_filenames.len() == 1 {
-        let path = Path::new(&predictor_filenames[0]);
-        if path.is_dir() {
-            utl::list_files(path, "prd")?
-        } else {
-            predictor_filenames
-        }
-    } else {
-        predictor_filenames
-    };
-    Ok(list)
-}
-
-fn to_cstrings(paths: Vec<PathBuf>) -> Vec<CString> {
-    paths
-        .into_iter()
-        .map(|predictor_filename| {
-            let str = predictor_filename.to_str().unwrap();
-            let c_string = CString::new(str).unwrap();
-            //println!("c_string = {:?}", c_string);
-            c_string
-        })
-        .collect()
 }

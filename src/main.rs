@@ -1,4 +1,5 @@
 extern crate csvutil;
+extern crate hmm;
 extern crate lpc;
 extern crate prd;
 extern crate sgn;
@@ -24,6 +25,9 @@ enum Ecoz {
 
     #[structopt(about = "VQ operations")]
     Vq(vq::VqMainOpts),
+
+    #[structopt(about = "HMM operations")]
+    Hmm(hmm::HmmMainOpts),
 }
 
 fn main() {
@@ -46,6 +50,10 @@ fn main() {
 
         Ecoz::Vq(opts) => {
             vq::main(opts);
+        }
+
+        Ecoz::Hmm(opts) => {
+            hmm::main(opts);
         }
     }
 }
