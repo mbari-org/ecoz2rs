@@ -9,6 +9,7 @@ use std::path::PathBuf;
 
 use csvutil::Instance;
 use itertools::Itertools;
+use std::fs;
 use structopt::StructOpt;
 use EcozSgnCommand::{Extract, Show};
 
@@ -45,9 +46,9 @@ pub struct SgnExtractOpts {
     #[structopt(short, long, parse(from_os_str))]
     segments: PathBuf,
 
-    /// Prefix for output wave files
+    /// Base directory for output wave files
     #[structopt(short, long)]
-    out_prefix: String,
+    out_dir: String,
 }
 
 pub fn main(opts: SgnMainOpts) {
@@ -77,12 +78,11 @@ struct SgnExtractor {
     wav_simple_name: String,
     sgn: Sgn,
 
-    duration: usize,
     sample_period: f32,
 
     sgm_filename: String,
 
-    out_prefix: String,
+    out_dir: String,
 }
 
 impl SgnExtractor {
@@ -90,7 +90,7 @@ impl SgnExtractor {
         let SgnExtractOpts {
             wav,
             segments,
-            out_prefix,
+            out_dir,
         } = opts;
 
         let wav_filename: &str = wav.to_str().unwrap();
@@ -115,10 +115,9 @@ impl SgnExtractor {
         SgnExtractor {
             wav_simple_name,
             sgn,
-            duration,
             sample_period,
             sgm_filename,
-            out_prefix,
+            out_dir,
         }
     }
 
@@ -136,7 +135,7 @@ impl SgnExtractor {
             println!("{0: >8}  {1: >3} instances", type_, instances.len());
             tot_instances += instances.len();
             for i in instances {
-                self.extract_instance(i);
+                self.extract_instance(i)?;
             }
         }
         println!("{0: >8}  {1: >3} total instances", "", tot_instances);
@@ -146,9 +145,15 @@ impl SgnExtractor {
     }
 
     fn extract_instance(&mut self, i: &Instance) -> Result<(), Box<dyn Error>> {
+        let out_dir: PathBuf = [&self.out_dir, &i.type_].iter().collect();
+        fs::create_dir_all(&out_dir)?;
+
         let out_name = format!(
-            "{}from_{}__{}_{}.wav",
-            self.out_prefix, self.wav_simple_name, i.begin_time, i.end_time
+            "{}/from_{}__{}_{}.wav",
+            &out_dir.to_str().unwrap(),
+            self.wav_simple_name,
+            i.begin_time,
+            i.end_time
         );
 
         //println!("\t\t extract_instance {} => {}", i.selection, out_name);
@@ -202,7 +207,8 @@ impl Sgn {
         for sample in &self.samples {
             writer.write_sample(*sample as i16).unwrap();
         }
-        println!("Duration: {} secs", writer.duration() / spec.sample_rate);
+        let dur_secs = writer.duration() as f32 / spec.sample_rate as f32;
+        println!("Duration: {:.3} secs", dur_secs);
         writer.finalize().unwrap();
     }
 
