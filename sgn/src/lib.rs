@@ -1,10 +1,16 @@
+extern crate csvutil;
 extern crate hound;
+extern crate itertools;
 extern crate structopt;
 
+use std::error::Error;
+use std::path::Path;
 use std::path::PathBuf;
 
+use csvutil::Instance;
+use itertools::Itertools;
 use structopt::StructOpt;
-use EcozSgnCommand::Show;
+use EcozSgnCommand::{Extract, Show};
 
 #[derive(StructOpt, Debug)]
 pub struct SgnMainOpts {
@@ -17,6 +23,9 @@ pub struct SgnMainOpts {
 enum EcozSgnCommand {
     #[structopt(about = "Basic signal info")]
     Show(SgnShowOpts),
+
+    #[structopt(about = "Extract segments from audio file")]
+    Extract(SgnExtractOpts),
 }
 
 #[derive(StructOpt, Debug)]
@@ -26,13 +35,34 @@ pub struct SgnShowOpts {
     file: PathBuf,
 }
 
+#[derive(StructOpt, Debug)]
+pub struct SgnExtractOpts {
+    /// Source wave file
+    #[structopt(short, long, parse(from_os_str))]
+    wav: PathBuf,
+
+    /// Segments file
+    #[structopt(short, long, parse(from_os_str))]
+    segments: PathBuf,
+
+    /// Prefix for output wave files
+    #[structopt(short, long)]
+    out_prefix: String,
+}
+
 pub fn main(opts: SgnMainOpts) {
-    match opts.cmd {
+    let res = match opts.cmd {
         Show(opts) => sgn_show(opts),
+
+        Extract(opts) => SgnExtractor::new(opts).sgn_extract(),
+    };
+
+    if let Err(err) = res {
+        println!("{}", err);
     }
 }
 
-pub fn sgn_show(opts: SgnShowOpts) {
+pub fn sgn_show(opts: SgnShowOpts) -> Result<(), Box<dyn Error>> {
     let SgnShowOpts { file } = opts;
 
     let filename: &str = file.to_str().unwrap();
@@ -40,6 +70,118 @@ pub fn sgn_show(opts: SgnShowOpts) {
     let mut s = load(&filename);
     println!("Signal loaded: {}", filename);
     s.show();
+    Ok(())
+}
+
+struct SgnExtractor {
+    wav_simple_name: String,
+    sgn: Sgn,
+
+    duration: usize,
+    sample_period: f32,
+
+    sgm_filename: String,
+
+    out_prefix: String,
+}
+
+impl SgnExtractor {
+    fn new(opts: SgnExtractOpts) -> SgnExtractor {
+        let SgnExtractOpts {
+            wav,
+            segments,
+            out_prefix,
+        } = opts;
+
+        let wav_filename: &str = wav.to_str().unwrap();
+
+        let mut sgn = load(&wav_filename);
+        println!("Signal loaded: {}", wav_filename);
+        sgn.show();
+
+        let wav_simple_name = Path::new(wav_filename)
+            .file_name()
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .into();
+
+        let duration = sgn.num_samples / sgn.sample_rate;
+        let sample_period = 1.0 / sgn.sample_rate as f32;
+        println!("duration: {}  sample_period: {}", duration, sample_period);
+
+        let sgm_filename = segments.to_str().unwrap().into();
+
+        SgnExtractor {
+            wav_simple_name,
+            sgn,
+            duration,
+            sample_period,
+            sgm_filename,
+            out_prefix,
+        }
+    }
+
+    pub fn sgn_extract(&mut self) -> Result<(), Box<dyn Error>> {
+        let instances = csvutil::load_instances(self.sgm_filename.as_str())?;
+
+        let lookup = &instances
+            .iter()
+            .map(|instance| (instance.type_.to_string(), instance))
+            .into_iter()
+            .into_group_map();
+
+        let mut tot_instances = 0;
+        for (type_, instances) in lookup {
+            println!("{0: >8}  {1: >3} instances", type_, instances.len());
+            tot_instances += instances.len();
+            for i in instances {
+                self.extract_instance(i);
+            }
+        }
+        println!("{0: >8}  {1: >3} total instances", "", tot_instances);
+        //    println!("Bmh = {:?}", lookup["Bmh"][0]);
+
+        Ok(())
+    }
+
+    fn extract_instance(&mut self, i: &Instance) -> Result<(), Box<dyn Error>> {
+        let out_name = format!(
+            "{}from_{}__{}_{}.wav",
+            self.out_prefix, self.wav_simple_name, i.begin_time, i.end_time
+        );
+
+        //println!("\t\t extract_instance {} => {}", i.selection, out_name);
+
+        let pos_beg = self.position(i.begin_time);
+        let pos_end = self.position(i.end_time);
+
+        /*
+                println!("\t\tbegin_time={} end_time={}", i.begin_time, i.end_time);
+                println!("\t\tpos_beg={} pos_end={}", pos_beg, pos_end);
+        */
+
+        let samples: Vec<i32> = self.sgn.samples[pos_beg..pos_end].to_vec();
+
+        let spec = self.sgn.spec;
+        let sample_rate = spec.sample_rate as usize;
+        let num_samples = samples.len();
+
+        let mut segment = Sgn {
+            sample_rate,
+            num_samples,
+            samples,
+            spec,
+        };
+
+        segment.save(out_name.as_str());
+
+        Ok(())
+    }
+
+    fn position(&mut self, time_secs: f32) -> usize {
+        (time_secs / self.sample_period as f32) as usize
+    }
 }
 
 pub struct Sgn {

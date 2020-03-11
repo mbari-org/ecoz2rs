@@ -19,16 +19,16 @@ pub struct CsvShowOpts {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct Instance {
-    selection: i32,
+    pub selection: i32,
 
     #[serde(rename = "Begin Time (s)")]
-    begin_time: f32,
+    pub begin_time: f32,
 
     #[serde(rename = "End Time (s)")]
-    end_time: f32,
+    pub end_time: f32,
 
     #[serde(rename = "Type")]
-    type_: String,
+    pub type_: String,
 }
 
 pub fn main_csv_show(opts: CsvShowOpts) {

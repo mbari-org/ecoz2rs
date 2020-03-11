@@ -8,3 +8,7 @@ structopt = { version = "0.3", features = [ "paw" ] }
 paw = "1.0"
 
 hound = "3.4.0"
+
+itertools = "0.9.0"
+
+csvutil = { path = "../csvutil" }
