@@ -25,6 +25,7 @@ fn main() {
             "../ecoz2/src/vq/quantize.c",
             "../ecoz2/src/hmm/hmm.c",
             "../ecoz2/src/hmm/hmm_learn.c",
+            "../ecoz2/src/hmm/hmm_classify.c",
             "../ecoz2/src/hmm/hmm_adjustb.c",
             "../ecoz2/src/hmm/hmm_file.c",
             "../ecoz2/src/hmm/hmm_refinement.c",

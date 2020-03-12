@@ -1,5 +1,11 @@
 2020-03
 
+- add `hmm classify`
+
+      cargo run -- hmm classify \
+            --models data/hmms/N64__M4_t3__a0.1_I10 \
+            --sequences data/sequences/TRAIN/M4
+
 - add ecoz2_lib module to link with the c library
 
 - add `hmm learn`

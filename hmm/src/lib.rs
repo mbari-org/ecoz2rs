@@ -6,9 +6,10 @@ extern crate utl;
 use std::error::Error;
 use std::path::PathBuf;
 
+use ecoz2_lib::ecoz2_hmm_classify;
 use ecoz2_lib::ecoz2_hmm_learn;
 use structopt::StructOpt;
-use EcozHmmCommand::Learn;
+use EcozHmmCommand::{Classify, Learn};
 
 #[derive(StructOpt, Debug)]
 pub struct HmmMainOpts {
@@ -21,6 +22,9 @@ pub struct HmmMainOpts {
 enum EcozHmmCommand {
     #[structopt(about = "Codebook training")]
     Learn(HmmLearnOpts),
+
+    #[structopt(about = "HMM based classification")]
+    Classify(HmmClassifyOpts),
 }
 
 #[derive(StructOpt, Debug)]
@@ -56,9 +60,39 @@ pub struct HmmLearnOpts {
     sequence_filenames: Vec<PathBuf>,
 }
 
+#[derive(StructOpt, Debug)]
+pub struct HmmClassifyOpts {
+    /// Show ranked models for incorrect classifications
+    #[structopt(short = "r", long)]
+    show_ranked: bool,
+
+    /// HMM models.
+    /// If a directory is given, then all `.hmm` under it will be used.
+    #[structopt(
+        short,
+        long = "models",
+        required = true,
+        min_values = 1,
+        parse(from_os_str)
+    )]
+    model_filenames: Vec<PathBuf>,
+
+    /// Sequences to classify.
+    /// If a directory is given, then all `.seq` under it will be used.
+    #[structopt(
+        short,
+        long = "sequences",
+        required = true,
+        min_values = 1,
+        parse(from_os_str)
+    )]
+    sequence_filenames: Vec<PathBuf>,
+}
+
 pub fn main(opts: HmmMainOpts) {
     let res = match opts.cmd {
         Learn(opts) => main_hmm_learn(opts),
+        Classify(opts) => main_hmm_classify(opts),
     };
 
     if let Err(err) = res {
@@ -90,6 +124,33 @@ pub fn main_hmm_learn(opts: HmmLearnOpts) -> Result<(), Box<dyn Error>> {
         epsilon,
         val_auto,
         max_iterations,
+    );
+
+    Ok(())
+}
+
+pub fn main_hmm_classify(opts: HmmClassifyOpts) -> Result<(), Box<dyn Error>> {
+    let HmmClassifyOpts {
+        show_ranked,
+        model_filenames,
+        sequence_filenames,
+    } = opts;
+
+    let actual_model_filenames = utl::get_actual_filenames(model_filenames, ".hmm")?;
+
+    let actual_sequence_filenames = utl::get_actual_filenames(sequence_filenames, ".seq")?;
+
+    println!(
+        "num_actual_models: {}  num_actual_sequences: {}",
+        actual_model_filenames.len(),
+        actual_sequence_filenames.len()
+    );
+    println!("show_ranked = {}", show_ranked);
+
+    ecoz2_hmm_classify(
+        actual_model_filenames,
+        actual_sequence_filenames,
+        show_ranked,
     );
 
     Ok(())

@@ -31,6 +31,14 @@ extern "C" {
         val_auto: c_double,
         max_iterations: c_int,
     );
+
+    fn hmm_classify(
+        model_filenames: *const *const c_char,
+        num_models: c_int,
+        sequence_filenames: *const *const c_char,
+        num_sequences: c_int,
+        show_ranked: c_int,
+    );
 }
 
 pub fn ecoz2_vq_learn(
@@ -96,6 +104,28 @@ pub fn ecoz2_hmm_learn(
             hmm_epsilon as c_double,
             val_auto as c_double,
             max_iterations as c_int,
+        );
+    }
+}
+
+pub fn ecoz2_hmm_classify(
+    model_filenames: Vec<PathBuf>,
+    sequence_filenames: Vec<PathBuf>,
+    show_ranked: bool,
+) {
+    let model_c_strings: Vec<CString> = to_cstrings(model_filenames);
+    let model_c_chars: Vec<*const c_char> = to_c_chars(model_c_strings);
+
+    let sequence_c_strings: Vec<CString> = to_cstrings(sequence_filenames);
+    let sequence_c_chars: Vec<*const c_char> = to_c_chars(sequence_c_strings);
+
+    unsafe {
+        hmm_classify(
+            model_c_chars.as_ptr(),
+            model_c_chars.len() as c_int,
+            sequence_c_chars.as_ptr(),
+            sequence_c_chars.len() as c_int,
+            show_ranked as c_int,
         );
     }
 }
