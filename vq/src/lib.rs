@@ -1,32 +1,14 @@
-extern crate libc;
+extern crate ecoz2_lib;
 extern crate structopt;
 extern crate utl;
 
 use std::error::Error;
-use std::ffi::CString;
 use std::path::PathBuf;
 
-use libc::c_char;
-use libc::c_double;
-use libc::c_int;
+use ecoz2_lib::ecoz2_vq_learn;
+use ecoz2_lib::ecoz2_vq_quantize;
 use structopt::StructOpt;
 use EcozVqCommand::{Learn, Quantize};
-
-extern "C" {
-    fn vq_learn(
-        prediction_order: c_int,
-        epsilon: c_double,
-        codebook_class_name: *const c_char,
-        predictor_filenames: *const *const c_char,
-        num_predictors: c_int,
-    );
-
-    fn vq_quantize(
-        nom_raas: *const c_char,
-        predictor_filenames: *const *const c_char,
-        num_predictors: c_int,
-    );
-}
 
 #[derive(StructOpt, Debug)]
 pub struct VqMainOpts {
@@ -95,37 +77,23 @@ pub fn main_vq_learn(opts: VqLearnOpts) -> Result<(), Box<dyn Error>> {
         predictor_filenames,
     } = opts;
 
-    let codebook_class_name = CString::new(match class_name {
+    let codebook_class_name = match class_name {
         Some(name) => name,
         None => "_".to_string(),
-    })
-    .unwrap();
+    };
 
     let actual_predictor_filenames = utl::get_actual_filenames(predictor_filenames, ".prd")?;
 
-    let num_actual_predictors = actual_predictor_filenames.len() as c_int;
+    let num_actual_predictors = actual_predictor_filenames.len();
     println!("num_actual_predictors: {}", num_actual_predictors);
 
-    let c_strings: Vec<CString> = utl::to_cstrings(actual_predictor_filenames);
-
-    unsafe {
-        let c_predictor_filenames: Vec<*const c_char> = c_strings
-            .into_iter()
-            .map(|c_string| {
-                let ptr = c_string.as_ptr();
-                std::mem::forget(c_string);
-                ptr
-            })
-            .collect();
-
-        vq_learn(
-            prediction_order as c_int,
-            epsilon as c_double,
-            codebook_class_name.as_ptr() as *const i8,
-            c_predictor_filenames.as_ptr(),
-            num_actual_predictors,
-        );
-    }
+    ecoz2_vq_learn(
+        prediction_order,
+        epsilon,
+        codebook_class_name,
+        actual_predictor_filenames,
+        num_actual_predictors,
+    );
 
     Ok(())
 }
@@ -136,31 +104,12 @@ pub fn main_vq_quantize(opts: VqQuantizeOpts) -> Result<(), Box<dyn Error>> {
         predictor_filenames,
     } = opts;
 
-    let codebook_c_string = CString::new(codebook.to_str().unwrap()).unwrap();
-
     let actual_predictor_filenames = utl::get_actual_filenames(predictor_filenames, ".prd")?;
 
-    let num_actual_predictors = actual_predictor_filenames.len() as c_int;
+    let num_actual_predictors = actual_predictor_filenames.len();
     println!("num_actual_predictors: {}", num_actual_predictors);
 
-    let c_strings: Vec<CString> = utl::to_cstrings(actual_predictor_filenames);
-
-    unsafe {
-        let c_predictor_filenames: Vec<*const c_char> = c_strings
-            .into_iter()
-            .map(|c_string| {
-                let ptr = c_string.as_ptr();
-                std::mem::forget(c_string);
-                ptr
-            })
-            .collect();
-
-        vq_quantize(
-            codebook_c_string.as_ptr() as *const i8,
-            c_predictor_filenames.as_ptr(),
-            num_actual_predictors,
-        );
-    }
+    ecoz2_vq_quantize(codebook, actual_predictor_filenames, num_actual_predictors);
 
     Ok(())
 }

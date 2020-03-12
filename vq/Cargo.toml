@@ -2,12 +2,6 @@
 name = "vq"
 version = "0.1.0"
 
-# https://doc.rust-lang.org/cargo/reference/build-scripts.html
-build = "build.rs"
-
-[build-dependencies]
-cc = "1.0"
-
 [dependencies]
 
 structopt = { version = "0.3", features = [ "paw" ] }
@@ -16,6 +10,7 @@ paw = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_cbor = "0.10"
 
+ecoz2_lib = { path = "../ecoz2_lib" }
 prd = { path = "../prd" }
 utl = { path = "../utl" }
 

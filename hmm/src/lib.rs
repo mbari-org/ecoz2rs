@@ -1,28 +1,14 @@
+extern crate ecoz2_lib;
 extern crate libc;
 extern crate structopt;
 extern crate utl;
 
 use std::error::Error;
-use std::ffi::CString;
 use std::path::PathBuf;
 
-use libc::c_char;
-use libc::c_double;
-use libc::c_int;
+use ecoz2_lib::ecoz2_hmm_learn;
 use structopt::StructOpt;
 use EcozHmmCommand::Learn;
-
-extern "C" {
-    fn hmm_learn(
-        N: c_int,
-        model_type: c_int,
-        sequence_filenames: *const *const c_char,
-        num_sequences: c_int,
-        hmm_epsilon: c_double,
-        val_auto: c_double,
-        max_iterations: c_int,
-    );
-}
 
 #[derive(StructOpt, Debug)]
 pub struct HmmMainOpts {
@@ -92,32 +78,19 @@ pub fn main_hmm_learn(opts: HmmLearnOpts) -> Result<(), Box<dyn Error>> {
 
     let actual_sequence_filenames = utl::get_actual_filenames(sequence_filenames, ".seq")?;
 
-    let num_actual_sequences = actual_sequence_filenames.len() as c_int;
+    let num_actual_sequences = actual_sequence_filenames.len();
     println!("num_actual_sequences: {}", num_actual_sequences);
     println!("val_auto = {}", val_auto);
 
-    let c_strings: Vec<CString> = utl::to_cstrings(actual_sequence_filenames);
-
-    unsafe {
-        let c_sequence_filenames: Vec<*const c_char> = c_strings
-            .into_iter()
-            .map(|c_string| {
-                let ptr = c_string.as_ptr();
-                std::mem::forget(c_string);
-                ptr
-            })
-            .collect();
-
-        hmm_learn(
-            num_states as c_int,
-            type_ as c_int,
-            c_sequence_filenames.as_ptr(),
-            num_actual_sequences,
-            epsilon as c_double,
-            val_auto as c_double,
-            max_iterations as c_int,
-        );
-    }
+    ecoz2_hmm_learn(
+        num_states,
+        type_,
+        actual_sequence_filenames,
+        num_actual_sequences,
+        epsilon,
+        val_auto,
+        max_iterations,
+    );
 
     Ok(())
 }

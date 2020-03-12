@@ -1,0 +1,13 @@
+[package]
+name = "ecoz2_lib"
+version = "0.1.0"
+
+# https://doc.rust-lang.org/cargo/reference/build-scripts.html
+build = "build.rs"
+
+[build-dependencies]
+cc = "1.0"
+
+[dependencies]
+
+libc = "0.2.62"

@@ -1,11 +1,10 @@
 2020-03
 
+- add ecoz2_lib module to link with the c library
+
 - add `hmm learn`
 
       cargo run -- hmm learn -a 0.1 -I 10 -N 64 data/sequences/TRAIN/M2/B/*.seq
-      
-    NOTE that the ecoz2_lib is created under the vq module.
-         TODO move it to a more common place.
 
 - add `vq quantize`
   TODO: remove some C warnings
