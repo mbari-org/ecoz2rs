@@ -8,8 +8,9 @@ use std::path::PathBuf;
 
 use ecoz2_lib::ecoz2_hmm_classify;
 use ecoz2_lib::ecoz2_hmm_learn;
+use ecoz2_lib::ecoz2_hmm_show;
 use structopt::StructOpt;
-use EcozHmmCommand::{Classify, Learn};
+use EcozHmmCommand::{Classify, Learn, Show};
 
 #[derive(StructOpt, Debug)]
 pub struct HmmMainOpts {
@@ -25,6 +26,9 @@ enum EcozHmmCommand {
 
     #[structopt(about = "HMM based classification")]
     Classify(HmmClassifyOpts),
+
+    #[structopt(about = "Show HMM model")]
+    Show(HmmShowOpts),
 }
 
 #[derive(StructOpt, Debug)]
@@ -89,10 +93,24 @@ pub struct HmmClassifyOpts {
     sequence_filenames: Vec<PathBuf>,
 }
 
+#[derive(StructOpt, Debug)]
+pub struct HmmShowOpts {
+    /// HMM model.
+    #[structopt(short, long, parse(from_os_str))]
+    hmm: PathBuf,
+
+    /// HMM model.
+    #[structopt(short, long, default_value = "%Lg ")]
+    format: String,
+}
+
 pub fn main(opts: HmmMainOpts) {
     let res = match opts.cmd {
         Learn(opts) => main_hmm_learn(opts),
+
         Classify(opts) => main_hmm_classify(opts),
+
+        Show(opts) => main_hmm_show(opts),
     };
 
     if let Err(err) = res {
@@ -150,6 +168,14 @@ pub fn main_hmm_classify(opts: HmmClassifyOpts) -> Result<(), Box<dyn Error>> {
         actual_sequence_filenames,
         show_ranked,
     );
+
+    Ok(())
+}
+
+pub fn main_hmm_show(opts: HmmShowOpts) -> Result<(), Box<dyn Error>> {
+    let HmmShowOpts { hmm, format } = opts;
+
+    ecoz2_hmm_show(hmm, format);
 
     Ok(())
 }

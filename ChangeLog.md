@@ -1,5 +1,13 @@
 2020-03
 
+- add `vq show`
+
+      cargo run -- vq show --codebook data/codebooks/_/eps_0.0005_M_0002.cbook
+
+- add `hmm show`
+
+      cargo run -- hmm show --hmm data/hmms/N64__M4_t3__a0.1_I10/A.hmm
+
 - add `hmm classify`
 
       cargo run -- hmm classify \

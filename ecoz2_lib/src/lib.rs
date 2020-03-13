@@ -22,6 +22,8 @@ extern "C" {
         num_predictors: c_int,
     );
 
+    fn vq_show(codebook_filename: *const c_char, from: c_int, to: c_int);
+
     fn hmm_learn(
         N: c_int,
         model_type: c_int,
@@ -39,6 +41,8 @@ extern "C" {
         num_sequences: c_int,
         show_ranked: c_int,
     );
+
+    fn hmm_show(hmm_filename: *const c_char, format: *const c_char);
 }
 
 pub fn ecoz2_vq_learn(
@@ -76,6 +80,20 @@ pub fn ecoz2_vq_quantize(nom_raas: PathBuf, predictor_filenames: Vec<PathBuf>) {
             raas_name,
             vpc_predictors.as_ptr(),
             vpc_predictors.len() as c_int,
+        )
+    }
+}
+
+pub fn ecoz2_vq_show(codebook_filename: PathBuf, from: i32, to: i32) {
+    println!("codebook_filename = {}", codebook_filename.display());
+
+    let codebook_c_string = CString::new(codebook_filename.to_str().unwrap()).unwrap();
+
+    unsafe {
+        vq_show(
+            codebook_c_string.as_ptr() as *const i8,
+            from as c_int,
+            to as c_int,
         )
     }
 }
@@ -119,6 +137,24 @@ pub fn ecoz2_hmm_classify(
             vpc_sequences.as_ptr(),
             vpc_sequences.len() as c_int,
             show_ranked as c_int,
+        );
+    }
+}
+
+pub fn ecoz2_hmm_show(hmm_filename: PathBuf, format: String) {
+    println!(
+        "ecoz2_hmm_show: hmm_filename={} format={}",
+        hmm_filename.display(),
+        format
+    );
+
+    let hmm_c_string = CString::new(hmm_filename.to_str().unwrap()).unwrap();
+    let format_c_string = CString::new(format).unwrap();
+
+    unsafe {
+        hmm_show(
+            hmm_c_string.as_ptr() as *const i8,
+            format_c_string.as_ptr() as *const i8,
         );
     }
 }

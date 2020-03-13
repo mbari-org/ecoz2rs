@@ -7,8 +7,9 @@ use std::path::PathBuf;
 
 use ecoz2_lib::ecoz2_vq_learn;
 use ecoz2_lib::ecoz2_vq_quantize;
+use ecoz2_lib::ecoz2_vq_show;
 use structopt::StructOpt;
-use EcozVqCommand::{Learn, Quantize};
+use EcozVqCommand::{Learn, Quantize, Show};
 
 #[derive(StructOpt, Debug)]
 pub struct VqMainOpts {
@@ -24,6 +25,9 @@ enum EcozVqCommand {
 
     #[structopt(about = "Vector quantization")]
     Quantize(VqQuantizeOpts),
+
+    #[structopt(about = "Show codebook")]
+    Show(VqShowOpts),
 }
 
 #[derive(StructOpt, Debug)]
@@ -57,11 +61,28 @@ pub struct VqQuantizeOpts {
     predictor_filenames: Vec<PathBuf>,
 }
 
+#[derive(StructOpt, Debug)]
+pub struct VqShowOpts {
+    /// Codebook.
+    #[structopt(long = "codebook", parse(from_os_str))]
+    codebook: PathBuf,
+
+    /// Start index for coefficient range selection
+    #[structopt(short, long, default_value = "-1")]
+    from: i32,
+
+    /// Limit index for coefficient range selection
+    #[structopt(short, long, default_value = "-1")]
+    to: i32,
+}
+
 pub fn main(opts: VqMainOpts) {
     let res = match opts.cmd {
         Learn(opts) => main_vq_learn(opts),
 
         Quantize(opts) => main_vq_quantize(opts),
+
+        Show(opts) => main_vq_show(opts),
     };
 
     if let Err(err) = res {
@@ -113,6 +134,14 @@ pub fn main_vq_quantize(opts: VqQuantizeOpts) -> Result<(), Box<dyn Error>> {
     );
 
     ecoz2_vq_quantize(codebook, actual_predictor_filenames);
+
+    Ok(())
+}
+
+pub fn main_vq_show(opts: VqShowOpts) -> Result<(), Box<dyn Error>> {
+    let VqShowOpts { codebook, from, to } = opts;
+
+    ecoz2_vq_show(codebook, from, to);
 
     Ok(())
 }
