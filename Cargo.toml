@@ -1,18 +1,32 @@
 [package]
 name = "ecoz2"
 version = "0.1.0"
+authors = [
+    "Carlos A. Rueda <carueda@mbari.org>",
+]
+description = "Linear Predictive Coding Vector Quantization and Hidden Markov Modeling for Pattern Recognition"
+repository = "https://github.com/ecoz2/ecoz2rs"
+license = "MIT OR Apache-2.0"
+keywords = [
+    "hmm",
+    "hidden-markov-model",
+    "linear-predictive-coding",
+    "k-means, vector-quantization",
+    "supervised-learning",
+    "unsupervised-learning",
+]
 
 [dependencies]
 
 structopt = { version = "0.3", features = [ "paw" ] }
 paw = "1.0"
 
-sgn = { path = "sgn" }
-lpc = { path = "lpc" }
-prd = { path = "prd" }
-vq = { path = "vq" }
-hmm = { path = "hmm" }
-csvutil = { path = "csvutil" }
+sgn = { path = "sgn", version = "0.1.0" }
+lpc = { path = "lpc", version = "0.1.0" }
+prd = { path = "prd", version = "0.1.0" }
+vq  = { path = "vq", version = "0.1.0" }
+hmm = { path = "hmm", version = "0.1.0" }
+csvutil = { path = "csvutil", version = "0.1.0" }
 
 # https://stackoverflow.com/a/34054833/830737
 [profile.dev]

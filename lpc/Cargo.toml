@@ -10,5 +10,5 @@ paw = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_cbor = "0.10"
 
-sgn = { path = "../sgn" }
-prd = { path = "../prd" }
+sgn = { path = "../sgn", version = "0.1.0" }
+prd = { path = "../prd", version = "0.1.0" }
