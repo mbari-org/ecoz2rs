@@ -112,15 +112,13 @@ pub fn main_hmm_learn(opts: HmmLearnOpts) -> Result<(), Box<dyn Error>> {
 
     let actual_sequence_filenames = utl::get_actual_filenames(sequence_filenames, ".seq")?;
 
-    let num_actual_sequences = actual_sequence_filenames.len();
-    println!("num_actual_sequences: {}", num_actual_sequences);
+    println!("num_actual_sequences: {}", actual_sequence_filenames.len());
     println!("val_auto = {}", val_auto);
 
     ecoz2_hmm_learn(
         num_states,
         type_,
         actual_sequence_filenames,
-        num_actual_sequences,
         epsilon,
         val_auto,
         max_iterations,

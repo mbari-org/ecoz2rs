@@ -46,10 +46,8 @@ pub fn ecoz2_vq_learn(
     epsilon: f64,
     codebook_class_name: String,
     predictor_filenames: Vec<PathBuf>,
-    num_predictors: usize,
 ) {
-    let c_strings: Vec<CString> = to_cstrings(predictor_filenames);
-    let c_chars: Vec<*const c_char> = to_c_chars(c_strings);
+    let vpc_predictors: Vec<*const c_char> = to_vec_of_ptr_const_c_char(predictor_filenames);
 
     unsafe {
         let class_name = CString::new(codebook_class_name).unwrap().as_ptr() as *const i8;
@@ -58,28 +56,27 @@ pub fn ecoz2_vq_learn(
             prediction_order as c_int,
             epsilon as c_double,
             class_name,
-            c_chars.as_ptr(),
-            num_predictors as c_int,
+            vpc_predictors.as_ptr(),
+            vpc_predictors.len() as c_int,
         )
     }
 }
 
-pub fn ecoz2_vq_quantize(
-    nom_raas: PathBuf,
-    predictor_filenames: Vec<PathBuf>,
-    num_predictors: usize,
-) {
+pub fn ecoz2_vq_quantize(nom_raas: PathBuf, predictor_filenames: Vec<PathBuf>) {
     println!("nom_raas = {}", nom_raas.display());
 
     let codebook_c_string = CString::new(nom_raas.to_str().unwrap()).unwrap();
 
-    let c_strings: Vec<CString> = to_cstrings(predictor_filenames);
-    let c_chars: Vec<*const c_char> = to_c_chars(c_strings);
+    let vpc_predictors: Vec<*const c_char> = to_vec_of_ptr_const_c_char(predictor_filenames);
 
     unsafe {
         let raas_name = codebook_c_string.as_ptr() as *const i8;
 
-        vq_quantize(raas_name, c_chars.as_ptr(), num_predictors as c_int)
+        vq_quantize(
+            raas_name,
+            vpc_predictors.as_ptr(),
+            vpc_predictors.len() as c_int,
+        )
     }
 }
 
@@ -87,20 +84,18 @@ pub fn ecoz2_hmm_learn(
     n: usize,
     model_type: usize,
     sequence_filenames: Vec<PathBuf>,
-    num_sequences: usize,
     hmm_epsilon: f64,
     val_auto: f64,
     max_iterations: usize,
 ) {
-    let c_strings: Vec<CString> = to_cstrings(sequence_filenames);
-    let c_chars: Vec<*const c_char> = to_c_chars(c_strings);
+    let vpc_sequences: Vec<*const c_char> = to_vec_of_ptr_const_c_char(sequence_filenames);
 
     unsafe {
         hmm_learn(
             n as c_int,
             model_type as c_int,
-            c_chars.as_ptr(),
-            num_sequences as c_int,
+            vpc_sequences.as_ptr(),
+            vpc_sequences.len() as c_int,
             hmm_epsilon as c_double,
             val_auto as c_double,
             max_iterations as c_int,
@@ -113,25 +108,23 @@ pub fn ecoz2_hmm_classify(
     sequence_filenames: Vec<PathBuf>,
     show_ranked: bool,
 ) {
-    let model_c_strings: Vec<CString> = to_cstrings(model_filenames);
-    let model_c_chars: Vec<*const c_char> = to_c_chars(model_c_strings);
+    let vpc_models: Vec<*const c_char> = to_vec_of_ptr_const_c_char(model_filenames);
 
-    let sequence_c_strings: Vec<CString> = to_cstrings(sequence_filenames);
-    let sequence_c_chars: Vec<*const c_char> = to_c_chars(sequence_c_strings);
+    let vpc_sequences: Vec<*const c_char> = to_vec_of_ptr_const_c_char(sequence_filenames);
 
     unsafe {
         hmm_classify(
-            model_c_chars.as_ptr(),
-            model_c_chars.len() as c_int,
-            sequence_c_chars.as_ptr(),
-            sequence_c_chars.len() as c_int,
+            vpc_models.as_ptr(),
+            vpc_models.len() as c_int,
+            vpc_sequences.as_ptr(),
+            vpc_sequences.len() as c_int,
             show_ranked as c_int,
         );
     }
 }
 
-fn to_cstrings(paths: Vec<PathBuf>) -> Vec<CString> {
-    paths
+fn to_vec_of_ptr_const_c_char(paths: Vec<PathBuf>) -> Vec<*const c_char> {
+    let vec_of_cstring: Vec<CString> = paths
         .into_iter()
         .map(|predictor_filename| {
             let str = predictor_filename.to_str().unwrap();
@@ -139,11 +132,9 @@ fn to_cstrings(paths: Vec<PathBuf>) -> Vec<CString> {
             //println!("c_string = {:?}", c_string);
             c_string
         })
-        .collect()
-}
+        .collect();
 
-fn to_c_chars(c_strings: Vec<CString>) -> Vec<*const c_char> {
-    c_strings
+    vec_of_cstring
         .into_iter()
         .map(|c_string| {
             let ptr = c_string.as_ptr();

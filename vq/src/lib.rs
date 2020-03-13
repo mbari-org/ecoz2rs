@@ -84,15 +84,16 @@ pub fn main_vq_learn(opts: VqLearnOpts) -> Result<(), Box<dyn Error>> {
 
     let actual_predictor_filenames = utl::get_actual_filenames(predictor_filenames, ".prd")?;
 
-    let num_actual_predictors = actual_predictor_filenames.len();
-    println!("num_actual_predictors: {}", num_actual_predictors);
+    println!(
+        "num_actual_predictors: {}",
+        actual_predictor_filenames.len()
+    );
 
     ecoz2_vq_learn(
         prediction_order,
         epsilon,
         codebook_class_name,
         actual_predictor_filenames,
-        num_actual_predictors,
     );
 
     Ok(())
@@ -106,10 +107,12 @@ pub fn main_vq_quantize(opts: VqQuantizeOpts) -> Result<(), Box<dyn Error>> {
 
     let actual_predictor_filenames = utl::get_actual_filenames(predictor_filenames, ".prd")?;
 
-    let num_actual_predictors = actual_predictor_filenames.len();
-    println!("num_actual_predictors: {}", num_actual_predictors);
+    println!(
+        "num_actual_predictors: {}",
+        actual_predictor_filenames.len()
+    );
 
-    ecoz2_vq_quantize(codebook, actual_predictor_filenames, num_actual_predictors);
+    ecoz2_vq_quantize(codebook, actual_predictor_filenames);
 
     Ok(())
 }
