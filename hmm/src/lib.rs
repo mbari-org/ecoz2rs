@@ -20,7 +20,7 @@ pub struct HmmMainOpts {
 #[derive(StructOpt, Debug)]
 #[structopt(name = "hmm", about = "HMM operations")]
 enum EcozHmmCommand {
-    #[structopt(about = "Codebook training")]
+    #[structopt(about = "HMM training")]
     Learn(HmmLearnOpts),
 
     #[structopt(about = "HMM based classification")]
