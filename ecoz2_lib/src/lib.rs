@@ -6,6 +6,7 @@ use std::path::PathBuf;
 use libc::c_char;
 use libc::c_double;
 use libc::c_int;
+use std::os::raw::c_float;
 
 extern "C" {
     fn lpc_signals(
@@ -13,7 +14,7 @@ extern "C" {
         window_length_ms: c_int,
         offset_length_ms: c_int,
         minpc: c_int,
-        split: c_double,
+        split: c_float,
         sgn_filenames: *const *const c_char,
         num_signals: c_int,
     );
@@ -60,7 +61,7 @@ pub fn ecoz2_lpc_signals(
     window_length_ms: usize,
     offset_length_ms: usize,
     minpc: usize,
-    split: f64,
+    split: f32,
     sgn_filenames: Vec<PathBuf>,
 ) {
     let vpc_signals: Vec<*const c_char> = to_vec_of_ptr_const_c_char(sgn_filenames);
@@ -71,7 +72,7 @@ pub fn ecoz2_lpc_signals(
             window_length_ms as c_int,
             offset_length_ms as c_int,
             minpc as c_int,
-            split as c_double,
+            split as c_float,
             vpc_signals.as_ptr(),
             vpc_signals.len() as c_int,
         )

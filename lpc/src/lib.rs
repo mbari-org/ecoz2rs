@@ -29,7 +29,7 @@ pub struct LpcOpts {
     /// Put the generated predictors into two different training
     /// and test subsets (with the given approx ratio)
     #[structopt(short = "s", long, default_value = "0")]
-    split: f64,
+    split: f32,
 
     /// Signal files to process. If a directory is given, then
     /// all `.wav` under it will be used.
