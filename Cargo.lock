@@ -174,12 +174,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 name = "lpc"
 version = "0.1.0"
 dependencies = [
+ "ecoz2_lib 0.1.0",
  "paw 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "prd 0.1.0",
  "serde 1.0.99 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_cbor 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "sgn 0.1.0",
  "structopt 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "utl 0.1.0",
 ]
 
 [[package]]

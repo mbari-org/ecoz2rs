@@ -8,6 +8,16 @@ use libc::c_double;
 use libc::c_int;
 
 extern "C" {
+    fn lpc_signals(
+        prediction_order: c_int,
+        window_length_ms: c_int,
+        offset_length_ms: c_int,
+        minpc: c_int,
+        split: c_double,
+        sgn_filenames: *const *const c_char,
+        num_signals: c_int,
+    );
+
     fn vq_learn(
         prediction_order: c_int,
         epsilon: c_double,
@@ -43,6 +53,29 @@ extern "C" {
     );
 
     fn hmm_show(hmm_filename: *const c_char, format: *const c_char);
+}
+
+pub fn ecoz2_lpc_signals(
+    prediction_order: usize,
+    window_length_ms: usize,
+    offset_length_ms: usize,
+    minpc: usize,
+    split: f64,
+    sgn_filenames: Vec<PathBuf>,
+) {
+    let vpc_signals: Vec<*const c_char> = to_vec_of_ptr_const_c_char(sgn_filenames);
+
+    unsafe {
+        lpc_signals(
+            prediction_order as c_int,
+            window_length_ms as c_int,
+            offset_length_ms as c_int,
+            minpc as c_int,
+            split as c_double,
+            vpc_signals.as_ptr(),
+            vpc_signals.len() as c_int,
+        )
+    }
 }
 
 pub fn ecoz2_vq_learn(

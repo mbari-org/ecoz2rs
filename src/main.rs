@@ -41,7 +41,7 @@ fn main() {
         }
 
         Ecoz::Lpc(opts) => {
-            lpc::main_lpc(opts);
+            lpc::main(opts);
         }
 
         Ecoz::PrdShow(opts) => {

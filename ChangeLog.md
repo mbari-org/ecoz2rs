@@ -1,5 +1,15 @@
 2020-03
 
+- `ecoz2 lpc` now uses the C implementation
+
+        $ cargo build --release
+        $ cd MARS_20161221_000046_SongSession_16kHz_HPF5HzNorm_labels
+        $ for t in `ls signals`; do 
+            ecoz2 lpc -P 36 -W 45 -O 15 -m 10 -s 0.8 signals/$t &
+        done
+      
+    rust implementation moved to `lpc_rs.rs`.
+
 - add `vq show`
 
       cargo run -- vq show --codebook data/codebooks/_/eps_0.0005_M_0002.cbook
