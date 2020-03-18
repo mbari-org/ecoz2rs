@@ -157,7 +157,7 @@ pub fn main_hmm_classify(opts: HmmClassifyOpts) -> Result<(), Box<dyn Error>> {
     let actual_sequence_filenames = utl::get_actual_filenames(sequence_filenames, ".seq")?;
 
     println!(
-        "num_actual_models: {}  num_actual_sequences: {}",
+        "number of HMM models: {}  number of sequences: {}",
         actual_model_filenames.len(),
         actual_sequence_filenames.len()
     );

@@ -11,7 +11,7 @@ pub fn get_actual_filenames(
     predictor_filenames: Vec<PathBuf>,
     file_ext: &str,
 ) -> Result<Vec<PathBuf>, Box<dyn Error>> {
-    let list = if predictor_filenames.len() == 1 {
+    let mut list = if predictor_filenames.len() == 1 {
         let path = Path::new(&predictor_filenames[0]);
         if path.is_dir() {
             list_files(path, file_ext)?
@@ -21,6 +21,7 @@ pub fn get_actual_filenames(
     } else {
         predictor_filenames
     };
+    list.sort_by(|a, b| a.cmp(b));
     Ok(list)
 }
 

@@ -106,7 +106,7 @@ pub fn main_vq_learn(opts: VqLearnOpts) -> Result<(), Box<dyn Error>> {
     let actual_predictor_filenames = utl::get_actual_filenames(predictor_filenames, ".prd")?;
 
     println!(
-        "num_actual_predictors: {}",
+        "number of predictor files: {}",
         actual_predictor_filenames.len()
     );
 
@@ -129,7 +129,7 @@ pub fn main_vq_quantize(opts: VqQuantizeOpts) -> Result<(), Box<dyn Error>> {
     let actual_predictor_filenames = utl::get_actual_filenames(predictor_filenames, ".prd")?;
 
     println!(
-        "num_actual_predictors: {}",
+        "number of predictor files: {}",
         actual_predictor_filenames.len()
     );
 
