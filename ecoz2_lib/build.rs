@@ -9,7 +9,7 @@ fn main() {
         "../ecoz2/src/hmm",
     ];
 
-    let files = &[
+    let files = vec![
         "../ecoz2/src/utl/fileutil.c",
         "../ecoz2/src/utl/list.c",
         "../ecoz2/src/utl/memutil.c",
@@ -19,6 +19,7 @@ fn main() {
         "../ecoz2/src/lpc/lpaOnSignal.c",
         "../ecoz2/src/lpc/lpca.c",
         "../ecoz2/src/lpc/prd.c",
+        "../ecoz2/src/lpc/prd_show_file.c",
         "../ecoz2/src/lpc/ref2raas.c",
         "../ecoz2/src/vq/vq_learn.c",
         "../ecoz2/src/vq/vq_quantize.c",
@@ -48,7 +49,7 @@ fn main() {
     for f in headers {
         println!("cargo:rerun-if-changed={}", f)
     }
-    for f in files {
+    for f in &files {
         println!("cargo:rerun-if-changed={}", f)
     }
 

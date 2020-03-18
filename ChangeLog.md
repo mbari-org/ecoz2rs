@@ -1,5 +1,8 @@
 2020-03
 
+- `ecoz2 prd` now uses the C implementation
+  (only `prd show` at this point)
+
 - `ecoz2 lpc` now uses the C implementation
 
         $ cargo build --release

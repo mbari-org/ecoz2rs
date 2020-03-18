@@ -20,8 +20,8 @@ enum Ecoz {
     #[structopt(about = "Linear prediction coding")]
     Lpc(lpc::LpcOpts),
 
-    #[structopt(about = "Show predictor")]
-    PrdShow(prd::PrdShowOpts),
+    #[structopt(about = "Predictor file operations")]
+    Prd(prd::PrdMainOpts),
 
     #[structopt(about = "VQ operations")]
     Vq(vq::VqMainOpts),
@@ -44,8 +44,8 @@ fn main() {
             lpc::main(opts);
         }
 
-        Ecoz::PrdShow(opts) => {
-            prd::main_prd_show(opts);
+        Ecoz::Prd(opts) => {
+            prd::main(opts);
         }
 
         Ecoz::Vq(opts) => {

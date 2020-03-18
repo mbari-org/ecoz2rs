@@ -19,6 +19,8 @@ extern "C" {
         num_signals: c_int,
     );
 
+    fn prd_show_file(prd_filename: *const c_char, show_reflections: c_int, from: c_int, to: c_int);
+
     fn vq_learn(
         prediction_order: c_int,
         epsilon: c_double,
@@ -75,6 +77,21 @@ pub fn ecoz2_lpc_signals(
             split as c_float,
             vpc_signals.as_ptr(),
             vpc_signals.len() as c_int,
+        )
+    }
+}
+
+pub fn ecoz2_prd_show_file(prd_filename: PathBuf, show_reflections: bool, from: i32, to: i32) {
+    let prd_filename_c_string = CString::new(prd_filename.to_str().unwrap()).unwrap();
+
+    unsafe {
+        let filename = prd_filename_c_string.as_ptr() as *const i8;
+
+        prd_show_file(
+            filename,
+            show_reflections as c_int,
+            from as c_int,
+            to as c_int,
         )
     }
 }
