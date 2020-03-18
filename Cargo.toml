@@ -26,6 +26,7 @@ lpc = { path = "lpc", version = "0.1.0" }
 prd = { path = "prd", version = "0.1.0" }
 vq  = { path = "vq", version = "0.1.0" }
 hmm = { path = "hmm", version = "0.1.0" }
+seq = { path = "seq", version = "0.1.0" }
 csvutil = { path = "csvutil", version = "0.1.0" }
 
 # https://stackoverflow.com/a/34054833/830737

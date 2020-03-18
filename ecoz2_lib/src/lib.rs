@@ -56,6 +56,15 @@ extern "C" {
     );
 
     fn hmm_show(hmm_filename: *const c_char, format: *const c_char);
+
+    fn seq_show_files(
+        with_prob: c_int,
+        gen_q_opt: c_int,
+        show_sequence: c_int,
+        hmm_filename: *const c_char,
+        sequence_filenames: *const *const c_char,
+        num_sequences: c_int,
+    );
 }
 
 pub fn ecoz2_lpc_signals(
@@ -206,6 +215,37 @@ pub fn ecoz2_hmm_show(hmm_filename: PathBuf, format: String) {
         hmm_show(
             hmm_c_string.as_ptr() as *const i8,
             format_c_string.as_ptr() as *const i8,
+        );
+    }
+}
+
+pub fn ecoz2_seq_show_files(
+    with_prob: bool,
+    gen_q_opt: bool,
+    no_sequence: bool,
+    hmm_filename_opt: Option<PathBuf>,
+    seq_filenames: Vec<PathBuf>,
+) {
+    println!(
+        "\necoz2_seq_show_files: with_prob={} gen_q_opt={} no_sequence={} hmm_filename_opt={:?} seq_filenames={}\n",
+        with_prob, gen_q_opt, no_sequence, hmm_filename_opt, seq_filenames.len()
+    );
+
+    let hmm_c_string = match hmm_filename_opt {
+        Some(hmm_filename) => CString::new(hmm_filename.to_str().unwrap()).unwrap(),
+        None => CString::new("").unwrap(),
+    };
+
+    let vpc_sequences: Vec<*const c_char> = to_vec_of_ptr_const_c_char(seq_filenames);
+
+    unsafe {
+        seq_show_files(
+            with_prob as c_int,
+            gen_q_opt as c_int,
+            no_sequence as c_int,
+            hmm_c_string.as_ptr() as *const i8,
+            vpc_sequences.as_ptr(),
+            vpc_sequences.len() as c_int,
         );
     }
 }

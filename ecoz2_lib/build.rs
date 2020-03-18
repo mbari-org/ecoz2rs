@@ -34,6 +34,7 @@ fn main() {
         "../ecoz2/src/hmm/hmm_learn.c",
         "../ecoz2/src/hmm/hmm_classify.c",
         "../ecoz2/src/hmm/hmm_show.c",
+        "../ecoz2/src/hmm/seq_show_files.c",
         "../ecoz2/src/hmm/hmm_adjustb.c",
         "../ecoz2/src/hmm/hmm_file.c",
         "../ecoz2/src/hmm/hmm_refinement.c",

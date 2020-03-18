@@ -1,5 +1,9 @@
 2020-03
 
+- add `seq show`
+
+      cargo run seq show ../ecoz2-whale/exerc01/data/sequences/TRAIN/M2048/B/
+
 - `ecoz2 prd` now uses the C implementation
   (only `prd show` at this point)
 

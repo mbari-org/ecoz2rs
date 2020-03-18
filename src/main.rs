@@ -2,6 +2,7 @@ extern crate csvutil;
 extern crate hmm;
 extern crate lpc;
 extern crate prd;
+extern crate seq;
 extern crate sgn;
 extern crate structopt;
 extern crate vq;
@@ -28,6 +29,9 @@ enum Ecoz {
 
     #[structopt(about = "HMM operations")]
     Hmm(hmm::HmmMainOpts),
+
+    #[structopt(about = "Sequence file operations")]
+    Seq(seq::SeqMainOpts),
 }
 
 fn main() {
@@ -54,6 +58,10 @@ fn main() {
 
         Ecoz::Hmm(opts) => {
             hmm::main(opts);
+        }
+
+        Ecoz::Seq(opts) => {
+            seq::main(opts);
         }
     }
 }
