@@ -63,10 +63,6 @@ pub struct VqQuantizeOpts {
 
 #[derive(StructOpt, Debug)]
 pub struct VqShowOpts {
-    /// Codebook.
-    #[structopt(long = "codebook", parse(from_os_str))]
-    codebook: PathBuf,
-
     /// Start index for coefficient range selection
     #[structopt(short, long, default_value = "-1")]
     from: i32,
@@ -74,6 +70,10 @@ pub struct VqShowOpts {
     /// Limit index for coefficient range selection
     #[structopt(short, long, default_value = "-1")]
     to: i32,
+
+    /// Codebook.
+    #[structopt(parse(from_os_str))]
+    codebook: PathBuf,
 }
 
 pub fn main(opts: VqMainOpts) {
@@ -139,7 +139,7 @@ pub fn main_vq_quantize(opts: VqQuantizeOpts) -> Result<(), Box<dyn Error>> {
 }
 
 pub fn main_vq_show(opts: VqShowOpts) -> Result<(), Box<dyn Error>> {
-    let VqShowOpts { codebook, from, to } = opts;
+    let VqShowOpts { from, to, codebook } = opts;
 
     ecoz2_vq_show(codebook, from, to);
 
