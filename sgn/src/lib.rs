@@ -80,7 +80,7 @@ struct SgnExtractor {
 
     sample_period: f32,
 
-    sgm_filename: String,
+    sgn_filename: String,
 
     out_dir: String,
 }
@@ -110,19 +110,19 @@ impl SgnExtractor {
         let sample_period = 1.0 / sgn.sample_rate as f32;
         println!("duration: {}  sample_period: {}", duration, sample_period);
 
-        let sgm_filename = segments.to_str().unwrap().into();
+        let sgn_filename = segments.to_str().unwrap().into();
 
         SgnExtractor {
             wav_simple_name,
             sgn,
             sample_period,
-            sgm_filename,
+            sgn_filename,
             out_dir,
         }
     }
 
     pub fn sgn_extract(&mut self) -> Result<(), Box<dyn Error>> {
-        let instances = csvutil::load_instances(self.sgm_filename.as_str())?;
+        let instances = csvutil::load_instances(self.sgn_filename.as_str())?;
 
         let lookup = &instances
             .iter()
