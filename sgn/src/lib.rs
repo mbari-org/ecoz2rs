@@ -68,7 +68,7 @@ pub fn sgn_show(opts: SgnShowOpts) -> Result<(), Box<dyn Error>> {
 
     let filename: &str = file.to_str().unwrap();
 
-    let mut s = load(&filename);
+    let s = load(&filename);
     println!("Signal loaded: {}", filename);
     s.show();
     Ok(())
@@ -95,7 +95,7 @@ impl SgnExtractor {
 
         let wav_filename: &str = wav.to_str().unwrap();
 
-        let mut sgn = load(&wav_filename);
+        let sgn = load(&wav_filename);
         println!("Signal loaded: {}", wav_filename);
         sgn.show();
 
@@ -172,7 +172,7 @@ impl SgnExtractor {
         let sample_rate = spec.sample_rate as usize;
         let num_samples = samples.len();
 
-        let mut segment = Sgn {
+        let segment = Sgn {
             sample_rate,
             num_samples,
             samples,
@@ -198,7 +198,7 @@ pub struct Sgn {
 }
 
 impl Sgn {
-    pub fn save(&mut self, filename: &str) {
+    pub fn save(&self, filename: &str) {
         println!("save: filename = {}", filename);
 
         let spec = self.spec;
@@ -212,7 +212,7 @@ impl Sgn {
         writer.finalize().unwrap();
     }
 
-    pub fn show(&mut self) {
+    pub fn show(&self) {
         println!(
             "num_samples: {}  sample_rate: {}  bits_per_sample: {}  sample_format = {:?}",
             self.num_samples, self.sample_rate, self.spec.bits_per_sample, self.spec.sample_format
