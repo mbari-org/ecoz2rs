@@ -8,18 +8,18 @@ use std::path::PathBuf;
 use walkdir::WalkDir;
 
 pub fn get_actual_filenames(
-    predictor_filenames: Vec<PathBuf>,
+    filenames: Vec<PathBuf>,
     file_ext: &str,
 ) -> Result<Vec<PathBuf>, Box<dyn Error>> {
-    let mut list = if predictor_filenames.len() == 1 {
-        let path = Path::new(&predictor_filenames[0]);
+    let mut list = if filenames.len() == 1 {
+        let path = Path::new(&filenames[0]);
         if path.is_dir() {
             list_files(path, file_ext)?
         } else {
-            predictor_filenames
+            filenames
         }
     } else {
-        predictor_filenames
+        filenames
     };
     list.sort_by(|a, b| a.cmp(b));
     Ok(list)
