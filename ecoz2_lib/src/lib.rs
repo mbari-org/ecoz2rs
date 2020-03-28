@@ -35,6 +35,14 @@ extern "C" {
         num_predictors: c_int,
     );
 
+    fn vq_classify(
+        cb_filenames: *const *const c_char,
+        num_codebooks: c_int,
+        prd_filenames: *const *const c_char,
+        num_predictors: c_int,
+        show_ranked: c_int,
+    );
+
     fn vq_show(codebook_filename: *const c_char, from: c_int, to: c_int);
 
     fn hmm_learn(
@@ -148,6 +156,26 @@ pub fn ecoz2_vq_quantize(nom_raas: PathBuf, predictor_filenames: Vec<PathBuf>) {
             vpc_predictors.as_ptr(),
             vpc_predictors.len() as c_int,
         )
+    }
+}
+
+pub fn ecoz2_vq_classify(
+    cb_filenames: Vec<PathBuf>,
+    prd_filenames: Vec<PathBuf>,
+    show_ranked: bool,
+) {
+    let vpc_codebooks: Vec<*const c_char> = to_vec_of_ptr_const_c_char(cb_filenames);
+
+    let vpc_predictors: Vec<*const c_char> = to_vec_of_ptr_const_c_char(prd_filenames);
+
+    unsafe {
+        vq_classify(
+            vpc_codebooks.as_ptr(),
+            vpc_codebooks.len() as c_int,
+            vpc_predictors.as_ptr(),
+            vpc_predictors.len() as c_int,
+            show_ranked as c_int,
+        );
     }
 }
 

@@ -10,6 +10,7 @@ fn main() {
     ];
 
     let files = vec![
+        "../ecoz2/src/utl/utl.c",
         "../ecoz2/src/utl/fileutil.c",
         "../ecoz2/src/utl/list.c",
         "../ecoz2/src/utl/memutil.c",
@@ -23,6 +24,7 @@ fn main() {
         "../ecoz2/src/lpc/ref2raas.c",
         "../ecoz2/src/vq/vq_learn.c",
         "../ecoz2/src/vq/vq_quantize.c",
+        "../ecoz2/src/vq/vq_classify.c",
         "../ecoz2/src/vq/vq_show.c",
         "../ecoz2/src/vq/vq.c",
         "../ecoz2/src/vq/distortion.c",

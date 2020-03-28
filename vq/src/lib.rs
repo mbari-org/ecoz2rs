@@ -5,11 +5,12 @@ extern crate utl;
 use std::error::Error;
 use std::path::PathBuf;
 
+use ecoz2_lib::ecoz2_vq_classify;
 use ecoz2_lib::ecoz2_vq_learn;
 use ecoz2_lib::ecoz2_vq_quantize;
 use ecoz2_lib::ecoz2_vq_show;
 use structopt::StructOpt;
-use EcozVqCommand::{Learn, Quantize, Show};
+use EcozVqCommand::{Classify, Learn, Quantize, Show};
 
 #[derive(StructOpt, Debug)]
 pub struct VqMainOpts {
@@ -25,6 +26,9 @@ enum EcozVqCommand {
 
     #[structopt(about = "Vector quantization")]
     Quantize(VqQuantizeOpts),
+
+    #[structopt(about = "VQ based classification")]
+    Classify(VqClassifyOpts),
 
     #[structopt(about = "Show codebook")]
     Show(VqShowOpts),
@@ -62,6 +66,35 @@ pub struct VqQuantizeOpts {
 }
 
 #[derive(StructOpt, Debug)]
+pub struct VqClassifyOpts {
+    /// Show ranked models for incorrect classifications
+    #[structopt(short = "r", long)]
+    show_ranked: bool,
+
+    /// Codebook models.
+    /// If a directory is given, then all `.cb` under it will be used.
+    #[structopt(
+        short,
+        long = "codebooks",
+        required = true,
+        min_values = 1,
+        parse(from_os_str)
+    )]
+    cb_filenames: Vec<PathBuf>,
+
+    /// Predictor files to classify.
+    /// If a directory is given, then all `.prd` under it will be used.
+    #[structopt(
+        short,
+        long = "predictors",
+        required = true,
+        min_values = 1,
+        parse(from_os_str)
+    )]
+    prd_filenames: Vec<PathBuf>,
+}
+
+#[derive(StructOpt, Debug)]
 pub struct VqShowOpts {
     /// Start index for coefficient range selection
     #[structopt(short, long, default_value = "-1")]
@@ -81,6 +114,8 @@ pub fn main(opts: VqMainOpts) {
         Learn(opts) => main_vq_learn(opts),
 
         Quantize(opts) => main_vq_quantize(opts),
+
+        Classify(opts) => main_vq_classify(opts),
 
         Show(opts) => main_vq_show(opts),
     };
@@ -129,6 +164,29 @@ pub fn main_vq_quantize(opts: VqQuantizeOpts) -> Result<(), Box<dyn Error>> {
     );
 
     ecoz2_vq_quantize(codebook, actual_predictor_filenames);
+
+    Ok(())
+}
+
+pub fn main_vq_classify(opts: VqClassifyOpts) -> Result<(), Box<dyn Error>> {
+    let VqClassifyOpts {
+        show_ranked,
+        cb_filenames,
+        prd_filenames,
+    } = opts;
+
+    let actual_cb_filenames = utl::get_actual_filenames(cb_filenames, ".cb")?;
+
+    let actual_prd_filenames = utl::get_actual_filenames(prd_filenames, ".prd")?;
+
+    println!(
+        "number of codebooks: {}  number of predictors: {}",
+        actual_cb_filenames.len(),
+        actual_prd_filenames.len()
+    );
+    println!("show_ranked = {}", show_ranked);
+
+    ecoz2_vq_classify(actual_cb_filenames, actual_prd_filenames, show_ranked);
 
     Ok(())
 }

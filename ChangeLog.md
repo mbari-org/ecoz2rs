@@ -1,5 +1,7 @@
 2020-03
 
+- add `vq classify`
+
 - fix in `vq learn` to properly pass class name to C impl
  
 - add `seq show`
