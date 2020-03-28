@@ -105,11 +105,6 @@ pub fn main_vq_learn(opts: VqLearnOpts) -> Result<(), Box<dyn Error>> {
 
     let actual_predictor_filenames = utl::get_actual_filenames(predictor_filenames, ".prd")?;
 
-    println!(
-        "number of predictor files: {}",
-        actual_predictor_filenames.len()
-    );
-
     ecoz2_vq_learn(
         prediction_order,
         epsilon,

@@ -1,5 +1,7 @@
 2020-03
 
+- fix in `vq learn` to properly pass class name to C impl
+ 
 - add `seq show`
 
       cargo run seq show ../ecoz2-whale/exerc01/data/sequences/TRAIN/M2048/B/

@@ -111,15 +111,22 @@ pub fn ecoz2_vq_learn(
     codebook_class_name: String,
     predictor_filenames: Vec<PathBuf>,
 ) {
+    println!(
+        "ecoz2_vq_learn: prediction_order={}, epsilon={} codebook_class_name={} predictor_filenames: {}",
+        prediction_order,
+        epsilon,
+        &codebook_class_name,
+        predictor_filenames.len()
+    );
+
+    let class_name = CString::new(codebook_class_name).unwrap();
     let vpc_predictors: Vec<*const c_char> = to_vec_of_ptr_const_c_char(predictor_filenames);
 
     unsafe {
-        let class_name = CString::new(codebook_class_name).unwrap().as_ptr() as *const i8;
-
         vq_learn(
             prediction_order as c_int,
             epsilon as c_double,
-            class_name,
+            class_name.as_ptr() as *const i8,
             vpc_predictors.as_ptr(),
             vpc_predictors.len() as c_int,
         )
