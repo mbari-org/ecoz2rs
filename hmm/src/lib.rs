@@ -45,9 +45,9 @@ pub struct HmmLearnOpts {
     #[structopt(short = "t", default_value = "3")]
     type_: usize,
 
-    /// Maximum number of iterations
-    #[structopt(short = "I", long, default_value = "0")]
-    max_iterations: usize,
+    /// Maximum number of iterations. Default (-1) means no limit.
+    #[structopt(short = "I", long, default_value = "-1")]
+    max_iterations: i32,
 
     /// epsilon restriction on B.
     /// 0 means do not apply this restriction

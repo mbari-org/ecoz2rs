@@ -164,7 +164,7 @@ pub fn ecoz2_hmm_learn(
     sequence_filenames: Vec<PathBuf>,
     hmm_epsilon: f64,
     val_auto: f64,
-    max_iterations: usize,
+    max_iterations: i32,
 ) {
     let vpc_sequences: Vec<*const c_char> = to_vec_of_ptr_const_c_char(sequence_filenames);
 
