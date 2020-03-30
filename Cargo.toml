@@ -10,7 +10,7 @@ license = "MIT OR Apache-2.0"
 keywords = [
     "hmm",
     "hidden-markov-model",
-    "linear-predictive-coding",
+    "linear-prediction",
     "vector-quantization",
     "machine-learning",
 ]
