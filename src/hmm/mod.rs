@@ -60,7 +60,7 @@ pub struct HmmLearnOpts {
     val_auto: f64,
 
     /// Training sequences.
-    /// If a directory is given, then all `.seq` under it will be used.
+    /// If directories are included, then all `.seq` under them will be used.
     #[structopt(parse(from_os_str))]
     sequence_filenames: Vec<PathBuf>,
 }
@@ -72,7 +72,7 @@ pub struct HmmClassifyOpts {
     show_ranked: bool,
 
     /// HMM models.
-    /// If a directory is given, then all `.hmm` under it will be used.
+    /// If directories are included, then all `.hmm` under them will be used.
     #[structopt(
         short,
         long = "models",
@@ -83,7 +83,7 @@ pub struct HmmClassifyOpts {
     model_filenames: Vec<PathBuf>,
 
     /// Sequences to classify.
-    /// If a directory is given, then all `.seq` under it will be used.
+    /// If directories are included, then all `.seq` under them will be used.
     #[structopt(
         short,
         long = "sequences",

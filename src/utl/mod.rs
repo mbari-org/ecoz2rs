@@ -7,24 +7,29 @@ use std::path::PathBuf;
 
 use self::walkdir::WalkDir;
 
+/// Returns the given list of files but expanding
+/// any directories.
+///
 pub fn get_actual_filenames(
     filenames: Vec<PathBuf>,
     file_ext: &str,
 ) -> Result<Vec<PathBuf>, Box<dyn Error>> {
-    let mut list = if filenames.len() == 1 {
-        let path = Path::new(&filenames[0]);
+    let mut list: Vec<PathBuf> = Vec::new();
+    for filename in filenames {
+        let path = Path::new(&filename);
         if path.is_dir() {
-            list_files(path, file_ext)?
-        } else {
-            filenames
+            let dir_files = list_files(path, file_ext)?;
+            list.extend(dir_files);
+        } else if path.is_file() && path.to_str().unwrap().ends_with(file_ext) {
+            list.push(path.to_path_buf());
         }
-    } else {
-        filenames
-    };
+    }
     list.sort_by(|a, b| a.cmp(b));
     Ok(list)
 }
 
+/// List all files under the given directory and having the given extension.
+///
 pub fn list_files(directory: &Path, file_ext: &str) -> io::Result<Vec<PathBuf>> {
     let mut list: Vec<PathBuf> = Vec::new();
 

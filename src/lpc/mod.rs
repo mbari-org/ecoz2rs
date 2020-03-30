@@ -31,8 +31,8 @@ pub struct LpcOpts {
     #[structopt(short = "s", long, default_value = "0")]
     split: f32,
 
-    /// Signal files to process. If a directory is given, then
-    /// all `.wav` under it will be used.
+    /// Signal files to process. If directories are included, then
+    /// all `.wav` under them will be used.
     #[structopt(parse(from_os_str))]
     sgn_filenames: Vec<PathBuf>,
 }

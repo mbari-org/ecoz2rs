@@ -42,7 +42,7 @@ pub struct SeqShowOpts {
     hmm: Option<PathBuf>,
 
     /// Sequences.
-    /// If a directory is given, then all `.seq` under it will be used.
+    /// If directories are included, then all `.seq` under them will be used.
     #[structopt(required = true, min_values = 1, parse(from_os_str))]
     seq_filenames: Vec<PathBuf>,
 }

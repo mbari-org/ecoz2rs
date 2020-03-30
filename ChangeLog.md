@@ -1,5 +1,7 @@
 2020-03
 
+- get_actual_filenames: expand all given directories
+
 - reorganize project
 
 - add `vq classify`

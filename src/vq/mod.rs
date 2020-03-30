@@ -49,8 +49,8 @@ pub struct VqLearnOpts {
     #[structopt(short = "w", long = "class-name")]
     class_name: Option<String>,
 
-    /// Predictor files for training. If a directory is given, then
-    /// all `.prd` under it will be used.
+    /// Predictor files for training. If directories are included, then
+    /// all `.prd` under them will be used.
     #[structopt(parse(from_os_str))]
     predictor_filenames: Vec<PathBuf>,
 }
@@ -73,7 +73,7 @@ pub struct VqClassifyOpts {
     show_ranked: bool,
 
     /// Codebook models.
-    /// If a directory is given, then all `.cb` under it will be used.
+    /// If directories are included, then all `.cb` under them will be used.
     #[structopt(
         short,
         long = "codebooks",
@@ -84,7 +84,7 @@ pub struct VqClassifyOpts {
     cb_filenames: Vec<PathBuf>,
 
     /// Predictor files to classify.
-    /// If a directory is given, then all `.prd` under it will be used.
+    /// If directories are included, then all `.prd` under them will be used.
     #[structopt(
         short,
         long = "predictors",
