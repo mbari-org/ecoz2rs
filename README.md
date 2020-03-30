@@ -4,19 +4,19 @@ This project is mainly a "front-end" to the original
 [ecoz2](https://github.com/ecoz2/ecoz2) implementation in C,
 with some functionality implemented in Rust.
 
-## Linking with C
+## Installing and running
 
-[ecoz2](https://github.com/ecoz2/ecoz2) is included as a submodule,
-with selected functionality exposed via
-https://doc.rust-lang.org/cargo/reference/build-scripts.html.
+You will need a C compiler as well as
+[`Rust`](https://www.rust-lang.org/tools/install)
+on your machine.
 
-## Build
-
-    $ cargo build --release
+    $ cargo install ecoz2
     
-## Run
+> If getting C compile errors, try `$ CC=c99 cargo install ecoz2`.
 
-    $ target/release/ecoz2 --help
+Running:
+
+    $ ecoz2 --help
     ecoz2 0.1.0
     ECOZ2 System
     
@@ -36,3 +36,12 @@ https://doc.rust-lang.org/cargo/reference/build-scripts.html.
         seq         Sequence file operations
         sgn         Signal operations
         vq          VQ operations
+
+
+## Development
+
+[ecoz2](https://github.com/ecoz2/ecoz2) is included as a submodule,
+with selected functionality exposed via
+https://doc.rust-lang.org/cargo/reference/build-scripts.html.
+
+    $ cargo build
