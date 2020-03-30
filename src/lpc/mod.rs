@@ -1,12 +1,12 @@
-extern crate ecoz2_lib;
 extern crate structopt;
-extern crate utl;
 
 use std::error::Error;
 use std::path::PathBuf;
 
-use ecoz2_lib::ecoz2_lpc_signals;
 use structopt::StructOpt;
+
+use ecoz2_lib::ecoz2_lpc_signals;
+use utl;
 
 #[derive(StructOpt, Debug)]
 pub struct LpcOpts {

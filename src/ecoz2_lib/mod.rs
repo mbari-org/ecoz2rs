@@ -1,12 +1,10 @@
 extern crate libc;
 
 use std::ffi::CString;
+use std::os::raw::c_float;
 use std::path::PathBuf;
 
-use libc::c_char;
-use libc::c_double;
-use libc::c_int;
-use std::os::raw::c_float;
+use self::libc::{c_char, c_double, c_int};
 
 extern "C" {
     fn lpc_signals(

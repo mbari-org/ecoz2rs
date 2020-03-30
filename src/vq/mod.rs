@@ -1,16 +1,17 @@
-extern crate ecoz2_lib;
 extern crate structopt;
-extern crate utl;
 
 use std::error::Error;
 use std::path::PathBuf;
+
+use structopt::StructOpt;
 
 use ecoz2_lib::ecoz2_vq_classify;
 use ecoz2_lib::ecoz2_vq_learn;
 use ecoz2_lib::ecoz2_vq_quantize;
 use ecoz2_lib::ecoz2_vq_show;
-use structopt::StructOpt;
-use EcozVqCommand::{Classify, Learn, Quantize, Show};
+use utl;
+
+use self::EcozVqCommand::{Classify, Learn, Quantize, Show};
 
 #[derive(StructOpt, Debug)]
 pub struct VqMainOpts {

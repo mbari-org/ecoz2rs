@@ -1,12 +1,13 @@
-extern crate ecoz2_lib;
 extern crate structopt;
 
 use std::error::Error;
 use std::path::PathBuf;
 
-use ecoz2_lib::ecoz2_prd_show_file;
 use structopt::StructOpt;
-use EcozPrdCommand::Show;
+
+use ecoz2_lib::ecoz2_prd_show_file;
+
+use self::EcozPrdCommand::Show;
 
 #[derive(StructOpt, Debug)]
 pub struct PrdMainOpts {

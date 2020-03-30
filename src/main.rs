@@ -1,13 +1,16 @@
-extern crate csvutil;
-extern crate hmm;
-extern crate lpc;
-extern crate prd;
-extern crate seq;
-extern crate sgn;
 extern crate structopt;
-extern crate vq;
 
 use structopt::StructOpt;
+
+mod csvutil;
+mod ecoz2_lib;
+mod hmm;
+mod lpc;
+mod prd;
+mod seq;
+mod sgn;
+mod utl;
+mod vq;
 
 #[derive(StructOpt, Debug)]
 #[structopt(name = "ecoz2", about = "ECOZ System")]

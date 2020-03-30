@@ -1,16 +1,17 @@
-extern crate ecoz2_lib;
 extern crate libc;
 extern crate structopt;
-extern crate utl;
 
 use std::error::Error;
 use std::path::PathBuf;
 
+use structopt::StructOpt;
+
 use ecoz2_lib::ecoz2_hmm_classify;
 use ecoz2_lib::ecoz2_hmm_learn;
 use ecoz2_lib::ecoz2_hmm_show;
-use structopt::StructOpt;
-use EcozHmmCommand::{Classify, Learn, Show};
+use utl;
+
+use self::EcozHmmCommand::{Classify, Learn, Show};
 
 #[derive(StructOpt, Debug)]
 pub struct HmmMainOpts {

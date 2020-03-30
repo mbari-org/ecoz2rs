@@ -5,7 +5,7 @@ use std::io;
 use std::path::Path;
 use std::path::PathBuf;
 
-use walkdir::WalkDir;
+use self::walkdir::WalkDir;
 
 pub fn get_actual_filenames(
     filenames: Vec<PathBuf>,

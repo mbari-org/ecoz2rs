@@ -6,17 +6,17 @@ use std::fs::File;
 use std::path::PathBuf;
 use std::process;
 
-use serde::Deserialize;
-use structopt::StructOpt;
+//use serde::Deserialize;
+//use structopt::StructOpt;
 
-#[derive(StructOpt, Debug)]
+#[derive(structopt::StructOpt, Debug)]
 pub struct CsvShowOpts {
     /// File to read
     #[structopt(short, long, parse(from_os_str))]
     file: PathBuf,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, serde::Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct Instance {
     pub selection: i32,

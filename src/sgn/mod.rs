@@ -1,17 +1,18 @@
-extern crate csvutil;
 extern crate hound;
 extern crate itertools;
 extern crate structopt;
 
 use std::error::Error;
+use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
 
-use csvutil::Instance;
-use itertools::Itertools;
-use std::fs;
 use structopt::StructOpt;
-use EcozSgnCommand::{Extract, Show};
+
+use csvutil::{load_instances, Instance};
+
+use self::itertools::Itertools;
+use self::EcozSgnCommand::{Extract, Show};
 
 #[derive(StructOpt, Debug)]
 pub struct SgnMainOpts {
@@ -122,7 +123,7 @@ impl SgnExtractor {
     }
 
     pub fn sgn_extract(&mut self) -> Result<(), Box<dyn Error>> {
-        let instances = csvutil::load_instances(self.sgn_filename.as_str())?;
+        let instances = load_instances(self.sgn_filename.as_str())?;
 
         let lookup = &instances
             .iter()

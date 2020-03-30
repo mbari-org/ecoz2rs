@@ -1,13 +1,14 @@
-extern crate ecoz2_lib;
 extern crate structopt;
-extern crate utl;
 
 use std::error::Error;
 use std::path::PathBuf;
 
-use ecoz2_lib::ecoz2_seq_show_files;
 use structopt::StructOpt;
-use EcozSeqCommand::Show;
+
+use ecoz2_lib::ecoz2_seq_show_files;
+use utl;
+
+use self::EcozSeqCommand::Show;
 
 #[derive(StructOpt, Debug)]
 pub struct SeqMainOpts {
