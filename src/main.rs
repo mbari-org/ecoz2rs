@@ -13,7 +13,7 @@ mod utl;
 mod vq;
 
 #[derive(StructOpt, Debug)]
-#[structopt(name = "ecoz2", about = "ECOZ System")]
+#[structopt(name = "ecoz2", about = "ECOZ2 System")]
 enum Ecoz {
     #[structopt(about = "Basic csv selection info")]
     CsvShow(csvutil::CsvShowOpts),
