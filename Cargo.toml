@@ -11,7 +11,8 @@ keywords = [
     "hmm",
     "hidden-markov-model",
     "linear-predictive-coding",
-    "k-means, vector-quantization",
+    "k-means",
+    "vector-quantization",
     "supervised-learning",
     "unsupervised-learning",
 ]
