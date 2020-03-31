@@ -6,9 +6,12 @@ with some functionality implemented in Rust.
 
 ## Installing and running
 
-You will need a C compiler as well as
+The `ecoz2` executable is available at https://github.com/ecoz2/ecoz2rs/releases
+(only for Mac OS at the moment).
+
+You can also install it if you have a C compiler and
 [`Rust`](https://www.rust-lang.org/tools/install)
-on your machine.
+on your machine:
 
     $ cargo install ecoz2
     
@@ -17,7 +20,7 @@ on your machine.
 Running:
 
     $ ecoz2 --help
-    ecoz2 0.1.0
+    ecoz2 0.1.1
     ECOZ2 System
     
     USAGE:
