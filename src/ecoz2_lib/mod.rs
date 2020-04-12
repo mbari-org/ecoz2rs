@@ -1,13 +1,17 @@
 extern crate libc;
 
+use std::ffi::CStr;
 use std::ffi::CString;
 use std::os::raw::c_float;
 use std::path::PathBuf;
+use std::str::Utf8Error;
 
 use self::libc::{c_char, c_double, c_int};
 
 extern "C" {
-    fn lpc_signals(
+    fn ecoz2_version() -> *const c_char;
+
+    fn ecoz2_lpc_signals(
         prediction_order: c_int,
         window_length_ms: c_int,
         offset_length_ms: c_int,
@@ -17,9 +21,14 @@ extern "C" {
         num_signals: c_int,
     );
 
-    fn prd_show_file(prd_filename: *const c_char, show_reflections: c_int, from: c_int, to: c_int);
+    fn ecoz2_prd_show_file(
+        prd_filename: *const c_char,
+        show_reflections: c_int,
+        from: c_int,
+        to: c_int,
+    );
 
-    fn vq_learn(
+    fn ecoz2_vq_learn(
         prediction_order: c_int,
         epsilon: c_double,
         codebook_class_name: *const c_char,
@@ -27,13 +36,13 @@ extern "C" {
         num_predictors: c_int,
     );
 
-    fn vq_quantize(
+    fn ecoz2_vq_quantize(
         nom_raas: *const c_char,
         predictor_filenames: *const *const c_char,
         num_predictors: c_int,
     );
 
-    fn vq_classify(
+    fn ecoz2_vq_classify(
         cb_filenames: *const *const c_char,
         num_codebooks: c_int,
         prd_filenames: *const *const c_char,
@@ -41,9 +50,9 @@ extern "C" {
         show_ranked: c_int,
     );
 
-    fn vq_show(codebook_filename: *const c_char, from: c_int, to: c_int);
+    fn ecoz2_vq_show(codebook_filename: *const c_char, from: c_int, to: c_int);
 
-    fn hmm_learn(
+    fn ecoz2_hmm_learn(
         N: c_int,
         model_type: c_int,
         sequence_filenames: *const *const c_char,
@@ -51,9 +60,11 @@ extern "C" {
         hmm_epsilon: c_double,
         val_auto: c_double,
         max_iterations: c_int,
+
+        callback: extern "C" fn(*mut c_char, c_double),
     );
 
-    fn hmm_classify(
+    fn ecoz2_hmm_classify(
         model_filenames: *const *const c_char,
         num_models: c_int,
         sequence_filenames: *const *const c_char,
@@ -61,9 +72,9 @@ extern "C" {
         show_ranked: c_int,
     );
 
-    fn hmm_show(hmm_filename: *const c_char, format: *const c_char);
+    fn ecoz2_hmm_show(hmm_filename: *const c_char, format: *const c_char);
 
-    fn seq_show_files(
+    fn ecoz2_seq_show_files(
         with_prob: c_int,
         gen_q_opt: c_int,
         show_sequence: c_int,
@@ -73,7 +84,15 @@ extern "C" {
     );
 }
 
-pub fn ecoz2_lpc_signals(
+pub fn version() -> Result<&'static str, Utf8Error> {
+    unsafe {
+        let char_ptr = ecoz2_version();
+        let c_str = CStr::from_ptr(char_ptr);
+        c_str.to_str()
+    }
+}
+
+pub fn lpc_signals(
     prediction_order: usize,
     window_length_ms: usize,
     offset_length_ms: usize,
@@ -84,7 +103,7 @@ pub fn ecoz2_lpc_signals(
     let vpc_signals: Vec<*const c_char> = to_vec_of_ptr_const_c_char(sgn_filenames);
 
     unsafe {
-        lpc_signals(
+        ecoz2_lpc_signals(
             prediction_order as c_int,
             window_length_ms as c_int,
             offset_length_ms as c_int,
@@ -96,13 +115,13 @@ pub fn ecoz2_lpc_signals(
     }
 }
 
-pub fn ecoz2_prd_show_file(prd_filename: PathBuf, show_reflections: bool, from: i32, to: i32) {
+pub fn prd_show_file(prd_filename: PathBuf, show_reflections: bool, from: i32, to: i32) {
     let prd_filename_c_string = CString::new(prd_filename.to_str().unwrap()).unwrap();
 
     unsafe {
         let filename = prd_filename_c_string.as_ptr() as *const i8;
 
-        prd_show_file(
+        ecoz2_prd_show_file(
             filename,
             show_reflections as c_int,
             from as c_int,
@@ -111,14 +130,14 @@ pub fn ecoz2_prd_show_file(prd_filename: PathBuf, show_reflections: bool, from: 
     }
 }
 
-pub fn ecoz2_vq_learn(
+pub fn vq_learn(
     prediction_order: usize,
     epsilon: f64,
     codebook_class_name: String,
     predictor_filenames: Vec<PathBuf>,
 ) {
     println!(
-        "ecoz2_vq_learn: prediction_order={}, epsilon={} codebook_class_name={} predictor_filenames: {}",
+        "vq_learn: prediction_order={}, epsilon={} codebook_class_name={} predictor_filenames: {}",
         prediction_order,
         epsilon,
         &codebook_class_name,
@@ -129,7 +148,7 @@ pub fn ecoz2_vq_learn(
     let vpc_predictors: Vec<*const c_char> = to_vec_of_ptr_const_c_char(predictor_filenames);
 
     unsafe {
-        vq_learn(
+        ecoz2_vq_learn(
             prediction_order as c_int,
             epsilon as c_double,
             class_name.as_ptr() as *const i8,
@@ -139,7 +158,7 @@ pub fn ecoz2_vq_learn(
     }
 }
 
-pub fn ecoz2_vq_quantize(nom_raas: PathBuf, predictor_filenames: Vec<PathBuf>) {
+pub fn vq_quantize(nom_raas: PathBuf, predictor_filenames: Vec<PathBuf>) {
     println!("nom_raas = {}", nom_raas.display());
 
     let codebook_c_string = CString::new(nom_raas.to_str().unwrap()).unwrap();
@@ -149,7 +168,7 @@ pub fn ecoz2_vq_quantize(nom_raas: PathBuf, predictor_filenames: Vec<PathBuf>) {
     unsafe {
         let raas_name = codebook_c_string.as_ptr() as *const i8;
 
-        vq_quantize(
+        ecoz2_vq_quantize(
             raas_name,
             vpc_predictors.as_ptr(),
             vpc_predictors.len() as c_int,
@@ -157,17 +176,13 @@ pub fn ecoz2_vq_quantize(nom_raas: PathBuf, predictor_filenames: Vec<PathBuf>) {
     }
 }
 
-pub fn ecoz2_vq_classify(
-    cb_filenames: Vec<PathBuf>,
-    prd_filenames: Vec<PathBuf>,
-    show_ranked: bool,
-) {
+pub fn vq_classify(cb_filenames: Vec<PathBuf>, prd_filenames: Vec<PathBuf>, show_ranked: bool) {
     let vpc_codebooks: Vec<*const c_char> = to_vec_of_ptr_const_c_char(cb_filenames);
 
     let vpc_predictors: Vec<*const c_char> = to_vec_of_ptr_const_c_char(prd_filenames);
 
     unsafe {
-        vq_classify(
+        ecoz2_vq_classify(
             vpc_codebooks.as_ptr(),
             vpc_codebooks.len() as c_int,
             vpc_predictors.as_ptr(),
@@ -177,13 +192,13 @@ pub fn ecoz2_vq_classify(
     }
 }
 
-pub fn ecoz2_vq_show(codebook_filename: PathBuf, from: i32, to: i32) {
+pub fn vq_show(codebook_filename: PathBuf, from: i32, to: i32) {
     println!("codebook_filename = {}", codebook_filename.display());
 
     let codebook_c_string = CString::new(codebook_filename.to_str().unwrap()).unwrap();
 
     unsafe {
-        vq_show(
+        ecoz2_vq_show(
             codebook_c_string.as_ptr() as *const i8,
             from as c_int,
             to as c_int,
@@ -191,18 +206,47 @@ pub fn ecoz2_vq_show(codebook_filename: PathBuf, from: i32, to: i32) {
     }
 }
 
-pub fn ecoz2_hmm_learn(
+// CALLBACK: to control that only one ongoing ecoz2_hmm_learn call is running.
+// Need to do this along with the c_callback below because using a closure
+// within hmm_learn may not be possible, or be more complicated.
+static mut CALLBACK: Option<fn(&str, f64)> = None;
+
+#[no_mangle]
+extern "C" fn c_callback(variable: *mut c_char, value: c_double) {
+    unsafe {
+        match CALLBACK {
+            Some(cb) => {
+                let c_string = CStr::from_ptr(variable);
+                //println!("   c_callback called var={:?} val={}", c_string, value);
+                let var = c_string.to_str().unwrap();
+                let val = value as f64;
+                cb(var, val)
+            }
+            None => (),
+        }
+    }
+}
+
+pub fn hmm_learn(
     n: usize,
     model_type: usize,
     sequence_filenames: Vec<PathBuf>,
     hmm_epsilon: f64,
     val_auto: f64,
     max_iterations: i32,
+    callback: fn(&str, f64),
 ) {
+    unsafe {
+        match CALLBACK {
+            Some(_) => panic!("Ongoing ecoz2_hmm_learn call"),
+            None => CALLBACK = Some(callback),
+        }
+    }
+
     let vpc_sequences: Vec<*const c_char> = to_vec_of_ptr_const_c_char(sequence_filenames);
 
     unsafe {
-        hmm_learn(
+        ecoz2_hmm_learn(
             n as c_int,
             model_type as c_int,
             vpc_sequences.as_ptr(),
@@ -210,11 +254,14 @@ pub fn ecoz2_hmm_learn(
             hmm_epsilon as c_double,
             val_auto as c_double,
             max_iterations as c_int,
+            c_callback,
         );
+
+        CALLBACK = None;
     }
 }
 
-pub fn ecoz2_hmm_classify(
+pub fn hmm_classify(
     model_filenames: Vec<PathBuf>,
     sequence_filenames: Vec<PathBuf>,
     show_ranked: bool,
@@ -224,7 +271,7 @@ pub fn ecoz2_hmm_classify(
     let vpc_sequences: Vec<*const c_char> = to_vec_of_ptr_const_c_char(sequence_filenames);
 
     unsafe {
-        hmm_classify(
+        ecoz2_hmm_classify(
             vpc_models.as_ptr(),
             vpc_models.len() as c_int,
             vpc_sequences.as_ptr(),
@@ -234,9 +281,9 @@ pub fn ecoz2_hmm_classify(
     }
 }
 
-pub fn ecoz2_hmm_show(hmm_filename: PathBuf, format: String) {
+pub fn hmm_show(hmm_filename: PathBuf, format: String) {
     println!(
-        "ecoz2_hmm_show: hmm_filename={} format={}",
+        "hmm_show: hmm_filename={} format={}",
         hmm_filename.display(),
         format
     );
@@ -245,14 +292,14 @@ pub fn ecoz2_hmm_show(hmm_filename: PathBuf, format: String) {
     let format_c_string = CString::new(format).unwrap();
 
     unsafe {
-        hmm_show(
+        ecoz2_hmm_show(
             hmm_c_string.as_ptr() as *const i8,
             format_c_string.as_ptr() as *const i8,
         );
     }
 }
 
-pub fn ecoz2_seq_show_files(
+pub fn seq_show_files(
     with_prob: bool,
     gen_q_opt: bool,
     no_sequence: bool,
@@ -260,7 +307,7 @@ pub fn ecoz2_seq_show_files(
     seq_filenames: Vec<PathBuf>,
 ) {
     println!(
-        "\necoz2_seq_show_files: with_prob={} gen_q_opt={} no_sequence={} hmm_filename_opt={:?} seq_filenames={}\n",
+        "\nseq_show_files: with_prob={} gen_q_opt={} no_sequence={} hmm_filename_opt={:?} seq_filenames={}\n",
         with_prob, gen_q_opt, no_sequence, hmm_filename_opt, seq_filenames.len()
     );
 
@@ -272,7 +319,7 @@ pub fn ecoz2_seq_show_files(
     let vpc_sequences: Vec<*const c_char> = to_vec_of_ptr_const_c_char(seq_filenames);
 
     unsafe {
-        seq_show_files(
+        ecoz2_seq_show_files(
             with_prob as c_int,
             gen_q_opt as c_int,
             no_sequence as c_int,

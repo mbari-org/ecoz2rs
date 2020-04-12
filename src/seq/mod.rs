@@ -5,7 +5,7 @@ use std::path::PathBuf;
 
 use structopt::StructOpt;
 
-use ecoz2_lib::ecoz2_seq_show_files;
+use ecoz2_lib::seq_show_files;
 use utl;
 
 use self::EcozSeqCommand::Show;
@@ -66,7 +66,7 @@ pub fn seq_show(opts: SeqShowOpts) -> Result<(), Box<dyn Error>> {
         seq_filenames,
     } = opts;
 
-    ecoz2_seq_show_files(
+    seq_show_files(
         with_prob,
         gen_q_opt,
         no_sequence,

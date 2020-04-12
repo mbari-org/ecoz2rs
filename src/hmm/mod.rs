@@ -6,9 +6,10 @@ use std::path::PathBuf;
 
 use structopt::StructOpt;
 
-use ecoz2_lib::ecoz2_hmm_classify;
-use ecoz2_lib::ecoz2_hmm_learn;
-use ecoz2_lib::ecoz2_hmm_show;
+use ecoz2_lib::hmm_classify;
+use ecoz2_lib::hmm_learn;
+use ecoz2_lib::hmm_show;
+use ecoz2_lib::version;
 use utl;
 
 use self::EcozHmmCommand::{Classify, Learn, Show};
@@ -131,16 +132,23 @@ pub fn main_hmm_learn(opts: HmmLearnOpts) -> Result<(), Box<dyn Error>> {
 
     let actual_sequence_filenames = utl::get_actual_filenames(sequence_filenames, ".seq")?;
 
+    println!("ECOZ2 C version: {}", version()?);
+
     println!("num_actual_sequences: {}", actual_sequence_filenames.len());
     println!("val_auto = {}", val_auto);
 
-    ecoz2_hmm_learn(
+    fn callback(var: &str, val: f64) {
+        println!("rust callback called var={} val={}", var, val);
+    }
+
+    hmm_learn(
         num_states,
         type_,
         actual_sequence_filenames,
         epsilon,
         val_auto,
         max_iterations,
+        callback,
     );
 
     Ok(())
@@ -157,6 +165,8 @@ pub fn main_hmm_classify(opts: HmmClassifyOpts) -> Result<(), Box<dyn Error>> {
 
     let actual_sequence_filenames = utl::get_actual_filenames(sequence_filenames, ".seq")?;
 
+    println!("ECOZ2 C version: {}", version()?);
+
     println!(
         "number of HMM models: {}  number of sequences: {}",
         actual_model_filenames.len(),
@@ -164,7 +174,7 @@ pub fn main_hmm_classify(opts: HmmClassifyOpts) -> Result<(), Box<dyn Error>> {
     );
     println!("show_ranked = {}", show_ranked);
 
-    ecoz2_hmm_classify(
+    hmm_classify(
         actual_model_filenames,
         actual_sequence_filenames,
         show_ranked,
@@ -176,7 +186,7 @@ pub fn main_hmm_classify(opts: HmmClassifyOpts) -> Result<(), Box<dyn Error>> {
 pub fn main_hmm_show(opts: HmmShowOpts) -> Result<(), Box<dyn Error>> {
     let HmmShowOpts { hmm, format } = opts;
 
-    ecoz2_hmm_show(hmm, format);
+    hmm_show(hmm, format);
 
     Ok(())
 }

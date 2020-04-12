@@ -5,10 +5,10 @@ use std::path::PathBuf;
 
 use structopt::StructOpt;
 
-use ecoz2_lib::ecoz2_vq_classify;
-use ecoz2_lib::ecoz2_vq_learn;
-use ecoz2_lib::ecoz2_vq_quantize;
-use ecoz2_lib::ecoz2_vq_show;
+use ecoz2_lib::vq_classify;
+use ecoz2_lib::vq_learn;
+use ecoz2_lib::vq_quantize;
+use ecoz2_lib::vq_show;
 use utl;
 
 use self::EcozVqCommand::{Classify, Learn, Quantize, Show};
@@ -141,7 +141,7 @@ pub fn main_vq_learn(opts: VqLearnOpts) -> Result<(), Box<dyn Error>> {
 
     let actual_predictor_filenames = utl::get_actual_filenames(predictor_filenames, ".prd")?;
 
-    ecoz2_vq_learn(
+    vq_learn(
         prediction_order,
         epsilon,
         codebook_class_name,
@@ -164,7 +164,7 @@ pub fn main_vq_quantize(opts: VqQuantizeOpts) -> Result<(), Box<dyn Error>> {
         actual_predictor_filenames.len()
     );
 
-    ecoz2_vq_quantize(codebook, actual_predictor_filenames);
+    vq_quantize(codebook, actual_predictor_filenames);
 
     Ok(())
 }
@@ -187,7 +187,7 @@ pub fn main_vq_classify(opts: VqClassifyOpts) -> Result<(), Box<dyn Error>> {
     );
     println!("show_ranked = {}", show_ranked);
 
-    ecoz2_vq_classify(actual_cb_filenames, actual_prd_filenames, show_ranked);
+    vq_classify(actual_cb_filenames, actual_prd_filenames, show_ranked);
 
     Ok(())
 }
@@ -195,7 +195,7 @@ pub fn main_vq_classify(opts: VqClassifyOpts) -> Result<(), Box<dyn Error>> {
 pub fn main_vq_show(opts: VqShowOpts) -> Result<(), Box<dyn Error>> {
     let VqShowOpts { from, to, codebook } = opts;
 
-    ecoz2_vq_show(codebook, from, to);
+    vq_show(codebook, from, to);
 
     Ok(())
 }

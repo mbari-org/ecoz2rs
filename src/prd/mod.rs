@@ -5,7 +5,7 @@ use std::path::PathBuf;
 
 use structopt::StructOpt;
 
-use ecoz2_lib::ecoz2_prd_show_file;
+use ecoz2_lib::prd_show_file;
 
 use self::EcozPrdCommand::Show;
 
@@ -59,7 +59,7 @@ pub fn prd_show(opts: PrdShowOpts) -> Result<(), Box<dyn Error>> {
         file,
     } = opts;
 
-    ecoz2_prd_show_file(file, show_reflection, from, to);
+    prd_show_file(file, show_reflection, from, to);
 
     Ok(())
 }

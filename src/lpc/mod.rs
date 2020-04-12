@@ -5,7 +5,7 @@ use std::path::PathBuf;
 
 use structopt::StructOpt;
 
-use ecoz2_lib::ecoz2_lpc_signals;
+use ecoz2_lib::lpc_signals;
 use utl;
 
 #[derive(StructOpt, Debug)]
@@ -57,7 +57,7 @@ pub fn main_lpc(opts: LpcOpts) -> Result<(), Box<dyn Error>> {
 
     let actual_sgn_filenames = utl::get_actual_filenames(sgn_filenames, ".wav")?;
 
-    ecoz2_lpc_signals(
+    lpc_signals(
         prediction_order,
         window_length_ms,
         offset_length_ms,

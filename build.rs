@@ -6,6 +6,7 @@ fn main() {
     let headers = &["ecoz2/src/include", "ecoz2/src/sgn", "ecoz2/src/hmm"];
 
     let files = vec![
+        "ecoz2/src/ecoz2/ecoz2.c",
         "ecoz2/src/utl/utl.c",
         "ecoz2/src/utl/fileutil.c",
         "ecoz2/src/utl/list.c",
@@ -36,6 +37,7 @@ fn main() {
         "ecoz2/src/hmm/hmm_adjustb.c",
         "ecoz2/src/hmm/hmm_file.c",
         "ecoz2/src/hmm/hmm_refinement.c",
+        "ecoz2/src/hmm/hmm_prob.c",
         "ecoz2/src/hmm/hmm_log_prob.c",
         "ecoz2/src/hmm/hmm_genQopt.c",
         "ecoz2/src/hmm/hmm_estimateB.c",

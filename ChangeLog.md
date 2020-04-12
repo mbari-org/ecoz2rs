@@ -1,3 +1,10 @@
+2020-04
+
+- 0.2.0: same version as in C version
+- use the `ecoz2_` prefixed functions exported from C
+
+- 0.1.2: callback in ecoz2_hmm_learn
+ 
 2020-03
 
 - get_actual_filenames: expand all given directories
