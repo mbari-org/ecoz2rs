@@ -1,7 +1,23 @@
-Initial notes about Rust implementation of some programs.
+## Implementation in Rust
 
-Note: these may not be readily buildable/runnable as shown below
-as focused on other stuff later on. 
+Some rather preliminary notes/exercises toward a possible
+implementation of the ECOZ2 programs in Rust.
+
+### To keep in mind
+
+- `long double` is used to represent probabilities in HMM models.
+  However:
+    - Not yet a `f128` type in Rust - https://github.com/rust-lang/rfcs/issues/2629
+    - "long double becomes u128" - https://github.com/rust-lang/rust-bindgen/issues/1549
+
+- for python binding
+    - https://github.com/PyO3/pyo3
+
+
+#### Initial exploration
+
+Note: the following ran as shown but may not be readily buildable/runnable
+as I moved things around a bit and focused on other stuff later on. 
 
 - [src/lpc/lpc_rs.rs](src/lpc/lpc_rs.rs) is `lpc` implemented in rust.
    Generates predictor file serialized with
