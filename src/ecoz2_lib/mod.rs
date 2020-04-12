@@ -11,6 +11,8 @@ use self::libc::{c_char, c_double, c_int};
 extern "C" {
     fn ecoz2_version() -> *const c_char;
 
+    fn ecoz2_set_random_seed(seed: c_int);
+
     fn ecoz2_lpc_signals(
         prediction_order: c_int,
         window_length_ms: c_int,
@@ -89,6 +91,12 @@ pub fn version() -> Result<&'static str, Utf8Error> {
         let char_ptr = ecoz2_version();
         let c_str = CStr::from_ptr(char_ptr);
         c_str.to_str()
+    }
+}
+
+pub fn set_random_seed(seed: i32) {
+    unsafe {
+        ecoz2_set_random_seed(seed as c_int);
     }
 }
 

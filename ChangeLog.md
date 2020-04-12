@@ -1,5 +1,6 @@
 2020-04
 
+- add `--seed` option for `hmm learn`
 - 0.2.0: same version as in C version
 - use the `ecoz2_` prefixed functions exported from C
 

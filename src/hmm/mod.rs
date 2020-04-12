@@ -9,6 +9,7 @@ use structopt::StructOpt;
 use ecoz2_lib::hmm_classify;
 use ecoz2_lib::hmm_learn;
 use ecoz2_lib::hmm_show;
+use ecoz2_lib::set_random_seed;
 use ecoz2_lib::version;
 use utl;
 
@@ -59,6 +60,11 @@ pub struct HmmLearnOpts {
     /// val_auto.
     #[structopt(short = "a", default_value = "0.3")]
     val_auto: f64,
+
+    /// Seed for random numbers. Negative means random seed.
+    /// Otherwise, the given seed is used, which will allow for reproducibility.
+    #[structopt(short = "s", long, default_value = "-1")]
+    seed: i32,
 
     /// Training sequences.
     /// If directories are included, then all `.seq` under them will be used.
@@ -127,6 +133,7 @@ pub fn main_hmm_learn(opts: HmmLearnOpts) -> Result<(), Box<dyn Error>> {
         max_iterations,
         epsilon,
         val_auto,
+        seed,
         sequence_filenames,
     } = opts;
 
@@ -136,6 +143,8 @@ pub fn main_hmm_learn(opts: HmmLearnOpts) -> Result<(), Box<dyn Error>> {
 
     println!("num_actual_sequences: {}", actual_sequence_filenames.len());
     println!("val_auto = {}", val_auto);
+
+    set_random_seed(seed);
 
     fn callback(var: &str, val: f64) {
         println!("rust callback called var={} val={}", var, val);
