@@ -141,11 +141,19 @@ pub fn main_vq_learn(opts: VqLearnOpts) -> Result<(), Box<dyn Error>> {
 
     let actual_predictor_filenames = utl::get_actual_filenames(predictor_filenames, ".prd")?;
 
+    fn callback(m: i32, avg_distortion: f64, sigma: f64, inertia: f64) {
+        println!(
+            "rust callback: M={} avg_distortion={} sigma={} inertia={}",
+            m, avg_distortion, sigma, inertia
+        );
+    }
+
     vq_learn(
         prediction_order,
         epsilon,
         codebook_class_name,
         actual_predictor_filenames,
+        callback,
     );
 
     Ok(())

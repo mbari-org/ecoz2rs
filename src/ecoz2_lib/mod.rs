@@ -36,6 +36,8 @@ extern "C" {
         codebook_class_name: *const c_char,
         predictor_filenames: *const *const c_char,
         num_predictors: c_int,
+
+        callback: extern "C" fn(c_int, c_double, c_double, c_double),
     );
 
     fn ecoz2_vq_quantize(
@@ -138,11 +140,40 @@ pub fn prd_show_file(prd_filename: PathBuf, show_reflections: bool, from: i32, t
     }
 }
 
+static mut VQ_LEARN_CALLBACK: Option<fn(i32, f64, f64, f64)> = None;
+
+#[no_mangle]
+extern "C" fn c_vq_learn_callback(
+    m: c_int,
+    avg_distortion: c_double,
+    sigma: c_double,
+    inertia: c_double,
+) {
+    unsafe {
+        match VQ_LEARN_CALLBACK {
+            Some(cb) => {
+                //println!(
+                //    "   c_vq_learn_callback: M={} avg_distortion={} sigma={} inertia={}",
+                //    m, avg_distortion, sigma, inertia
+                //);
+                cb(
+                    m as i32,
+                    avg_distortion as f64,
+                    sigma as f64,
+                    inertia as f64,
+                )
+            }
+            None => (),
+        }
+    }
+}
+
 pub fn vq_learn(
     prediction_order: usize,
     epsilon: f64,
     codebook_class_name: String,
     predictor_filenames: Vec<PathBuf>,
+    callback: fn(i32, f64, f64, f64),
 ) {
     println!(
         "vq_learn: prediction_order={}, epsilon={} codebook_class_name={} predictor_filenames: {}",
@@ -151,6 +182,13 @@ pub fn vq_learn(
         &codebook_class_name,
         predictor_filenames.len()
     );
+
+    unsafe {
+        match VQ_LEARN_CALLBACK {
+            Some(_) => panic!("Ongoing ecoz2_vq_learn call"),
+            None => VQ_LEARN_CALLBACK = Some(callback),
+        }
+    }
 
     let class_name = CString::new(codebook_class_name).unwrap();
     let vpc_predictors: Vec<*const c_char> = to_vec_of_ptr_const_c_char(predictor_filenames);
@@ -162,6 +200,7 @@ pub fn vq_learn(
             class_name.as_ptr() as *const i8,
             vpc_predictors.as_ptr(),
             vpc_predictors.len() as c_int,
+            c_vq_learn_callback,
         )
     }
 }
@@ -214,18 +253,18 @@ pub fn vq_show(codebook_filename: PathBuf, from: i32, to: i32) {
     }
 }
 
-// CALLBACK: to control that only one ongoing ecoz2_hmm_learn call is running.
-// Need to do this along with the c_callback below because using a closure
+// HMM_LEARN_CALLBACK: to control that only one ongoing ecoz2_hmm_learn call is running.
+// Need to do this along with the c_hmm_learn_callback below because using a closure
 // within hmm_learn may not be possible, or be more complicated.
-static mut CALLBACK: Option<fn(&str, f64)> = None;
+static mut HMM_LEARN_CALLBACK: Option<fn(&str, f64)> = None;
 
 #[no_mangle]
-extern "C" fn c_callback(variable: *mut c_char, value: c_double) {
+extern "C" fn c_hmm_learn_callback(variable: *mut c_char, value: c_double) {
     unsafe {
-        match CALLBACK {
+        match HMM_LEARN_CALLBACK {
             Some(cb) => {
                 let c_string = CStr::from_ptr(variable);
-                //println!("   c_callback called var={:?} val={}", c_string, value);
+                //println!("   c_hmm_learn_callback: var={:?} val={}", c_string, value);
                 let var = c_string.to_str().unwrap();
                 let val = value as f64;
                 cb(var, val)
@@ -245,9 +284,9 @@ pub fn hmm_learn(
     callback: fn(&str, f64),
 ) {
     unsafe {
-        match CALLBACK {
+        match HMM_LEARN_CALLBACK {
             Some(_) => panic!("Ongoing ecoz2_hmm_learn call"),
-            None => CALLBACK = Some(callback),
+            None => HMM_LEARN_CALLBACK = Some(callback),
         }
     }
 
@@ -262,10 +301,10 @@ pub fn hmm_learn(
             hmm_epsilon as c_double,
             val_auto as c_double,
             max_iterations as c_int,
-            c_callback,
+            c_hmm_learn_callback,
         );
 
-        CALLBACK = None;
+        HMM_LEARN_CALLBACK = None;
     }
 }
 
