@@ -13,6 +13,7 @@ use self::walkdir::WalkDir;
 pub fn get_actual_filenames(
     filenames: Vec<PathBuf>,
     file_ext: &str,
+    subjects_msg_if_empty: &str,
 ) -> Result<Vec<PathBuf>, Box<dyn Error>> {
     let mut list: Vec<PathBuf> = Vec::new();
     for filename in filenames {
@@ -24,7 +25,11 @@ pub fn get_actual_filenames(
             list.push(path.to_path_buf());
         }
     }
-    list.sort_by(|a, b| a.cmp(b));
+    if !list.is_empty() {
+        list.sort_by(|a, b| a.cmp(b));
+    } else if !subjects_msg_if_empty.is_empty() {
+        return Err(format!("No {} given", subjects_msg_if_empty))?;
+    }
     Ok(list)
 }
 

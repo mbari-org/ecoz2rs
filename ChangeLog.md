@@ -1,5 +1,6 @@
 2020-04
 
+- have get_actual_filenames fail if resulting list is empty
 - use callback in `vq learn`
 - add `--seed` option for `hmm learn`
 - 0.2.0: same version as in C version

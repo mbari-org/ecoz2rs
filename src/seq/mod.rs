@@ -71,7 +71,7 @@ pub fn seq_show(opts: SeqShowOpts) -> Result<(), Box<dyn Error>> {
         gen_q_opt,
         no_sequence,
         hmm,
-        utl::get_actual_filenames(seq_filenames, ".seq")?,
+        utl::get_actual_filenames(seq_filenames, ".seq", "sequences")?,
     );
 
     Ok(())

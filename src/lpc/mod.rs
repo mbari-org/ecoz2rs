@@ -55,7 +55,7 @@ pub fn main_lpc(opts: LpcOpts) -> Result<(), Box<dyn Error>> {
         sgn_filenames,
     } = opts;
 
-    let actual_sgn_filenames = utl::get_actual_filenames(sgn_filenames, ".wav")?;
+    let actual_sgn_filenames = utl::get_actual_filenames(sgn_filenames, ".wav", "signals")?;
 
     lpc_signals(
         prediction_order,

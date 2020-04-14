@@ -137,7 +137,8 @@ pub fn main_hmm_learn(opts: HmmLearnOpts) -> Result<(), Box<dyn Error>> {
         sequence_filenames,
     } = opts;
 
-    let actual_sequence_filenames = utl::get_actual_filenames(sequence_filenames, ".seq")?;
+    let actual_sequence_filenames =
+        utl::get_actual_filenames(sequence_filenames, ".seq", "sequences")?;
 
     println!("ECOZ2 C version: {}", version()?);
 
@@ -146,8 +147,8 @@ pub fn main_hmm_learn(opts: HmmLearnOpts) -> Result<(), Box<dyn Error>> {
 
     set_random_seed(seed);
 
-    fn callback(var: &str, val: f64) {
-        println!("rust callback called var={} val={}", var, val);
+    fn callback(_var: &str, _val: f64) {
+        //println!("rust callback called var={} val={}", var, val);
     }
 
     hmm_learn(
@@ -170,9 +171,10 @@ pub fn main_hmm_classify(opts: HmmClassifyOpts) -> Result<(), Box<dyn Error>> {
         sequence_filenames,
     } = opts;
 
-    let actual_model_filenames = utl::get_actual_filenames(model_filenames, ".hmm")?;
+    let actual_model_filenames = utl::get_actual_filenames(model_filenames, ".hmm", "models")?;
 
-    let actual_sequence_filenames = utl::get_actual_filenames(sequence_filenames, ".seq")?;
+    let actual_sequence_filenames =
+        utl::get_actual_filenames(sequence_filenames, ".seq", "sequences")?;
 
     println!("ECOZ2 C version: {}", version()?);
 

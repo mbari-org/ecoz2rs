@@ -139,7 +139,8 @@ pub fn main_vq_learn(opts: VqLearnOpts) -> Result<(), Box<dyn Error>> {
         None => "_".to_string(),
     };
 
-    let actual_predictor_filenames = utl::get_actual_filenames(predictor_filenames, ".prd")?;
+    let actual_prd_filenames =
+        utl::get_actual_filenames(predictor_filenames, ".prd", "predictors")?;
 
     fn callback(m: i32, avg_distortion: f64, sigma: f64, inertia: f64) {
         println!(
@@ -152,7 +153,7 @@ pub fn main_vq_learn(opts: VqLearnOpts) -> Result<(), Box<dyn Error>> {
         prediction_order,
         epsilon,
         codebook_class_name,
-        actual_predictor_filenames,
+        actual_prd_filenames,
         callback,
     );
 
@@ -165,14 +166,12 @@ pub fn main_vq_quantize(opts: VqQuantizeOpts) -> Result<(), Box<dyn Error>> {
         predictor_filenames,
     } = opts;
 
-    let actual_predictor_filenames = utl::get_actual_filenames(predictor_filenames, ".prd")?;
+    let actual_prd_filenames =
+        utl::get_actual_filenames(predictor_filenames, ".prd", "predictors")?;
 
-    println!(
-        "number of predictor files: {}",
-        actual_predictor_filenames.len()
-    );
+    println!("number of predictor files: {}", actual_prd_filenames.len());
 
-    vq_quantize(codebook, actual_predictor_filenames);
+    vq_quantize(codebook, actual_prd_filenames);
 
     Ok(())
 }
@@ -184,9 +183,9 @@ pub fn main_vq_classify(opts: VqClassifyOpts) -> Result<(), Box<dyn Error>> {
         prd_filenames,
     } = opts;
 
-    let actual_cb_filenames = utl::get_actual_filenames(cb_filenames, ".cb")?;
+    let actual_cb_filenames = utl::get_actual_filenames(cb_filenames, ".cb", "codebooks")?;
 
-    let actual_prd_filenames = utl::get_actual_filenames(prd_filenames, ".prd")?;
+    let actual_prd_filenames = utl::get_actual_filenames(prd_filenames, ".prd", "predictors")?;
 
     println!(
         "number of codebooks: {}  number of predictors: {}",
