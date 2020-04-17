@@ -114,6 +114,7 @@ impl LPAnalyzer {
         self.preemphasis();
         self.apply_hamming(hamming);
 
+        // lpca defined in lpc_rs.rs
         let (res_lpca, err_pred) = lpca(
             &self.frame,
             self.prediction_order,
@@ -263,59 +264,4 @@ fn create_hamming(win_size: usize) -> Vec<f64> {
     (0..win_size)
         .map(|n| 0.54 - 0.46 * (((n * 2) as f64 * PI) / (win_size - 1) as f64).cos())
         .collect::<Vec<_>>()
-}
-
-#[inline]
-fn lpca(x: &[f64], p: usize, r: &mut [f64], rc: &mut [f64], a: &mut [f64]) -> (i32, f64) {
-    let n = x.len();
-
-    let mut pe: f64 = 0.;
-
-    let mut i = 0;
-    while i <= p {
-        let mut sum = 0.0f64;
-        let mut k = 0;
-        while k < n - i {
-            sum += x[k] * x[k + i];
-            k += 1
-        }
-        r[i] = sum;
-        i += 1
-    }
-    let r0 = r[0];
-    if 0.0f64 == r0 {
-        return (1, pe);
-    }
-
-    pe = r0;
-    a[0] = 1.0f64;
-    let mut k = 1;
-    while k <= p {
-        let mut sum = 0.0f64;
-        i = 1;
-        while i <= k {
-            sum -= a[k - i] * r[i];
-            i += 1
-        }
-        let akk = sum / pe;
-        rc[k] = akk;
-
-        a[k] = akk;
-        i = 1;
-        while i <= k >> 1 {
-            let ai = a[i];
-            let aj = a[k - i];
-            a[i] = ai + akk * aj;
-            a[k - i] = aj + akk * ai;
-            i += 1
-        }
-
-        pe *= 1.0f64 - akk * akk;
-        if pe <= 0.0f64 {
-            return (2, pe);
-        }
-        k += 1
-    }
-
-    (0, pe)
 }
