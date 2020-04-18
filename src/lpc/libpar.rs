@@ -4,7 +4,6 @@ use super::lpc_rs::create_hamming;
 use super::lpc_rs::lpca;
 use prd::Predictor;
 use sgn;
-use std::cmp;
 use std::sync::mpsc;
 use std::sync::Arc;
 use std::thread;
@@ -211,13 +210,11 @@ pub fn lpa_on_signal(
                 let signal_from = f * offset;
                 let signal_to = signal_from + win_size;
                 let samples = &signal[signal_from..signal_to];
-                //let mut samples = vec![0i32; win_size];
-                //samples.clone_from_slice(&signal[signal_from..signal_to]);
 
                 let mut vector = vec![0f64; p + 1];
                 let res = lpa.process_frame(&samples, &c_hamming, &mut vector);
                 if res {
-                    c_tx.send(vector).unwrap();
+                    c_tx.send((f, vector)).unwrap();
                 }
             }
         });
@@ -230,9 +227,9 @@ pub fn lpa_on_signal(
         child.join().unwrap();
     }
 
-    let mut vectors = vec![vec![0f64; p + 1]; 0];
-    for vector in &rx {
-        vectors.push(vector);
+    let mut vectors = vec![vec![0f64; p + 1]; num_frames];
+    for (f, vector) in &rx {
+        vectors[f] = vector;
     }
 
     println!("  PAR lpa_on_signal complete: {} vectors", vectors.len());

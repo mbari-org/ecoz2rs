@@ -1,5 +1,6 @@
 2020-04
 
+- lpc: --zrs and --zrsp now generating exactly same output
 - reincorporate some of the rust implementations.
   Note: not fully implemented yet.
   Special `--zrs` options added to exercise them.
