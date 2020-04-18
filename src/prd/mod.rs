@@ -11,7 +11,6 @@ use structopt::StructOpt;
 use ecoz2_lib::prd_show_file;
 
 use self::EcozPrdCommand::Show;
-use itertools::enumerate;
 
 #[derive(StructOpt, Debug)]
 pub struct PrdMainOpts {
@@ -107,8 +106,7 @@ impl Predictor {
             self.prediction_order,
             self.vectors.len(),
         );
-        for (i, v) in enumerate(&self.vectors) {
-            //print!("{:4}: ", i);
+        for v in &self.vectors {
             let mut comma = "";
             for val in v {
                 print!("{}{}", comma, val);
