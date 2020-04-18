@@ -123,7 +123,7 @@ impl Predictor {
         for v in &self.vectors {
             let mut comma = "";
             for i in from..=to_ {
-                print!("{}{}", comma, v[i]);
+                print!("{}{:.5}", comma, v[i]);
                 comma = ",";
             }
             println!();

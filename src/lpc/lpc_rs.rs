@@ -27,7 +27,10 @@ pub fn lpc_rs(
 
     let before = Instant::now();
     let vectors = lpa_on_signal(prediction_order, window_length_ms, offset_length_ms, &s).unwrap();
-    println!("processing took: {:.2?}", before.elapsed());
+    let elapsed = before.elapsed();
+    if elapsed.as_secs() > 5 {
+        println!("processing took: {:.2?}", elapsed);
+    }
 
     let class_name = "_".to_string();
     let mut predictor = Predictor {

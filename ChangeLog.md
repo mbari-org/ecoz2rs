@@ -2,8 +2,14 @@
 
 - `lpc --zrsp` now uses all the available logical cores
   as reported with the num_cpus crate.
-  BTW, with the 4.5hr file, processing on my mac (8 logical cores) 
-  only takes now 6.81s (vs. 35.13s with the serialized version `--zrs`). 
+  
+    With the 4.5hr file, the multi-threaded processing on my mac (8 logical cores) 
+    takes now 6.63s vs. 35.53s with the single-threaded version `--zrs`.
+    However, the C version (single-threaded) takes 10.65s, meaning
+    that (unsurprisingly given the preliminary attempts) there's lots
+    to be improved in the Rust version regarding performance.
+    
+    (note: I verified that all versions generate the same output.) 
 
 - `prd show --zrs` more similar to the c impl
 - lpc: --zrs and --zrsp now generating exactly same output
