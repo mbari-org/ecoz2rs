@@ -37,3 +37,10 @@ walkdir = "2.3.1"
 # https://stackoverflow.com/a/34054833/830737
 [profile.dev]
 opt-level = 3
+
+[dev-dependencies]
+criterion = "0.3"
+
+[[bench]]
+name = "my_benchmark"
+harness = false

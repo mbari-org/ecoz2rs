@@ -1,5 +1,7 @@
 2020-04
 
+- some preps for benchmarking
+
 - `lpc --zrsp` now uses all the available logical cores
   as reported with the num_cpus crate.
   

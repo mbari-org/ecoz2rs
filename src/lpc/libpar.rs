@@ -26,8 +26,8 @@ pub fn lpc_par(
         None => "predictor_par.prd",
     };
 
+    println!("Loading: {}", filename);
     let s = sgn::load(&filename);
-    println!("Signal loaded: {}", filename);
     &s.show();
     //sgn::save(&s, "output.wav");
 

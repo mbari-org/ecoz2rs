@@ -20,8 +20,8 @@ pub fn lpc_rs(
         None => "predictor.prd",
     };
 
+    println!("Loading: {}", filename);
     let s = sgn::load(&filename);
-    println!("Signal loaded: {}", filename);
     &s.show();
     //sgn::save(&s, "output.wav");
 
@@ -85,7 +85,7 @@ impl LPAnalyzerSer {
     }
 
     #[inline]
-    pub fn process_frame(
+    fn process_frame(
         &mut self,
         samples: &[i32],
         mut vector: &mut [f64],
@@ -149,7 +149,7 @@ impl LPAnalyzerSer {
     }
 }
 
-pub fn lpa_on_signal(
+fn lpa_on_signal(
     p: usize,
     window_length_ms: usize,
     offset_length_ms: usize,
