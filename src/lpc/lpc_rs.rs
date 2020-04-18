@@ -1,6 +1,7 @@
 use std::error::Error;
 use std::f64::consts::PI;
 use std::path::PathBuf;
+use std::time::Instant;
 
 use prd::Predictor;
 use sgn;
@@ -24,7 +25,9 @@ pub fn lpc_rs(
     &s.show();
     //sgn::save(&s, "output.wav");
 
+    let before = Instant::now();
     let vectors = lpa_on_signal(prediction_order, window_length_ms, offset_length_ms, &s).unwrap();
+    println!("processing took: {:.2?}", before.elapsed());
 
     let class_name = "_".to_string();
     let mut predictor = Predictor {
@@ -42,7 +45,7 @@ pub fn lpc_rs(
     );
 }
 
-struct LPAnalyzer {
+struct LPAnalyzerSer {
     pub prediction_order: usize,
     pub win_size: usize,
 
@@ -58,8 +61,8 @@ pub fn create_hamming(win_size: usize) -> Vec<f64> {
         .collect::<Vec<_>>()
 }
 
-impl LPAnalyzer {
-    fn new(prediction_order: usize, win_size: usize) -> LPAnalyzer {
+impl LPAnalyzerSer {
+    fn new(prediction_order: usize, win_size: usize) -> LPAnalyzerSer {
         let hamming = create_hamming(win_size);
 
         let reflex = vec![0f64; prediction_order + 1]; // reflection coefficients
@@ -68,7 +71,7 @@ impl LPAnalyzer {
         // perform linear prediction to each frame:
         let frame = vec![0f64; win_size];
 
-        LPAnalyzer {
+        LPAnalyzerSer {
             prediction_order,
             win_size,
             hamming,
@@ -164,7 +167,7 @@ pub fn lpa_on_signal(
         return None;
     }
 
-    let mut lpa = LPAnalyzer::new(p, win_size);
+    let mut lpa = LPAnalyzerSer::new(p, win_size);
 
     // total number of frames:
     let mut num_frames = (num_samples - (win_size - offset)) / offset;

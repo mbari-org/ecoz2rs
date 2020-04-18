@@ -1,5 +1,10 @@
 2020-04
 
+- `lpc --zrsp` now uses all the available logical cores
+  as reported with the num_cpus crate.
+  BTW, with the 4.5hr file, processing on my mac (8 logical cores) 
+  only takes now 6.81s (vs. 35.13s with the serialized version `--zrs`). 
+
 - `prd show --zrs` more similar to the c impl
 - lpc: --zrs and --zrsp now generating exactly same output
 - reincorporate some of the rust implementations.

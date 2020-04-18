@@ -1,18 +1,17 @@
+extern crate num_cpus;
+
 use std::error::Error;
 use std::path::PathBuf;
 use std::sync::mpsc;
 use std::sync::Arc;
 use std::thread;
+use std::time::Instant;
 
 use prd::Predictor;
 use sgn;
 
 use super::lpc_rs::create_hamming;
 use super::lpc_rs::lpca;
-
-const NTHREADS: usize = 4;
-
-// NOTE: not fully implemented
 
 pub fn lpc_par(
     file: PathBuf,
@@ -32,7 +31,9 @@ pub fn lpc_par(
     &s.show();
     //sgn::save(&s, "output.wav");
 
+    let before = Instant::now();
     let vectors = lpa_on_signal(prediction_order, window_length_ms, offset_length_ms, &s).unwrap();
+    println!("processing took: {:.2?}", before.elapsed());
 
     let class_name = "_".to_string();
     let mut predictor = Predictor {
@@ -50,7 +51,7 @@ pub fn lpc_par(
     );
 }
 
-struct LPAnalyzer {
+struct LPAnalyzerPar {
     pub prediction_order: usize,
     pub win_size: usize,
 
@@ -59,15 +60,15 @@ struct LPAnalyzer {
     frame: Vec<f64>,
 }
 
-impl LPAnalyzer {
-    fn new(prediction_order: usize, win_size: usize) -> LPAnalyzer {
+impl LPAnalyzerPar {
+    fn new(prediction_order: usize, win_size: usize) -> LPAnalyzerPar {
         let reflex = vec![0f64; prediction_order + 1]; // reflection coefficients
         let pred = vec![0f64; prediction_order + 1]; // prediction coefficients
 
         // perform linear prediction to each frame:
         let frame = vec![0f64; win_size];
 
-        LPAnalyzer {
+        LPAnalyzerPar {
             prediction_order,
             win_size,
             reflex,
@@ -175,9 +176,11 @@ pub fn lpa_on_signal(
         num_frames -= 1;
     }
 
+    let cores: usize = num_cpus::get();
+
     println!(
-        "lpa_on_signal: p={} numSamples={} sampleRate={} winSize={} offset={} num_frames={}",
-        p, num_samples, sample_rate, win_size, offset, num_frames
+        "lpa_on_signal: p={} numSamples={} sampleRate={} winSize={} offset={} num_frames={} (cores={})",
+        p, num_samples, sample_rate, win_size, offset, num_frames, cores
     );
 
     let hamming: Arc<Vec<_>> = Arc::new(create_hamming(win_size));
@@ -186,21 +189,21 @@ pub fn lpa_on_signal(
 
     let mut children = vec![];
 
-    let frames_per_thread = num_frames / NTHREADS;
-    let extra_frames_last_thread = num_frames % NTHREADS;
+    let frames_per_thread = num_frames / cores;
+    let extra_frames_last_thread = num_frames % cores;
 
-    for th in 0..NTHREADS {
+    for th in 0..cores {
         let c_hamming = hamming.clone();
         let c_tx = tx.clone();
 
-        let mut lpa = LPAnalyzer::new(p, win_size);
+        let mut lpa = LPAnalyzerPar::new(p, win_size);
 
         let signal = signal.clone();
 
         let handle = thread::spawn(move || {
             let frame_low = th * frames_per_thread;
             let frame_upp = frame_low + frames_per_thread + {
-                if th == NTHREADS - 1 {
+                if th == cores - 1 {
                     extra_frames_last_thread
                 } else {
                     0
