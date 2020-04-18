@@ -3,6 +3,8 @@ use std::f64::consts::PI;
 use std::path::PathBuf;
 use std::time::Instant;
 
+use super::lpca::lpca;
+use super::lpca::lpca_save_input;
 use prd::Predictor;
 use sgn;
 
@@ -56,6 +58,9 @@ struct LPAnalyzerSer {
     reflex: Vec<f64>,
     pred: Vec<f64>,
     frame: Vec<f64>,
+
+    frame_to_be_processed: i64,
+    frame_to_be_saved: i64,
 }
 
 pub fn create_hamming(win_size: usize) -> Vec<f64> {
@@ -74,6 +79,9 @@ impl LPAnalyzerSer {
         // perform linear prediction to each frame:
         let frame = vec![0f64; win_size];
 
+        let frame_to_be_processed = 0i64;
+        let frame_to_be_saved = 21i64;
+
         LPAnalyzerSer {
             prediction_order,
             win_size,
@@ -81,6 +89,8 @@ impl LPAnalyzerSer {
             reflex,
             pred,
             frame,
+            frame_to_be_processed,
+            frame_to_be_saved,
         }
     }
 
@@ -95,6 +105,11 @@ impl LPAnalyzerSer {
         self.preemphasis();
         self.apply_hamming();
 
+        if self.frame_to_be_saved == self.frame_to_be_processed {
+            let filename = &"signal_frame.inputs";
+            println!("saving lpca inputs, frame={}", self.frame_to_be_saved);
+            lpca_save_input(&self.frame, self.prediction_order, filename)?;
+        }
         let (res_lpca, err_pred) = lpca(
             &self.frame,
             self.prediction_order,
@@ -102,6 +117,8 @@ impl LPAnalyzerSer {
             &mut self.reflex,
             &mut self.pred,
         );
+        self.frame_to_be_processed += 1;
+
         if res_lpca == 0 {
             // normalize autocorrelation sequence by gain:
             if err_pred != 0. {
@@ -205,59 +222,4 @@ fn lpa_on_signal(
     println!("  SER lpa_on_signal complete: {} vectors", vectors.len());
 
     Some(vectors)
-}
-
-#[inline]
-pub fn lpca(x: &[f64], p: usize, r: &mut [f64], rc: &mut [f64], a: &mut [f64]) -> (i32, f64) {
-    let n = x.len();
-
-    let mut pe: f64 = 0.;
-
-    let mut i = 0;
-    while i <= p {
-        let mut sum = 0.0f64;
-        let mut k = 0;
-        while k < n - i {
-            sum += x[k] * x[k + i];
-            k += 1
-        }
-        r[i] = sum;
-        i += 1
-    }
-    let r0 = r[0];
-    if 0.0f64 == r0 {
-        return (1, pe);
-    }
-
-    pe = r0;
-    a[0] = 1.0f64;
-    let mut k = 1;
-    while k <= p {
-        let mut sum = 0.0f64;
-        i = 1;
-        while i <= k {
-            sum -= a[k - i] * r[i];
-            i += 1
-        }
-        let akk = sum / pe;
-        rc[k] = akk;
-
-        a[k] = akk;
-        i = 1;
-        while i <= k >> 1 {
-            let ai = a[i];
-            let aj = a[k - i];
-            a[i] = ai + akk * aj;
-            a[k - i] = aj + akk * ai;
-            i += 1
-        }
-
-        pe *= 1.0f64 - akk * akk;
-        if pe <= 0.0f64 {
-            return (2, pe);
-        }
-        k += 1
-    }
-
-    (0, pe)
 }

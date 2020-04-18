@@ -1,5 +1,6 @@
 2020-04
 
+- put lpca (rust impl) in a module and do some benchmarking
 - some preps for benchmarking
 
 - `lpc --zrsp` now uses all the available logical cores
