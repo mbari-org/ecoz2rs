@@ -52,11 +52,15 @@ struct LPAnalyzer {
     frame: Vec<f64>,
 }
 
+pub fn create_hamming(win_size: usize) -> Vec<f64> {
+    (0..win_size)
+        .map(|n| 0.54 - 0.46 * (((n * 2) as f64 * PI) / (win_size - 1) as f64).cos())
+        .collect::<Vec<_>>()
+}
+
 impl LPAnalyzer {
     fn new(prediction_order: usize, win_size: usize) -> LPAnalyzer {
-        let hamming = (0..win_size)
-            .map(|n| 0.54 - 0.46 * (((n * 2) as f64 * PI) / (win_size - 1) as f64).cos())
-            .collect::<Vec<_>>();
+        let hamming = create_hamming(win_size);
 
         let reflex = vec![0f64; prediction_order + 1]; // reflection coefficients
         let pred = vec![0f64; prediction_order + 1]; // prediction coefficients
@@ -191,7 +195,9 @@ pub fn lpa_on_signal(
             break;
         }
     }
-    println!("  {} frames processed", frames_processed);
+    println!("  {} total frames processed", frames_processed);
+
+    println!("  SER lpa_on_signal complete: {} vectors", vectors.len());
 
     Some(vectors)
 }

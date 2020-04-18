@@ -108,7 +108,7 @@ impl Predictor {
             self.vectors.len(),
         );
         for (i, v) in enumerate(&self.vectors) {
-            print!("{:4}: ", i);
+            //print!("{:4}: ", i);
             let mut comma = "";
             for val in v {
                 print!("{}{}", comma, val);

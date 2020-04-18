@@ -1,6 +1,6 @@
-use std::f64::consts::PI;
 use std::path::PathBuf;
 
+use super::lpc_rs::create_hamming;
 use super::lpc_rs::lpca;
 use prd::Predictor;
 use sgn;
@@ -87,7 +87,6 @@ impl LPAnalyzer {
         self.preemphasis();
         self.apply_hamming(hamming);
 
-        // lpca defined in lpc_rs.rs
         let (res_lpca, err_pred) = lpca(
             &self.frame,
             self.prediction_order,
@@ -188,6 +187,8 @@ pub fn lpa_on_signal(
     let mut children = vec![];
 
     let frames_per_thread = num_frames / NTHREADS;
+    let extra_frames_last_thread = num_frames % NTHREADS;
+
     for th in 0..NTHREADS {
         let c_hamming = hamming.clone();
         let c_tx = tx.clone();
@@ -198,14 +199,20 @@ pub fn lpa_on_signal(
 
         let handle = thread::spawn(move || {
             let frame_low = th * frames_per_thread;
-            let frame_upp = cmp::min((th + 1) * frames_per_thread, num_frames);
+            let frame_upp = frame_low + frames_per_thread + {
+                if th == NTHREADS - 1 {
+                    extra_frames_last_thread
+                } else {
+                    0
+                }
+            };
 
             for f in frame_low..frame_upp {
                 let signal_from = f * offset;
                 let signal_to = signal_from + win_size;
-                //let samples = &signal[signal_from..signal_to];
-                let mut samples = vec![0i32; win_size];
-                samples.clone_from_slice(&signal[signal_from..signal_to]);
+                let samples = &signal[signal_from..signal_to];
+                //let mut samples = vec![0i32; win_size];
+                //samples.clone_from_slice(&signal[signal_from..signal_to]);
 
                 let mut vector = vec![0f64; p + 1];
                 let res = lpa.process_frame(&samples, &c_hamming, &mut vector);
@@ -228,13 +235,7 @@ pub fn lpa_on_signal(
         vectors.push(vector);
     }
 
-    println!("  lpa_on_signal complete: {} vectors", vectors.len());
+    println!("  PAR lpa_on_signal complete: {} vectors", vectors.len());
 
     Some(vectors)
-}
-
-fn create_hamming(win_size: usize) -> Vec<f64> {
-    (0..win_size)
-        .map(|n| 0.54 - 0.46 * (((n * 2) as f64 * PI) / (win_size - 1) as f64).cos())
-        .collect::<Vec<_>>()
 }
