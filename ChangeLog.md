@@ -1,5 +1,9 @@
 2020-04
 
+- reincorporate some of the rust implementations.
+  Note: not fully implemented yet.
+  Special `--zrs` options added to exercise them.
+
 - have get_actual_filenames fail if resulting list is empty
 - use callback in `vq learn`
 - add `--seed` option for `hmm learn`

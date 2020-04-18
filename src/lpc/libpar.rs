@@ -1,59 +1,32 @@
-extern crate prd;
-extern crate sgn;
-extern crate structopt;
-
 use std::f64::consts::PI;
 use std::path::PathBuf;
 
+use super::lpc_rs::lpca;
 use prd::Predictor;
-use sgn::Sgn;
+use sgn;
 use std::cmp;
 use std::sync::mpsc;
 use std::sync::Arc;
 use std::thread;
-use structopt::StructOpt;
 
 const NTHREADS: usize = 4;
 
-#[derive(StructOpt, Debug)]
-pub struct LpcOpts {
-    /// File to process
-    #[structopt(short, long, parse(from_os_str))]
+// NOTE: not fully implemented
+
+pub fn lpc_par(
     file: PathBuf,
-
-    /// Output file
-    #[structopt(short, long, parse(from_os_str))]
     output: Option<PathBuf>,
-
-    /// Prediction order
-    #[structopt(short = "P", long, default_value = "36")]
     prediction_order: usize,
-
-    /// Analysis window length in milliseconds
-    #[structopt(short = "W", long, default_value = "45")]
     window_length_ms: usize,
-
-    /// Window offset length in milliseconds
-    #[structopt(short = "O", long, default_value = "15")]
     offset_length_ms: usize,
-}
-
-pub fn main_lpc(opts: LpcOpts) {
-    let LpcOpts {
-        file,
-        output,
-        prediction_order,
-        window_length_ms,
-        offset_length_ms,
-    } = opts;
-
+) {
     let filename: &str = file.to_str().unwrap();
     let out_filename: &str = match output {
         Some(ref fname) => &fname.to_str().unwrap(),
-        None => "predictor.prd",
+        None => "predictor_par.prd",
     };
 
-    let mut s = sgn::load(&filename);
+    let s = sgn::load(&filename);
     println!("Signal loaded: {}", filename);
     &s.show();
     //sgn::save(&s, "output.wav");
@@ -69,7 +42,7 @@ pub fn main_lpc(opts: LpcOpts) {
 
     &predictor.save(out_filename).unwrap();
     println!(
-        "{} saved.  Class: '{}':  {} vector sequences",
+        "{} saved.  Class: '{}':  {} vectors",
         out_filename,
         &predictor.class_name,
         &predictor.vectors.len()
@@ -174,7 +147,7 @@ pub fn lpa_on_signal(
     p: usize,
     window_length_ms: usize,
     offset_length_ms: usize,
-    s: &Sgn,
+    s: &sgn::Sgn,
 ) -> Option<Vec<Vec<f64>>> {
     let num_samples: usize = s.num_samples;
     let sample_rate: usize = s.sample_rate;

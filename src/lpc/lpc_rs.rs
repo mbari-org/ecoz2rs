@@ -1,11 +1,9 @@
-extern crate prd;
-extern crate sgn;
 use std::path::PathBuf;
 
 use std::f64::consts::PI;
 
-use self::prd::Predictor;
-use self::sgn::Sgn;
+use prd::Predictor;
+use sgn;
 
 pub fn lpc_rs(
     file: PathBuf,
@@ -15,12 +13,13 @@ pub fn lpc_rs(
     offset_length_ms: usize,
 ) {
     let filename: &str = file.to_str().unwrap();
+
     let out_filename: &str = match output {
         Some(ref fname) => &fname.to_str().unwrap(),
         None => "predictor.prd",
     };
 
-    let mut s = sgn::load(&filename);
+    let s = sgn::load(&filename);
     println!("Signal loaded: {}", filename);
     &s.show();
     //sgn::save(&s, "output.wav");
@@ -36,7 +35,7 @@ pub fn lpc_rs(
 
     &predictor.save(out_filename).unwrap();
     println!(
-        "{} saved.  Class: '{}':  {} vector sequences",
+        "{} saved.  Class: '{}':  {} vectors",
         out_filename,
         &predictor.class_name,
         &predictor.vectors.len()
@@ -141,7 +140,7 @@ pub fn lpa_on_signal(
     p: usize,
     window_length_ms: usize,
     offset_length_ms: usize,
-    s: &Sgn,
+    s: &sgn::Sgn,
 ) -> Option<Vec<Vec<f64>>> {
     let signal = &s.samples;
     let num_samples: usize = s.num_samples;
@@ -198,7 +197,7 @@ pub fn lpa_on_signal(
 }
 
 #[inline]
-fn lpca(x: &[f64], p: usize, r: &mut [f64], rc: &mut [f64], a: &mut [f64]) -> (i32, f64) {
+pub fn lpca(x: &[f64], p: usize, r: &mut [f64], rc: &mut [f64], a: &mut [f64]) -> (i32, f64) {
     let n = x.len();
 
     let mut pe: f64 = 0.;
