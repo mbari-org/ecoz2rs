@@ -1,6 +1,6 @@
-use std::path::PathBuf;
-
+use std::error::Error;
 use std::f64::consts::PI;
+use std::path::PathBuf;
 
 use prd::Predictor;
 use sgn;
@@ -79,7 +79,11 @@ impl LPAnalyzer {
     }
 
     #[inline]
-    pub fn process_frame(&mut self, samples: &[i32], mut vector: &mut [f64]) -> bool {
+    pub fn process_frame(
+        &mut self,
+        samples: &[i32],
+        mut vector: &mut [f64],
+    ) -> Result<(), Box<dyn Error>> {
         self.fill_frame(&samples);
         self.remove_mean();
         self.preemphasis();
@@ -99,13 +103,12 @@ impl LPAnalyzer {
                     *elem /= err_pred;
                 }
             }
-            true
+            Ok(())
         } else {
-            eprintln!(
+            Err(format!(
                 "ERROR: lpa_on_signal: res_lpca = {},  err_pred = {}",
                 res_lpca, err_pred
-            );
-            false
+            ))?
         }
     }
 
@@ -185,14 +188,10 @@ pub fn lpa_on_signal(
         let signal_to = signal_from + win_size;
         let samples = &signal[signal_from..signal_to];
 
-        let res = lpa.process_frame(&samples, &mut vector);
-        if res {
-            frames_processed += 1;
-            if frames_processed % 15000 == 0 {
-                println!("  {} frames processed", frames_processed);
-            }
-        } else {
-            break;
+        lpa.process_frame(&samples, &mut vector).unwrap();
+        frames_processed += 1;
+        if frames_processed % 15000 == 0 {
+            println!("  {} frames processed", frames_processed);
         }
     }
     println!("  {} total frames processed", frames_processed);

@@ -1,12 +1,14 @@
+use std::error::Error;
 use std::path::PathBuf;
-
-use super::lpc_rs::create_hamming;
-use super::lpc_rs::lpca;
-use prd::Predictor;
-use sgn;
 use std::sync::mpsc;
 use std::sync::Arc;
 use std::thread;
+
+use prd::Predictor;
+use sgn;
+
+use super::lpc_rs::create_hamming;
+use super::lpc_rs::lpca;
 
 const NTHREADS: usize = 4;
 
@@ -80,7 +82,7 @@ impl LPAnalyzer {
         samples: &[i32],
         hamming: &[f64],
         mut vector: &mut [f64],
-    ) -> bool {
+    ) -> Result<(), Box<dyn Error>> {
         self.fill_frame(&samples);
         self.remove_mean();
         self.preemphasis();
@@ -100,13 +102,12 @@ impl LPAnalyzer {
                     *elem /= err_pred;
                 }
             }
-            true
+            Ok(())
         } else {
-            eprintln!(
+            Err(format!(
                 "ERROR: lpa_on_signal: res_lpca = {},  err_pred = {}",
                 res_lpca, err_pred
-            );
-            false
+            ))?
         }
     }
 
@@ -212,10 +213,9 @@ pub fn lpa_on_signal(
                 let samples = &signal[signal_from..signal_to];
 
                 let mut vector = vec![0f64; p + 1];
-                let res = lpa.process_frame(&samples, &c_hamming, &mut vector);
-                if res {
-                    c_tx.send((f, vector)).unwrap();
-                }
+                lpa.process_frame(&samples, &c_hamming, &mut vector)
+                    .unwrap();
+                c_tx.send((f, vector)).unwrap();
             }
         });
         children.push(handle);
@@ -227,7 +227,7 @@ pub fn lpa_on_signal(
         child.join().unwrap();
     }
 
-    let mut vectors = vec![vec![0f64; p + 1]; num_frames];
+    let mut vectors = vec![vec![0f64; 0]; num_frames];
     for (f, vector) in &rx {
         vectors[f] = vector;
     }
