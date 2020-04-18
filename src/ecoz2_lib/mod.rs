@@ -125,7 +125,7 @@ pub fn lpc_signals(
     }
 }
 
-pub fn prd_show_file(prd_filename: PathBuf, show_reflections: bool, from: i32, to: i32) {
+pub fn prd_show_file(prd_filename: PathBuf, show_reflections: bool, from: usize, to: usize) {
     let prd_filename_c_string = CString::new(prd_filename.to_str().unwrap()).unwrap();
 
     unsafe {

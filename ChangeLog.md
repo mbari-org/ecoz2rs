@@ -1,5 +1,6 @@
 2020-04
 
+- `prd show --zrs` more similar to the c impl
 - lpc: --zrs and --zrsp now generating exactly same output
 - reincorporate some of the rust implementations.
   Note: not fully implemented yet.

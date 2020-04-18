@@ -32,12 +32,12 @@ pub struct PrdShowOpts {
     show_reflection: bool,
 
     /// Start for coefficient range selection
-    #[structopt(short = "f", long, default_value = "-1")]
-    from: i32,
+    #[structopt(short = "f", long, default_value = "1")]
+    from: usize,
 
     /// End for coefficient range selection
-    #[structopt(short = "t", long, default_value = "-1")]
-    to: i32,
+    #[structopt(short = "t", long, default_value = "0")]
+    to: usize,
 
     /// File to read
     #[structopt(parse(from_os_str))]
@@ -68,8 +68,7 @@ pub fn prd_show(opts: PrdShowOpts) -> Result<(), Box<dyn Error>> {
     } = opts;
 
     if zrs {
-        println!("warn: ignoring any options in rust impl.");
-        prd_show_rs(file);
+        prd_show_rs(file, show_reflection, from, to);
     } else {
         prd_show_file(file, show_reflection, from, to);
     }
@@ -79,9 +78,11 @@ pub fn prd_show(opts: PrdShowOpts) -> Result<(), Box<dyn Error>> {
 
 // NOTE: for Rust implementation (preliminary)
 
-fn prd_show_rs(prd_filename: PathBuf) {
-    let mut prd = load(prd_filename.to_str().unwrap()).unwrap();
-    prd.show();
+fn prd_show_rs(prd_filename: PathBuf, show_reflections: bool, from: usize, to: usize) {
+    let filename = prd_filename.to_str().unwrap();
+    let mut prd = load(filename).unwrap();
+    println!("# {}", filename);
+    prd.show(show_reflections, from, to);
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
@@ -99,18 +100,31 @@ impl Predictor {
         Ok(())
     }
 
-    pub fn show(&mut self) {
+    pub fn show(&mut self, show_reflections: bool, from: usize, to: usize) {
+        let p = self.prediction_order;
+        let to_ = if to == 0 || to > p { p } else { to };
+
+        if show_reflections {
+            eprintln!("WARN: show_reflections UNIMPLEMENTED")
+        }
+
         println!(
-            " class_name = '{}' prediction_order: {} vectors: {}",
+            "# class_name='{}', T={} P={}",
             self.class_name,
-            self.prediction_order,
             self.vectors.len(),
+            self.prediction_order,
         );
+        let mut comma = "";
+        for i in from..=to_ {
+            print!("{}r{}", comma, i);
+            comma = ",";
+        }
+        println!();
         for v in &self.vectors {
             let mut comma = "";
-            for val in v {
-                print!("{}{}", comma, val);
-                comma = ", ";
+            for i in from..=to_ {
+                print!("{}{}", comma, v[i]);
+                comma = ",";
             }
             println!();
         }
