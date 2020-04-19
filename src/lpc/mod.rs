@@ -10,7 +10,7 @@ use utl;
 
 mod libpar;
 mod lpc_rs;
-mod lpca;
+mod lpca_rs;
 
 #[derive(StructOpt, Debug)]
 pub struct LpcOpts {

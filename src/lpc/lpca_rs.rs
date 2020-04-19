@@ -2,7 +2,7 @@ extern crate serde;
 
 use std::error::Error;
 use std::fs::File;
-use std::io::{BufReader, BufWriter};
+use std::io::BufWriter;
 
 #[inline]
 pub fn lpca(x: &[f64], p: usize, r: &mut [f64], rc: &mut [f64], a: &mut [f64]) -> (i32, f64) {
@@ -77,11 +77,4 @@ impl LpcaInput {
 pub fn lpca_save_input(x: &Vec<f64>, p: usize, filename: &str) -> Result<(), Box<dyn Error>> {
     let mut input = LpcaInput { x: x.to_vec(), p };
     input.save(filename)
-}
-
-pub fn lpca_load_input(filename: &str) -> Result<LpcaInput, Box<dyn Error>> {
-    let f = File::open(filename)?;
-    let br = BufReader::new(f);
-    let inputs = serde_cbor::from_reader(br)?;
-    Ok(inputs)
 }

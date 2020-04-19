@@ -3,8 +3,8 @@ use std::f64::consts::PI;
 use std::path::PathBuf;
 use std::time::Instant;
 
-use super::lpca::lpca;
-use super::lpca::lpca_save_input;
+use super::lpca_rs::lpca;
+use super::lpca_rs::lpca_save_input;
 use prd::Predictor;
 use sgn;
 

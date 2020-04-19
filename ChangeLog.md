@@ -1,5 +1,10 @@
 2020-04
 
+- benchmark exposed lpca (C impl) and do comparison with rust impl:
+
+      cargo bench
+      open target/criterion/report/index.html
+      
 - put lpca (rust impl) in a module and do some benchmarking
 - some preps for benchmarking
 

@@ -11,7 +11,7 @@ use prd::Predictor;
 use sgn;
 
 use super::lpc_rs::create_hamming;
-use super::lpca::lpca;
+use super::lpca_rs::lpca;
 
 pub fn lpc_par(
     file: PathBuf,
