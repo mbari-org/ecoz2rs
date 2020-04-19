@@ -1,5 +1,7 @@
 2020-04
 
+- load signal samples into `Vec<f64>` and other adjustments
+ 
 - benchmark exposed lpca (C impl) and do comparison with rust impl:
 
       cargo bench

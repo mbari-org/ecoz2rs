@@ -1,5 +1,3 @@
-extern crate num_cpus;
-
 use std::error::Error;
 use std::path::PathBuf;
 use std::sync::mpsc;
@@ -83,7 +81,7 @@ impl LPAnalyzerPar {
     #[inline]
     pub fn process_frame(
         &mut self,
-        samples: &[i32],
+        samples: &[f64],
         hamming: &[f64],
         mut vector: &mut [f64],
     ) -> Result<(), Box<dyn Error>> {
@@ -116,10 +114,8 @@ impl LPAnalyzerPar {
     }
 
     #[inline]
-    fn fill_frame(&mut self, from: &[i32]) {
-        for (n, elem) in self.frame.iter_mut().enumerate() {
-            *elem = f64::from(from[n]);
-        }
+    fn fill_frame(&mut self, from: &[f64]) {
+        self.frame.copy_from_slice(from);
     }
 
     #[inline]
@@ -156,7 +152,7 @@ pub fn lpa_on_signal(
     let sample_rate: usize = s.sample_rate;
 
     let signal = Arc::new({
-        let mut x = vec![0i32; num_samples];
+        let mut x = vec![0f64; num_samples];
         x.clone_from_slice(&s.samples[..num_samples]);
         x
     });

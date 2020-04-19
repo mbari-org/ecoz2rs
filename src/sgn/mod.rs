@@ -167,7 +167,7 @@ impl SgnExtractor {
                 println!("\t\tpos_beg={} pos_end={}", pos_beg, pos_end);
         */
 
-        let samples: Vec<i32> = self.sgn.samples[pos_beg..pos_end].to_vec();
+        let samples = self.sgn.samples[pos_beg..pos_end].to_vec();
 
         let spec = self.sgn.spec;
         let sample_rate = spec.sample_rate as usize;
@@ -193,7 +193,7 @@ impl SgnExtractor {
 pub struct Sgn {
     pub sample_rate: usize,
     pub num_samples: usize,
-    pub samples: Vec<i32>,
+    pub samples: Vec<f64>,
 
     spec: hound::WavSpec,
 }
@@ -223,11 +223,17 @@ impl Sgn {
 
 pub fn load(filename: &str) -> Sgn {
     let mut reader = hound::WavReader::open(&filename).unwrap();
-    let samples: Vec<i32> = reader.samples().map(|s| s.unwrap()).collect();
+    let i32s: Vec<i32> = reader.samples().map(|s| s.unwrap()).collect();
+    let num_samples = i32s.len();
+
+    // convert samples to f64:
+    let mut samples = vec![0f64; num_samples];
+    for (dst, src) in samples.iter_mut().zip(i32s.as_slice()) {
+        *dst = f64::from(*src);
+    }
 
     let spec = reader.spec();
     let sample_rate = spec.sample_rate as usize;
-    let num_samples = samples.len();
 
     Sgn {
         sample_rate,

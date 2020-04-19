@@ -1,6 +1,5 @@
 extern crate serde;
 
-use std::error::Error;
 use std::fs::File;
 use std::io::BufWriter;
 
@@ -66,15 +65,14 @@ pub struct LpcaInput {
 }
 
 impl LpcaInput {
-    fn save(&mut self, filename: &str) -> Result<(), Box<dyn Error>> {
-        let f = File::create(filename)?;
+    fn save(&mut self, filename: &str) {
+        let f = File::create(filename).unwrap();
         let bw = BufWriter::new(f);
-        serde_cbor::to_writer(bw, &self)?;
-        Ok(())
+        serde_cbor::to_writer(bw, &self).unwrap();
     }
 }
 
-pub fn lpca_save_input(x: &Vec<f64>, p: usize, filename: &str) -> Result<(), Box<dyn Error>> {
+pub fn lpca_save_input(x: &Vec<f64>, p: usize, filename: &str) {
     let mut input = LpcaInput { x: x.to_vec(), p };
     input.save(filename)
 }

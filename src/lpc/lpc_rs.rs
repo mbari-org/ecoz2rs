@@ -1,12 +1,12 @@
-use std::error::Error;
 use std::f64::consts::PI;
 use std::path::PathBuf;
 use std::time::Instant;
 
-use super::lpca_rs::lpca;
-use super::lpca_rs::lpca_save_input;
 use prd::Predictor;
 use sgn;
+
+use super::lpca_rs::lpca;
+use super::lpca_rs::lpca_save_input;
 
 pub fn lpc_rs(
     file: PathBuf,
@@ -95,11 +95,7 @@ impl LPAnalyzerSer {
     }
 
     #[inline]
-    fn process_frame(
-        &mut self,
-        samples: &[i32],
-        mut vector: &mut [f64],
-    ) -> Result<(), Box<dyn Error>> {
+    fn process_frame(&mut self, samples: &[f64], mut vector: &mut [f64]) {
         self.fill_frame(&samples);
         self.remove_mean();
         self.preemphasis();
@@ -108,8 +104,9 @@ impl LPAnalyzerSer {
         if self.frame_to_be_saved == self.frame_to_be_processed {
             let filename = &"signal_frame.inputs";
             println!("saving lpca inputs, frame={}", self.frame_to_be_saved);
-            lpca_save_input(&self.frame, self.prediction_order, filename)?;
+            lpca_save_input(&self.frame, self.prediction_order, filename);
         }
+
         let (res_lpca, err_pred) = lpca(
             &self.frame,
             self.prediction_order,
@@ -126,20 +123,17 @@ impl LPAnalyzerSer {
                     *elem /= err_pred;
                 }
             }
-            Ok(())
         } else {
-            Err(format!(
+            panic!(
                 "ERROR: lpa_on_signal: res_lpca = {},  err_pred = {}",
                 res_lpca, err_pred
-            ))?
+            );
         }
     }
 
     #[inline]
-    fn fill_frame(&mut self, from: &[i32]) {
-        for (n, elem) in self.frame.iter_mut().enumerate() {
-            *elem = f64::from(from[n]);
-        }
+    fn fill_frame(&mut self, from: &[f64]) {
+        self.frame.copy_from_slice(from);
     }
 
     #[inline]
@@ -156,6 +150,27 @@ impl LPAnalyzerSer {
         for n in (1..self.frame.len()).rev() {
             self.frame[n] -= 0.95 * self.frame[n - 1];
         }
+        //        let num_samples = self.frame.len() as isize;
+        //        let ptr: *mut f64 = self.frame.as_mut_ptr();
+        //        unsafe {
+        //            let mut n = num_samples - 1;
+        //
+        //            // x[n]
+        //            //sample_t * x_n = frame + numSamples - 1;
+        //            let mut x_n = ptr.offset(n);
+        //
+        //            // x[n-1]
+        //            //sample_t *x_n1 = x_n - 1;
+        //            let mut x_n1 = x_n.offset(-1);
+        //
+        //            while n > 0 {
+        //                *x_n = *x_n - 0.95 * *x_n1;
+        //
+        //                x_n = x_n.offset(-1);
+        //                x_n1 = x_n.offset(-1);
+        //                n -= 1;
+        //            }
+        //        }
     }
 
     #[inline]
@@ -206,16 +221,20 @@ fn lpa_on_signal(
     // perform linear prediction to each frame:
     let mut frames_processed = 0;
 
-    for (t, mut vector) in vectors.iter_mut().enumerate() {
-        let signal_from = t * offset;
+    let mut signal_from = 0usize;
+
+    for mut vector in vectors.iter_mut() {
         let signal_to = signal_from + win_size;
         let samples = &signal[signal_from..signal_to];
 
-        lpa.process_frame(&samples, &mut vector).unwrap();
+        lpa.process_frame(&samples, &mut vector);
+
         frames_processed += 1;
-        if frames_processed % 15000 == 0 {
+        if frames_processed % 50000 == 0 {
             println!("  {} frames processed", frames_processed);
         }
+
+        signal_from += offset;
     }
     println!("  {} total frames processed", frames_processed);
 
