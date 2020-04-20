@@ -1,7 +1,28 @@
 2020-04
 
-- add "-ffast-math" to C build upon noting `ecoz lpc ...` rather slow.
-  Now `lpc ...` and `ecoz2 lpc ...` are similar.
+- ok, lack of "fast-math" in Rust is what explains the big performance
+  discrepancy between the C and Rust impls.
+    
+    - first, I added "-ffast-math" to the C build here upon noting `ecoz lpc ...`
+      surprisingly slow compared to the direct execution of the C generated binary
+      (where -ffast-math has been used since the origins of the ECOZ software).
+      Now `lpc ...` (the binary from the C project) and `ecoz2 lpc ...`
+      (the binary from this Rust project, but using the C impl) are similarly
+      performant as expected.
+      `cargo bench` results now also make more sense: the mean execution time
+      of lpca for the C impl is ~3.7 times faster than before.
+   
+    - from this I then of course realized that this fast-math feature is not
+      enabled for Rust, thus explaining the difference in performance: 
+        - https://internals.rust-lang.org/t/pre-rfc-whats-the-best-way-to-implement-ffast-math/5740
+        - https://github.com/rust-lang/rust/issues/21690
+    
+    - for now, for the Rust impl of the lpc subcommand I'm enabling the 
+      C impl of the lpca operation.
+      
+    - and perhaps that could be a general approach moving forward with
+      the Rust impl while "fast-math" is not available:
+      general code in Rust and critical operations in C.
   
 - load signal samples into `Vec<f64>` and other adjustments
  

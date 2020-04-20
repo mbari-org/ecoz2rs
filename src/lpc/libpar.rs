@@ -5,11 +5,14 @@ use std::sync::Arc;
 use std::thread;
 use std::time::Instant;
 
+// perf note: instead of using Rust impl of lpca:
+//use super::lpca_rs::lpca;
+// use the C impl:
+use ecoz2_lib::lpca_c::lpca;
 use prd::Predictor;
 use sgn;
 
 use super::lpc_rs::create_hamming;
-use super::lpca_rs::lpca;
 
 pub fn lpc_par(
     file: PathBuf,

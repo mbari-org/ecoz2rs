@@ -1,5 +1,7 @@
 extern crate libc;
 
+pub mod lpca_c;
+
 use std::ffi::CStr;
 use std::ffi::CString;
 use std::os::raw::c_float;

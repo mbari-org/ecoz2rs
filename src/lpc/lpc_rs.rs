@@ -2,10 +2,13 @@ use std::f64::consts::PI;
 use std::path::PathBuf;
 use std::time::Instant;
 
+// perf note: instead of using Rust impl of lpca:
+//use super::lpca_rs::lpca;
+// use the C impl:
+use ecoz2_lib::lpca_c::lpca;
 use prd::Predictor;
 use sgn;
 
-use super::lpca_rs::lpca;
 use super::lpca_rs::lpca_save_input;
 
 pub fn lpc_rs(
@@ -238,7 +241,7 @@ fn lpa_on_signal(
     }
     println!("  {} total frames processed", frames_processed);
 
-    println!("  SER lpa_on_signal complete: {} vectors", vectors.len());
+    println!("  SER lpa_on_signal complete: {} vectors", num_frames);
 
     Some(vectors)
 }
