@@ -108,7 +108,7 @@ c:
     Number of classes: 1
     class 'HBSe_20161221T010133': 1
       ../ecoz2-whale-cb/HBSe_20161221T010133/HBSe_20161221T010133.wav
-    lpaOnSignal: P=36 numSamples=18368474 sampleRate=32000 winSize=1440 offset=480 T=38265
+    lpa_on_signal: P=36 numSamples=18368474 sampleRate=32000 winSize=1440 offset=480 T=38265
     data/predictors/HBSe_20161221T010133/HBSe_20161221T010133.prd: 'HBSe_20161221T010133': predictor saved
     
     lpc -P 36 -W 45 -O 15   0.78s user 0.12s system 98% cpu 0.912 total

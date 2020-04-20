@@ -1,5 +1,8 @@
 2020-04
 
+- add "-ffast-math" to C build upon noting `ecoz lpc ...` rather slow.
+  Now `lpc ...` and `ecoz2 lpc ...` are similar.
+  
 - load signal samples into `Vec<f64>` and other adjustments
  
 - benchmark exposed lpca (C impl) and do comparison with rust impl:
