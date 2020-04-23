@@ -1,3 +1,4 @@
+#![allow(clippy::many_single_char_names)]
 extern crate serde;
 
 use std::fs::File;
@@ -6,6 +7,7 @@ use std::io::BufWriter;
 /// a Rust version of lpca (equivalent to the previous commit), just for reference.
 /// (the actual performance "problem" is related with lack of fast-math):
 ///
+#[allow(dead_code)]
 #[inline]
 pub fn lpca(x: &[f64], p: usize, r: &mut [f64], rc: &mut [f64], a: &mut [f64]) -> (i32, f64) {
     let n = x.len();
@@ -129,7 +131,7 @@ impl LpcaInput {
     }
 }
 
-pub fn lpca_save_input(x: &Vec<f64>, p: usize, filename: &str) {
+pub fn lpca_save_input(x: &[f64], p: usize, filename: &str) {
     let mut input = LpcaInput { x: x.to_vec(), p };
     input.save(filename)
 }

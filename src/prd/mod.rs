@@ -120,10 +120,10 @@ impl Predictor {
             comma = ",";
         }
         println!();
-        for v in &self.vectors {
+        for vec in &self.vectors {
             let mut comma = "";
-            for i in from..=to_ {
-                print!("{}{:.5}", comma, v[i]);
+            for v in &vec[from..=to_] {
+                print!("{}{:.5}", comma, v);
                 comma = ",";
             }
             println!();

@@ -152,20 +152,17 @@ extern "C" fn c_vq_learn_callback(
     inertia: c_double,
 ) {
     unsafe {
-        match VQ_LEARN_CALLBACK {
-            Some(cb) => {
-                //println!(
-                //    "   c_vq_learn_callback: M={} avg_distortion={} sigma={} inertia={}",
-                //    m, avg_distortion, sigma, inertia
-                //);
-                cb(
-                    m as i32,
-                    avg_distortion as f64,
-                    sigma as f64,
-                    inertia as f64,
-                )
-            }
-            None => (),
+        if let Some(cb) = VQ_LEARN_CALLBACK {
+            //println!(
+            //    "   c_vq_learn_callback: M={} avg_distortion={} sigma={} inertia={}",
+            //    m, avg_distortion, sigma, inertia
+            //);
+            cb(
+                m as i32,
+                avg_distortion as f64,
+                sigma as f64,
+                inertia as f64,
+            )
         }
     }
 }
@@ -263,15 +260,12 @@ static mut HMM_LEARN_CALLBACK: Option<fn(&str, f64)> = None;
 #[no_mangle]
 extern "C" fn c_hmm_learn_callback(variable: *mut c_char, value: c_double) {
     unsafe {
-        match HMM_LEARN_CALLBACK {
-            Some(cb) => {
-                let c_string = CStr::from_ptr(variable);
-                //println!("   c_hmm_learn_callback: var={:?} val={}", c_string, value);
-                let var = c_string.to_str().unwrap();
-                let val = value as f64;
-                cb(var, val)
-            }
-            None => (),
+        if let Some(cb) = HMM_LEARN_CALLBACK {
+            let c_string = CStr::from_ptr(variable);
+            //println!("   c_hmm_learn_callback: var={:?} val={}", c_string, value);
+            let var = c_string.to_str().unwrap();
+            let val = value as f64;
+            cb(var, val)
         }
     }
 }
@@ -384,9 +378,7 @@ fn to_vec_of_ptr_const_c_char(paths: Vec<PathBuf>) -> Vec<*const c_char> {
         .into_iter()
         .map(|predictor_filename| {
             let str = predictor_filename.to_str().unwrap();
-            let c_string = CString::new(str).unwrap();
-            //println!("c_string = {:?}", c_string);
-            c_string
+            CString::new(str).unwrap()
         })
         .collect();
 

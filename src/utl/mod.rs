@@ -28,7 +28,7 @@ pub fn get_actual_filenames(
     if !list.is_empty() {
         list.sort_by(|a, b| a.cmp(b));
     } else if !subjects_msg_if_empty.is_empty() {
-        return Err(format!("No {} given", subjects_msg_if_empty))?;
+        return Err(format!("No {} given", subjects_msg_if_empty).into());
     }
     Ok(list)
 }

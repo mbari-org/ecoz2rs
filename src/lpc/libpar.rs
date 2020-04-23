@@ -29,7 +29,7 @@ pub fn lpc_par(
 
     println!("Loading: {}", filename);
     let s = sgn::load(&filename);
-    &s.show();
+    s.show();
     //sgn::save(&s, "output.wav");
 
     let before = Instant::now();
@@ -46,7 +46,7 @@ pub fn lpc_par(
         vectors,
     };
 
-    &predictor.save(out_filename).unwrap();
+    predictor.save(out_filename).unwrap();
     println!(
         "{} saved.  Class: '{}':  {} vectors",
         out_filename,
@@ -112,7 +112,8 @@ impl LPAnalyzerPar {
             Err(format!(
                 "ERROR: lpa_on_signal: res_lpca = {},  err_pred = {}",
                 res_lpca, err_pred
-            ))?
+            )
+            .into())
         }
     }
 

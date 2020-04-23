@@ -1,5 +1,7 @@
 2020-04
 
+- minor adjustments per clippy suggestions 
+
 - ok, lack of "fast-math" in Rust is what explains the big performance
   discrepancy between the C and Rust impls.
     

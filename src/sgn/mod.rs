@@ -128,7 +128,6 @@ impl SgnExtractor {
         let lookup = &instances
             .iter()
             .map(|instance| (instance.type_.to_string(), instance))
-            .into_iter()
             .into_group_map();
 
         let mut tot_instances = 0;

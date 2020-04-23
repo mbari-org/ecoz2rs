@@ -1,3 +1,5 @@
+#![allow(clippy::many_single_char_names)]
+
 extern crate libc;
 
 use self::libc::{c_double, c_int};
