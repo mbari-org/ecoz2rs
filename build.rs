@@ -1,7 +1,7 @@
 extern crate cc;
 
 fn main() {
-    let flags = &["-ffast-math", "-O3", "-Wall"];
+    let flags = &["-ffast-math", "-O3", "-Wall", "-march=native"];
 
     let headers = &["ecoz2/src/include", "ecoz2/src/sgn", "ecoz2/src/hmm"];
 
