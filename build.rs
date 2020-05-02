@@ -6,7 +6,7 @@ fn main() {
         "-O3",
         "-Wall",
         "-std=c99",
-        //"-fopenmp",
+        "-fopenmp",
         "-march=native",
     ];
 
