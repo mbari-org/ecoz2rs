@@ -1,14 +1,9 @@
 extern crate cc;
 
 fn main() {
-    let flags = &[
-        "-ffast-math",
-        "-O3",
-        "-Wall",
-        "-std=c99",
-        "-fopenmp",
-        "-march=native",
-    ];
+    let flags = &["-ffast-math", "-O3", "-Wall", "-std=c99", "-march=native"];
+
+    let flags_if_supported = &["-std=gnu99", "-fopenmp", "-lomp"];
 
     let headers = &["ecoz2/src/include", "ecoz2/src/sgn", "ecoz2/src/hmm"];
 
@@ -43,7 +38,7 @@ fn main() {
         "ecoz2/src/hmm/seq_show_files.c",
         "ecoz2/src/hmm/hmm_adjustb.c",
         "ecoz2/src/hmm/hmm_file.c",
-        "ecoz2/src/hmm/hmm_refinement.c",
+        //        "ecoz2/src/hmm/hmm_refinement.c",
         "ecoz2/src/hmm/hmm_prob.c",
         "ecoz2/src/hmm/hmm_log_prob.c",
         "ecoz2/src/hmm/hmm_genQopt.c",
@@ -67,9 +62,15 @@ fn main() {
         build = build.flag(f).to_owned();
     }
 
+    for f in flags_if_supported {
+        build = build.flag(f).to_owned();
+    }
+
     for f in headers {
         build = build.include(f).to_owned();
     }
+
+    build.flag(&std::env::var("DEP_OPENMP_FLAG").unwrap());
 
     build.files(files).compile("ecoz2_lib");
 }

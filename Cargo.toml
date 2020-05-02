@@ -34,6 +34,10 @@ serde_cbor = "0.10"
 structopt = { version = "0.3", features = [ "paw" ] }
 walkdir = "2.3.1"
 
+[dependencies.openmp-sys]
+features = ["static"]
+version = "0.1.7"
+
 # https://stackoverflow.com/a/34054833/830737
 [profile.dev]
 opt-level = 3

@@ -1,5 +1,6 @@
 extern crate itertools;
 extern crate num_cpus;
+extern crate openmp_sys;
 extern crate structopt;
 
 use structopt::StructOpt;

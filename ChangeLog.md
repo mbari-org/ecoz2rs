@@ -1,3 +1,9 @@
+2020-05
+
+- use openmp-sys to compile and use c code.
+  https://docs.rs/crate/openmp-sys/0.1.7
+
+
 2020-04
 
 - use `-march=native`
