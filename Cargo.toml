@@ -44,6 +44,7 @@ opt-level = 3
 
 [dev-dependencies]
 criterion = "0.3"
+openmp-sys = { version = "0.1.7", features = ["static"] }
 
 [[bench]]
 name = "my_benchmark"
