@@ -6,21 +6,17 @@ with some functionality implemented in Rust.
 
 ## Installing and running
 
-The `ecoz2` executable is available at https://github.com/ecoz2/ecoz2rs/releases
-(only for Mac OS at the moment).
-
-You can also install it if you have a C compiler and
+You will need a gcc compiler and
 [`Rust`](https://www.rust-lang.org/tools/install)
 on your machine:
 
     $ cargo install ecoz2
     
-> If getting C compile errors, try `$ CC=c99 cargo install ecoz2`.
 
 Running:
 
-    $ ecoz2 --help
-    ecoz2 0.1.1
+    $ ecoz2 help
+    ecoz2 0.3.0
     ECOZ2 System
     
     USAGE:
@@ -32,6 +28,7 @@ Running:
     
     SUBCOMMANDS:
         csv-show    Basic csv selection info
+        cversion    Show version of C code
         help        Prints this message or the help of the given subcommand(s)
         hmm         HMM operations
         lpc         Linear prediction coding
@@ -47,4 +44,4 @@ Running:
 with selected functionality exposed via
 https://doc.rust-lang.org/cargo/reference/build-scripts.html.
 
-    $ cargo build
+    $ cargo build [--release]

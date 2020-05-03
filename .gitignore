@@ -1,4 +1,6 @@
 MARS_20161221_000046_SongSession_16kHz_HPF5HzNorm_labels/
+predictor*prd
+predictor*txt
 data/
 /target
 **/*.rs.bk
