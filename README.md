@@ -12,6 +12,8 @@ on your machine:
 
     $ cargo install ecoz2
     
+This may take some time to complete (example of output
+[here](https://gist.github.com/carueda/0b4ede3e0152d3d670b0a0f2fc7098ce)).
 
 Running:
 
@@ -36,6 +38,17 @@ Running:
         seq         Sequence file operations
         sgn         Signal operations
         vq          VQ operations
+
+Starting with a set of acoustic signals (WAV format) on your machine,
+the typical use of the system will involve the following main subcommands
+in temporal order:
+
+- `ecoz2 lpc`:         takes `*.wav` and generates `*.prd`
+- `ecoz2 vq learn`     takes `*.prd` and generates `*.cb`
+- `ecoz2 vq quantize`  takes `*.cb` and `*.prd` and generates `*.seq`
+- `ecoz2 hmm learn`    takes `*.seq` and generates `*.hmm`
+- `ecoz2 hmm classify` takes `*.hmm` and `*.seq` and reports classification
+  of the sequences
 
 
 ## Development
