@@ -1,5 +1,7 @@
 2020-05
 
+- show versions (proper from cargo.toml;  and c code  via cversion cmd
+
 - use openmp-sys to compile and use c version, which now uses openmp.
   Fortunately, found https://docs.rs/crate/openmp-sys/0.1.7 for this purpose.
   Build successful on:

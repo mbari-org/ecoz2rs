@@ -3,6 +3,7 @@ extern crate num_cpus;
 extern crate openmp_sys;
 extern crate structopt;
 
+use structopt::clap::crate_version;
 use structopt::StructOpt;
 
 mod csvutil;
@@ -17,7 +18,11 @@ mod vq;
 
 #[derive(StructOpt, Debug)]
 #[structopt(name = "ecoz2", about = "ECOZ2 System")]
+#[structopt(version = crate_version!())]
 enum Ecoz {
+    #[structopt(about = "Show version of C code")]
+    Cversion,
+
     #[structopt(about = "Basic csv selection info")]
     CsvShow(csvutil::CsvShowOpts),
 
@@ -42,6 +47,10 @@ enum Ecoz {
 
 fn main() {
     match Ecoz::from_args() {
+        Ecoz::Cversion => {
+            println!("ecoz2/C {}", ecoz2_lib::version().unwrap());
+        }
+
         Ecoz::CsvShow(opts) => {
             csvutil::main_csv_show(opts);
         }
