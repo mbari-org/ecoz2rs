@@ -3,7 +3,7 @@
 - use openmp-sys to compile and use c version, which now uses openmp.
   Fortunately, found https://docs.rs/crate/openmp-sys/0.1.7 for this purpose.
   Build successful on:
-    - macos with  gcc (Homebrew GCC 9.3.0_1) 9.3.0
+    - macos with  gcc (Homebrew GCC 9.3.0_1) 9.3.0: `CC=gcc-9 cargo build [...]`
     - centos with gcc (GCC) 8.3.1 20190507 (Red Hat 8.3.1-4)
 
 
