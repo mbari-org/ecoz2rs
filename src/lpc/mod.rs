@@ -40,6 +40,10 @@ pub struct LpcOpts {
     #[structopt(parse(from_os_str))]
     sgn_filenames: Vec<PathBuf>,
 
+    /// Min time in secs to report processing time per signal
+    #[structopt(short = "X", default_value = "5")]
+    mintrpt: f32,
+
     /// Use Rust implementation
     #[structopt(long)]
     zrs: bool,
@@ -65,6 +69,7 @@ pub fn main_lpc(opts: LpcOpts) -> Result<(), Box<dyn Error>> {
         minpc,
         split,
         sgn_filenames,
+        mintrpt,
         zrs,
         zrsp,
     } = opts;
@@ -94,6 +99,7 @@ pub fn main_lpc(opts: LpcOpts) -> Result<(), Box<dyn Error>> {
             minpc,
             split,
             actual_sgn_filenames,
+            mintrpt,
         );
     }
 
