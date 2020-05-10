@@ -8,7 +8,7 @@ use std::os::raw::c_float;
 use std::path::PathBuf;
 use std::str::Utf8Error;
 
-use self::libc::{c_char, c_double, c_int};
+use self::libc::{c_char, c_double, c_int, c_uint};
 
 extern "C" {
     fn ecoz2_version() -> *const c_char;
@@ -63,19 +63,20 @@ extern "C" {
         N: c_int,
         model_type: c_int,
         sequence_filenames: *const *const c_char,
-        num_sequences: c_int,
+        num_sequences: c_uint,
         hmm_epsilon: c_double,
         val_auto: c_double,
         max_iterations: c_int,
+        use_par: c_int,
 
         callback: extern "C" fn(*mut c_char, c_double),
     );
 
     fn ecoz2_hmm_classify(
         model_filenames: *const *const c_char,
-        num_models: c_int,
+        num_models: c_uint,
         sequence_filenames: *const *const c_char,
-        num_sequences: c_int,
+        num_sequences: c_uint,
         show_ranked: c_int,
     );
 
@@ -280,6 +281,7 @@ pub fn hmm_learn(
     hmm_epsilon: f64,
     val_auto: f64,
     max_iterations: i32,
+    use_par: bool,
     callback: fn(&str, f64),
 ) {
     unsafe {
@@ -296,10 +298,11 @@ pub fn hmm_learn(
             n as c_int,
             model_type as c_int,
             vpc_sequences.as_ptr(),
-            vpc_sequences.len() as c_int,
+            vpc_sequences.len() as c_uint,
             hmm_epsilon as c_double,
             val_auto as c_double,
             max_iterations as c_int,
+            if use_par { 1 } else { 0 } as c_int,
             c_hmm_learn_callback,
         );
 
@@ -319,9 +322,9 @@ pub fn hmm_classify(
     unsafe {
         ecoz2_hmm_classify(
             vpc_models.as_ptr(),
-            vpc_models.len() as c_int,
+            vpc_models.len() as c_uint,
             vpc_sequences.as_ptr(),
-            vpc_sequences.len() as c_int,
+            vpc_sequences.len() as c_uint,
             show_ranked as c_int,
         );
     }

@@ -1,5 +1,7 @@
 2020-05
 
+- 0.3.1 aligned with C
+
 - show versions (proper from cargo.toml;  and c code  via cversion cmd
 
 - use openmp-sys to compile and use c version, which now uses openmp.

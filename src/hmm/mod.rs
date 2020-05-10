@@ -66,6 +66,10 @@ pub struct HmmLearnOpts {
     #[structopt(short = "s", long, default_value = "-1")]
     seed: i32,
 
+    /// Use serialized implementation
+    #[structopt(long)]
+    ser: bool,
+
     /// Training sequences.
     /// If directories are included, then all `.seq` under them will be used.
     #[structopt(parse(from_os_str))]
@@ -134,6 +138,7 @@ pub fn main_hmm_learn(opts: HmmLearnOpts) -> Result<(), Box<dyn Error>> {
         epsilon,
         val_auto,
         seed,
+        ser,
         sequence_filenames,
     } = opts;
 
@@ -158,6 +163,7 @@ pub fn main_hmm_learn(opts: HmmLearnOpts) -> Result<(), Box<dyn Error>> {
         epsilon,
         val_auto,
         max_iterations,
+        !ser,
         callback,
     );
 
