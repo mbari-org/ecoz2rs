@@ -1,6 +1,6 @@
 [package]
 name = "ecoz2"
-version = "0.3.1"
+version = "0.3.3"
 authors = [
     "Carlos A. Rueda <carueda@mbari.org>",
 ]

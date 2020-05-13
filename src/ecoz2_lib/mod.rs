@@ -10,6 +10,8 @@ use std::str::Utf8Error;
 
 use self::libc::{c_char, c_double, c_int, c_uint};
 
+use std::thread;
+
 extern "C" {
     fn ecoz2_version() -> *const c_char;
 
@@ -37,6 +39,15 @@ extern "C" {
         prediction_order: c_int,
         epsilon: c_double,
         codebook_class_name: *const c_char,
+        predictor_filenames: *const *const c_char,
+        num_predictors: c_int,
+
+        callback: extern "C" fn(c_int, c_double, c_double, c_double),
+    );
+
+    fn ecoz2_vq_learn_using_base_codebook(
+        base_codebook: *const c_char,
+        epsilon: c_double,
         predictor_filenames: *const *const c_char,
         num_predictors: c_int,
 
@@ -172,15 +183,19 @@ extern "C" fn c_vq_learn_callback(
 }
 
 pub fn vq_learn(
-    prediction_order: usize,
+    base_codebook_opt: Option<String>,
+    prediction_order_opt: Option<usize>,
     epsilon: f64,
     codebook_class_name: String,
     predictor_filenames: Vec<PathBuf>,
     callback: fn(i32, f64, f64, f64),
 ) {
+    assert_ne!(base_codebook_opt.is_some(), prediction_order_opt.is_some());
+
     println!(
-        "vq_learn: prediction_order={}, epsilon={} codebook_class_name={} predictor_filenames: {}",
-        prediction_order,
+        "vq_learn: base_codebook_opt={:?} prediction_order={:?}, epsilon={} codebook_class_name={} predictor_filenames: {}",
+        base_codebook_opt,
+        prediction_order_opt,
         epsilon,
         &codebook_class_name,
         predictor_filenames.len()
@@ -193,19 +208,42 @@ pub fn vq_learn(
         }
     }
 
-    let class_name = CString::new(codebook_class_name).unwrap();
-    let vpc_predictors: Vec<*const c_char> = to_vec_of_ptr_const_c_char(predictor_filenames);
+    // thread needed to increment stack size, currently required
+    // for the C implementation
+    let child = thread::Builder::new()
+        .stack_size(32 * 1024 * 1024)
+        .spawn(move || {
+            let class_name = CString::new(codebook_class_name).unwrap();
+            let vpc_predictors: Vec<*const c_char> =
+                to_vec_of_ptr_const_c_char(predictor_filenames);
 
-    unsafe {
-        ecoz2_vq_learn(
-            prediction_order as c_int,
-            epsilon as c_double,
-            class_name.as_ptr() as *const i8,
-            vpc_predictors.as_ptr(),
-            vpc_predictors.len() as c_int,
-            c_vq_learn_callback,
-        )
-    }
+            unsafe {
+                match base_codebook_opt {
+                    Some(base_codebook) => ecoz2_vq_learn_using_base_codebook(
+                        base_codebook.as_ptr() as *const i8,
+                        epsilon as c_double,
+                        vpc_predictors.as_ptr(),
+                        vpc_predictors.len() as c_int,
+                        c_vq_learn_callback,
+                    ),
+
+                    None => {
+                        let prediction_order = prediction_order_opt.unwrap();
+                        ecoz2_vq_learn(
+                            prediction_order as c_int,
+                            epsilon as c_double,
+                            class_name.as_ptr() as *const i8,
+                            vpc_predictors.as_ptr(),
+                            vpc_predictors.len() as c_int,
+                            c_vq_learn_callback,
+                        )
+                    }
+                }
+            }
+        })
+        .unwrap();
+
+    child.join().unwrap();
 }
 
 pub fn vq_quantize(nom_raas: PathBuf, predictor_filenames: Vec<PathBuf>) {

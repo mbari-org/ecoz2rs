@@ -1,5 +1,10 @@
 2020-05
 
+- 0.3.3 - `vq learn` can now accept a base codebook for "resuming" the
+  training, that is, starting with the next power-of-2 codebook size.
+  Note that for the additional codebook size (4096) the C impl currently
+  needs a bigger stack, which is given from Rust via a thread.
+
 - 0.3.1 aligned with C
 
 - show versions (proper from cargo.toml;  and c code  via cversion cmd

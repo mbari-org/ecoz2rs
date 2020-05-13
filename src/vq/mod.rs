@@ -37,15 +37,19 @@ enum EcozVqCommand {
 
 #[derive(StructOpt, Debug)]
 pub struct VqLearnOpts {
-    /// Prediction order
-    #[structopt(short = "P", long, default_value = "36")]
-    prediction_order: usize,
+    /// Start training from this base codebook.
+    #[structopt(short = "B", long)]
+    base_codebook: Option<String>,
+
+    /// Prediction order (required if -B not given).
+    #[structopt(short = "P", long)]
+    prediction_order: Option<usize>,
 
     /// Epsilon parameter for convergence.
     #[structopt(short = "e", long = "epsilon", default_value = "0.05")]
     epsilon: f64,
 
-    /// Class name ID to associate to codebook.
+    /// Class name ID to associate to codebook (ignored if -B given).
     #[structopt(short = "w", long = "class-name")]
     class_name: Option<String>,
 
@@ -128,11 +132,16 @@ pub fn main(opts: VqMainOpts) {
 
 pub fn main_vq_learn(opts: VqLearnOpts) -> Result<(), Box<dyn Error>> {
     let VqLearnOpts {
+        base_codebook,
         prediction_order,
         epsilon,
         class_name,
         predictor_filenames,
     } = opts;
+
+    if let (Some(_), Some(_)) = (&base_codebook, prediction_order) {
+        return Err("Only one of base codebook or prediction order expected").unwrap();
+    }
 
     let codebook_class_name = match class_name {
         Some(name) => name,
@@ -150,6 +159,7 @@ pub fn main_vq_learn(opts: VqLearnOpts) -> Result<(), Box<dyn Error>> {
     }
 
     vq_learn(
+        base_codebook,
         prediction_order,
         epsilon,
         codebook_class_name,
