@@ -6,6 +6,7 @@ extern crate structopt;
 use structopt::clap::crate_version;
 use structopt::StructOpt;
 
+mod comet_client;
 mod csvutil;
 mod ecoz2_lib;
 mod hmm;

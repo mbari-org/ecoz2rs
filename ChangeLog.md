@@ -1,5 +1,7 @@
 2020-05
 
+- preliminaries for a CometClient
+
 - 0.3.3 - `vq learn` can now accept a base codebook for "resuming" the
   training, that is, starting with the next power-of-2 codebook size.
   Note that for the additional codebook size (4096) the C impl currently
