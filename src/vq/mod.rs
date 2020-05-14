@@ -57,6 +57,10 @@ pub struct VqLearnOpts {
     /// all `.prd` under them will be used.
     #[structopt(parse(from_os_str))]
     predictor_filenames: Vec<PathBuf>,
+
+    /// Experiment key to log to comet.
+    #[structopt(long)]
+    log_comet: Option<String>,
 }
 
 #[derive(StructOpt, Debug)]
@@ -137,6 +141,7 @@ pub fn main_vq_learn(opts: VqLearnOpts) -> Result<(), Box<dyn Error>> {
         epsilon,
         class_name,
         predictor_filenames,
+        log_comet,
     } = opts;
 
     if let (Some(_), Some(_)) = (&base_codebook, prediction_order) {
@@ -151,20 +156,13 @@ pub fn main_vq_learn(opts: VqLearnOpts) -> Result<(), Box<dyn Error>> {
     let actual_prd_filenames =
         utl::get_actual_filenames(predictor_filenames, ".prd", "predictors")?;
 
-    fn callback(m: i32, avg_distortion: f64, sigma: f64, inertia: f64) {
-        println!(
-            "rust callback: M={} avg_distortion={} sigma={} inertia={}",
-            m, avg_distortion, sigma, inertia
-        );
-    }
-
     vq_learn(
         base_codebook,
         prediction_order,
         epsilon,
         codebook_class_name,
         actual_prd_filenames,
-        callback,
+        log_comet,
     );
 
     Ok(())

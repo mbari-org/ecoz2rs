@@ -7,10 +7,34 @@ use std::ffi::CString;
 use std::os::raw::c_float;
 use std::path::PathBuf;
 use std::str::Utf8Error;
+use std::thread;
+
+use comet_client::CometClient;
 
 use self::libc::{c_char, c_double, c_int, c_uint};
 
-use std::thread;
+#[repr(C)]
+pub struct VqLearnObserver {
+    comet_client: CometClient,
+}
+
+impl VqLearnObserver {
+    fn new(log_comet: Option<String>) -> Self {
+        VqLearnObserver {
+            comet_client: CometClient::new(log_comet),
+        }
+    }
+
+    fn step(&self, m: i32, avg_distortion: f64, sigma: f64, inertia: f64) {
+        //        println!(
+        //            "   VqLearnObserver.step: M={} avg_distortion={} sigma={} inertia={}",
+        //            m, avg_distortion, sigma, inertia
+        //        );
+
+        self.comet_client
+            .log_vq_learn(m, avg_distortion, sigma, inertia);
+    }
+}
 
 extern "C" {
     fn ecoz2_version() -> *const c_char;
@@ -42,7 +66,8 @@ extern "C" {
         predictor_filenames: *const *const c_char,
         num_predictors: c_int,
 
-        callback: extern "C" fn(c_int, c_double, c_double, c_double),
+        target: *mut VqLearnObserver,
+        callback: extern "C" fn(*mut VqLearnObserver, c_int, c_double, c_double, c_double),
     );
 
     fn ecoz2_vq_learn_using_base_codebook(
@@ -51,7 +76,8 @@ extern "C" {
         predictor_filenames: *const *const c_char,
         num_predictors: c_int,
 
-        callback: extern "C" fn(c_int, c_double, c_double, c_double),
+        target: *mut VqLearnObserver,
+        callback: extern "C" fn(*mut VqLearnObserver, c_int, c_double, c_double, c_double),
     );
 
     fn ecoz2_vq_quantize(
@@ -157,28 +183,21 @@ pub fn prd_show_file(prd_filename: PathBuf, show_reflections: bool, from: usize,
     }
 }
 
-static mut VQ_LEARN_CALLBACK: Option<fn(i32, f64, f64, f64)> = None;
-
 #[no_mangle]
 extern "C" fn c_vq_learn_callback(
+    target: *mut VqLearnObserver,
     m: c_int,
     avg_distortion: c_double,
     sigma: c_double,
     inertia: c_double,
 ) {
     unsafe {
-        if let Some(cb) = VQ_LEARN_CALLBACK {
-            //println!(
-            //    "   c_vq_learn_callback: M={} avg_distortion={} sigma={} inertia={}",
-            //    m, avg_distortion, sigma, inertia
-            //);
-            cb(
-                m as i32,
-                avg_distortion as f64,
-                sigma as f64,
-                inertia as f64,
-            )
-        }
+        (*target).step(
+            m as i32,
+            avg_distortion as f64,
+            sigma as f64,
+            inertia as f64,
+        )
     }
 }
 
@@ -188,7 +207,7 @@ pub fn vq_learn(
     epsilon: f64,
     codebook_class_name: String,
     predictor_filenames: Vec<PathBuf>,
-    callback: fn(i32, f64, f64, f64),
+    log_comet: Option<String>,
 ) {
     assert_ne!(base_codebook_opt.is_some(), prediction_order_opt.is_some());
 
@@ -201,13 +220,6 @@ pub fn vq_learn(
         predictor_filenames.len()
     );
 
-    unsafe {
-        match VQ_LEARN_CALLBACK {
-            Some(_) => panic!("Ongoing ecoz2_vq_learn call"),
-            None => VQ_LEARN_CALLBACK = Some(callback),
-        }
-    }
-
     // thread needed to increment stack size, currently required
     // for the C implementation
     let child = thread::Builder::new()
@@ -217,6 +229,9 @@ pub fn vq_learn(
             let vpc_predictors: Vec<*const c_char> =
                 to_vec_of_ptr_const_c_char(predictor_filenames);
 
+            let observer = VqLearnObserver::new(log_comet);
+            let mut rust_object = Box::new(observer);
+
             unsafe {
                 match base_codebook_opt {
                     Some(base_codebook) => ecoz2_vq_learn_using_base_codebook(
@@ -224,6 +239,7 @@ pub fn vq_learn(
                         epsilon as c_double,
                         vpc_predictors.as_ptr(),
                         vpc_predictors.len() as c_int,
+                        &mut *rust_object,
                         c_vq_learn_callback,
                     ),
 
@@ -235,6 +251,7 @@ pub fn vq_learn(
                             class_name.as_ptr() as *const i8,
                             vpc_predictors.as_ptr(),
                             vpc_predictors.len() as c_int,
+                            &mut *rust_object,
                             c_vq_learn_callback,
                         )
                     }
