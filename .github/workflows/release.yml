@@ -6,51 +6,57 @@ on:
       - 'v*'
 
 jobs:
-  build:
-
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest]
+  build_linux:
+    runs-on: ubuntu-latest
 
     steps:
     - name: Checkout
       uses: actions/checkout@v2
 
     - name: Checkout submodules
-      uses: srt32/git-actions@v0.0.3
+      uses: textbook/git-checkout-submodule-action@2.1.1
+
+    # as git action to get submodules not available on macos:
+    - name: Upload source for the macos build
+    - uses: actions/upload-artifact@v2
       with:
-        args: git submodule update --init --recursive
+        name: ecoz2rs-src
+        path: ./
 
     - name: Build linux
-      if: ${{ matrix.os == 'ubuntu-latest' }}
       run: |
         CC=gcc cargo build --verbose --release
         cd target/release/
         zip "${{github.workspace}}/ecoz2rs-linux.zip" *
+    - uses: actions/upload-artifact@v2
+      with:
+        name: ecoz2rs-linux.zip
+        path: "${{github.workspace}}/ecoz2rs-linux.zip"
 
+  build_macos_and_release:
+    needs: build_linux
+    runs-on: macos-latest
+
+    steps:
+    - name: Get sources
+      uses: actions/download-artifact@v2
+      with:
+        name: ecoz2rs-src
+    - name: List directory
+      run: ls -lrt
 
     - name: Build macos
-      if: ${{ matrix.os == 'macos-latest' }}
       run: |
         CC=gcc-9 cargo build --verbose --release
         cd target/release/
         zip "${{github.workspace}}/ecoz2rs-macos.zip" *
 
-    - name: Release linux
-      if: ${{ matrix.os == 'ubuntu-latest' }}
-      uses: sondreb/action-release@master
+    - name: Get linux release
+      uses: actions/download-artifact@v2
       with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        draft: true
-        prerelease: true
-        body: 'This is a pre-release'
-        name: "Draft Release"
-        tag: ${{ github.ref }}
-        files: "ecoz2rs-linux.zip"
+        name: ecoz2rs-linux.zip
 
-    - name: Release macos
-      if: ${{ matrix.os == 'macos-latest' }}
+    - name: Complete release
       uses: sondreb/action-release@master
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
@@ -59,4 +65,4 @@ jobs:
         body: 'This is a pre-release'
         name: "Draft Release"
         tag: ${{ github.ref }}
-        files: "ecoz2rs-macos.zip"
+        files: "ecoz2rs-linux.zip;ecoz2rs-macos.zip"
