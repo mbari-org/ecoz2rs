@@ -7,32 +7,68 @@ use std::ffi::CString;
 use std::os::raw::c_float;
 use std::path::PathBuf;
 use std::str::Utf8Error;
+use std::sync::Arc;
+use std::sync::RwLock;
 use std::thread;
 
 use comet_client::CometClient;
 
 use self::libc::{c_char, c_double, c_int, c_uint};
 
-#[repr(C)]
-pub struct VqLearnObserver {
-    comet_client: CometClient,
+use std::collections::HashMap;
+
+// https://users.rust-lang.org/t/ownership-issue-with-a-static-hashmap/27239
+
+lazy_static! {
+    static ref COMET_CLIENTS: RwLock<HashMap<c_int, Arc<CometClient>>> =
+        RwLock::new(HashMap::new());
+}
+static mut NEXT_REF_ID: c_int = 0;
+
+pub fn register_cc(comet_client: CometClient) -> c_int {
+    let ref_id: c_int;
+    unsafe {
+        ref_id = NEXT_REF_ID;
+        NEXT_REF_ID += 1;
+    };
+    COMET_CLIENTS
+        .write()
+        .unwrap()
+        .insert(ref_id, Arc::new(comet_client));
+
+    ref_id
 }
 
-impl VqLearnObserver {
-    fn new(log_comet: Option<String>) -> Self {
-        VqLearnObserver {
-            comet_client: CometClient::new(log_comet),
-        }
+pub fn unregister_cc(ref_id: c_int) {
+    COMET_CLIENTS.write().unwrap().remove(&ref_id);
+}
+
+pub fn find_cc(ref_id: &c_int) -> Option<Arc<CometClient>> {
+    COMET_CLIENTS
+        .read()
+        .unwrap()
+        .get(ref_id)
+        .map(|v| Arc::clone(v))
+}
+
+#[repr(C)]
+pub struct Ecoz2ObserverRef {
+    ref_id: c_int,
+}
+
+impl Ecoz2ObserverRef {
+    fn new(ref_id: c_int) -> Self {
+        Ecoz2ObserverRef { ref_id }
     }
 
     fn step(&self, m: i32, avg_distortion: f64, sigma: f64, inertia: f64) {
-        //        println!(
-        //            "   VqLearnObserver.step: M={} avg_distortion={} sigma={} inertia={}",
-        //            m, avg_distortion, sigma, inertia
-        //        );
-
-        self.comet_client
-            .log_vq_learn(m, avg_distortion, sigma, inertia);
+        println!(
+            "   Ecoz2ObserverRef.step: M={} avg_distortion={} sigma={} inertia={}",
+            m, avg_distortion, sigma, inertia
+        );
+        if let Some(a) = find_cc(&self.ref_id) {
+            a.log_vq_learn(m, avg_distortion, sigma, inertia);
+        }
     }
 }
 
@@ -66,8 +102,8 @@ extern "C" {
         predictor_filenames: *const *const c_char,
         num_predictors: c_int,
 
-        target: *mut VqLearnObserver,
-        callback: extern "C" fn(*mut VqLearnObserver, c_int, c_double, c_double, c_double),
+        target: *mut Ecoz2ObserverRef,
+        callback: extern "C" fn(*mut Ecoz2ObserverRef, c_int, c_double, c_double, c_double),
     );
 
     fn ecoz2_vq_learn_using_base_codebook(
@@ -76,8 +112,8 @@ extern "C" {
         predictor_filenames: *const *const c_char,
         num_predictors: c_int,
 
-        target: *mut VqLearnObserver,
-        callback: extern "C" fn(*mut VqLearnObserver, c_int, c_double, c_double, c_double),
+        target: *mut Ecoz2ObserverRef,
+        callback: extern "C" fn(*mut Ecoz2ObserverRef, c_int, c_double, c_double, c_double),
     );
 
     fn ecoz2_vq_quantize(
@@ -185,7 +221,7 @@ pub fn prd_show_file(prd_filename: PathBuf, show_reflections: bool, from: usize,
 
 #[no_mangle]
 extern "C" fn c_vq_learn_callback(
-    target: *mut VqLearnObserver,
+    target: *mut Ecoz2ObserverRef,
     m: c_int,
     avg_distortion: c_double,
     sigma: c_double,
@@ -207,7 +243,7 @@ pub fn vq_learn(
     epsilon: f64,
     codebook_class_name: String,
     predictor_filenames: Vec<PathBuf>,
-    log_comet: Option<String>,
+    exp_key: Option<String>,
 ) {
     assert_ne!(base_codebook_opt.is_some(), prediction_order_opt.is_some());
 
@@ -229,8 +265,17 @@ pub fn vq_learn(
             let vpc_predictors: Vec<*const c_char> =
                 to_vec_of_ptr_const_c_char(predictor_filenames);
 
-            let observer = VqLearnObserver::new(log_comet);
-            let mut rust_object = Box::new(observer);
+            let comet_client = CometClient::new(exp_key);
+
+            if let Some(p) = prediction_order_opt {
+                comet_client.log_parameter(&"P".to_string(), &format!("{}", p));
+            }
+            comet_client.log_parameter(&"epsilon".to_string(), &format!("{}", epsilon));
+
+            let ref_id = register_cc(comet_client);
+
+            let observer = Ecoz2ObserverRef::new(ref_id);
+            let mut obs_ref = Box::new(observer);
 
             unsafe {
                 match base_codebook_opt {
@@ -239,7 +284,7 @@ pub fn vq_learn(
                         epsilon as c_double,
                         vpc_predictors.as_ptr(),
                         vpc_predictors.len() as c_int,
-                        &mut *rust_object,
+                        &mut *obs_ref,
                         c_vq_learn_callback,
                     ),
 
@@ -251,12 +296,14 @@ pub fn vq_learn(
                             class_name.as_ptr() as *const i8,
                             vpc_predictors.as_ptr(),
                             vpc_predictors.len() as c_int,
-                            &mut *rust_object,
+                            &mut *obs_ref,
                             c_vq_learn_callback,
                         )
                     }
                 }
             }
+
+            unregister_cc(ref_id);
         })
         .unwrap();
 

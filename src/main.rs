@@ -1,7 +1,11 @@
 extern crate itertools;
 extern crate num_cpus;
 extern crate openmp_sys;
+extern crate reqwest;
 extern crate structopt;
+
+#[macro_use]
+extern crate lazy_static;
 
 use structopt::clap::crate_version;
 use structopt::StructOpt;

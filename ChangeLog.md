@@ -1,6 +1,9 @@
 2020-05
 
-- preliminaries for a CometClient
+- `vq learn`: initial optional logging to comet
+    - if the COMET_API_KEY env var is defined and the `-exp-key` option
+      is given (with the experiment id), then some parameters and metrics
+      are reported
 
 - 0.3.3 - `vq learn` can now accept a base codebook for "resuming" the
   training, that is, starting with the next power-of-2 codebook size.

@@ -59,8 +59,9 @@ pub struct VqLearnOpts {
     predictor_filenames: Vec<PathBuf>,
 
     /// Experiment key to log to comet.
+    /// Only has effect if the COMET_API_KEY env var is defined.
     #[structopt(long)]
-    log_comet: Option<String>,
+    exp_key: Option<String>,
 }
 
 #[derive(StructOpt, Debug)]
@@ -141,7 +142,7 @@ pub fn main_vq_learn(opts: VqLearnOpts) -> Result<(), Box<dyn Error>> {
         epsilon,
         class_name,
         predictor_filenames,
-        log_comet,
+        exp_key,
     } = opts;
 
     if let (Some(_), Some(_)) = (&base_codebook, prediction_order) {
@@ -162,7 +163,7 @@ pub fn main_vq_learn(opts: VqLearnOpts) -> Result<(), Box<dyn Error>> {
         epsilon,
         codebook_class_name,
         actual_prd_filenames,
-        log_comet,
+        exp_key,
     );
 
     Ok(())
