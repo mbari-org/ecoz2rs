@@ -1,0 +1,60 @@
+name: ECOZ2 Rust Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Checkout submodules
+      uses: textbook/git-checkout-submodule-action@2.1.1
+
+    - name: Build linux
+      if: ${{ matrix.os == 'ubuntu-latest' }}
+      run: |
+        CC=gcc cargo build --verbose --release
+        cd target/release/
+        zip "${{github.workspace}}/ecoz2rs-linux.zip" *
+
+
+    - name: Build macos
+      if: ${{ matrix.os == 'macos-latest' }}
+      run: |
+        CC=gcc-9 cargo build --verbose --release
+        cd target/release/
+        zip "${{github.workspace}}/ecoz2rs-macos.zip" *
+
+    - name: Release linux
+      if: ${{ matrix.os == 'ubuntu-latest' }}
+      uses: sondreb/action-release@master
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        draft: true
+        prerelease: true
+        body: 'This is a pre-release'
+        name: "Draft Release"
+        tag: ${{ github.ref }}
+        files: "ecoz2rs-linux.zip"
+
+    - name: Release macos
+      if: ${{ matrix.os == 'macos-latest' }}
+      uses: sondreb/action-release@master
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        draft: true
+        prerelease: true
+        body: 'This is a pre-release'
+        name: "Draft Release"
+        tag: ${{ github.ref }}
+        files: "ecoz2rs-macos.zip"

@@ -1,5 +1,7 @@
 2020-05
 
+- release using github actions (linux and macos binaries)
+
 - `vq learn`: initial optional logging to comet
     - if the COMET_API_KEY env var is defined and the `-exp-key` option
       is given (with the experiment id), then some parameters and metrics
