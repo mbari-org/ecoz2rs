@@ -25,7 +25,8 @@ jobs:
       if: startsWith(github.ref, 'refs/tags/')
       with:
         files: target/release/ecoz2
-      prerelease: true
+        body: linux pre-release
+        prerelease: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
