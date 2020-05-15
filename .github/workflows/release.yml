@@ -18,7 +18,7 @@ jobs:
 
     # as git action to get submodules not available on macos:
     - name: Upload source for the macos build
-    - uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v2
       with:
         name: ecoz2rs-src
         path: ./
