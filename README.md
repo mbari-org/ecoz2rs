@@ -7,7 +7,8 @@ with some functionality implemented in Rust.
 ## Installing and running
 
 The `ecoz2` executable is currently being built and released for
-[Linux and MacOS](https://github.com/ecoz2/ecoz2rs/releases).
+Linux and MacOS, which you can find under
+[releases](https://github.com/ecoz2/ecoz2rs/releases).
 
 Alternatively, you can also install the executable using
 [`Rust`](https://www.rust-lang.org/tools/install).
