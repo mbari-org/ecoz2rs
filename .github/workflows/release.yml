@@ -27,7 +27,7 @@ jobs:
       run: |
         CC=gcc cargo build --verbose --release
         cd target/release/
-        zip "${{github.workspace}}/ecoz2rs-linux.zip" *
+        zip "${{github.workspace}}/ecoz2rs-linux.zip" ecoz2
     - uses: actions/upload-artifact@v2
       with:
         name: ecoz2rs-linux.zip
@@ -49,7 +49,7 @@ jobs:
       run: |
         CC=gcc-9 cargo build --verbose --release
         cd target/release/
-        zip "${{github.workspace}}/ecoz2rs-macos.zip" *
+        zip "${{github.workspace}}/ecoz2rs-macos.zip" ecoz2
 
     - name: Get linux release
       uses: actions/download-artifact@v2

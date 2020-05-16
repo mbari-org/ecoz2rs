@@ -6,19 +6,27 @@ with some functionality implemented in Rust.
 
 ## Installing and running
 
-You will need a gcc compiler and
-[`Rust`](https://www.rust-lang.org/tools/install)
-on your machine:
+The `ecoz2` executable is currently being built and released for
+[Linux and MacOS](https://github.com/ecoz2/ecoz2rs/releases).
 
-    $ cargo install ecoz2
-    
+Alternatively, you can also install the executable using
+[`Rust`](https://www.rust-lang.org/tools/install).
+For this you will also need a GNU gcc compiler on your machine.
+On Linux you can run:
+
+    $ CC=gcc cargo install ecoz2
+
+and on a MacOS, something like:
+
+    $ CC=gcc-9 cargo install ecoz2
+
 This may take some time to complete (example of output
 [here](https://gist.github.com/carueda/0b4ede3e0152d3d670b0a0f2fc7098ce)).
 
 Running:
 
-    $ ecoz2 help
-    ecoz2 0.3.0
+    $ ecoz2
+    ecoz2 0.3.35
     ECOZ2 System
     
     USAGE:
@@ -41,12 +49,12 @@ Running:
 
 Starting with a set of acoustic signals (WAV format) on your machine,
 the typical use of the system will involve the following main subcommands
-in temporal order:
+in this general order:
 
-- `ecoz2 lpc`:         takes `*.wav` and generates `*.prd`
-- `ecoz2 vq learn`     takes `*.prd` and generates `*.cb`
-- `ecoz2 vq quantize`  takes `*.cb` and `*.prd` and generates `*.seq`
-- `ecoz2 hmm learn`    takes `*.seq` and generates `*.hmm`
+- `ecoz2 lpc`:         takes `*.wav` and generates perdictor files `*.prd`
+- `ecoz2 vq learn`     takes `*.prd` and generates codebooks `*.cb`
+- `ecoz2 vq quantize`  takes `*.cb` and `*.prd` and generates observation sequences `*.seq`
+- `ecoz2 hmm learn`    takes `*.seq` and generates an HMM model `*.hmm`
 - `ecoz2 hmm classify` takes `*.hmm` and `*.seq` and reports classification
   of the sequences
 
