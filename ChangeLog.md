@@ -1,5 +1,6 @@
 2020-05
 
+- 0.3.5 - align with C
 - release using github actions (linux and macos binaries)
 
 - `vq learn`: initial optional logging to comet
