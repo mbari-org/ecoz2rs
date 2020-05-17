@@ -1,3 +1,4 @@
+extern crate byteorder;
 extern crate itertools;
 extern crate num_cpus;
 extern crate openmp_sys;
@@ -15,8 +16,10 @@ mod csvutil;
 mod ecoz2_lib;
 mod hmm;
 mod lpc;
+mod nbayes;
 mod prd;
 mod seq;
+mod sequence;
 mod sgn;
 mod utl;
 mod vq;
@@ -48,6 +51,9 @@ enum Ecoz {
 
     #[structopt(about = "Sequence file operations")]
     Seq(seq::SeqMainOpts),
+
+    #[structopt(about = "NBayes operations")]
+    Nbayes(nbayes::NBayesMainOpts),
 }
 
 fn main() {
@@ -82,6 +88,10 @@ fn main() {
 
         Ecoz::Seq(opts) => {
             seq::main(opts);
+        }
+
+        Ecoz::Nbayes(opts) => {
+            nbayes::main(opts);
         }
     }
 }

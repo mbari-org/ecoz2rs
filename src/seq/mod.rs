@@ -66,13 +66,19 @@ pub fn seq_show(opts: SeqShowOpts) -> Result<(), Box<dyn Error>> {
         seq_filenames,
     } = opts;
 
-    seq_show_files(
-        with_prob,
-        gen_q_opt,
-        no_sequence,
-        hmm,
-        utl::get_actual_filenames(seq_filenames, ".seq", "sequences")?,
-    );
+    use sequence::load;
+    for seq_filename in seq_filenames {
+        let mut seq = load(seq_filename.to_str().unwrap())?;
+        seq.show();
+    }
+
+    //    seq_show_files(
+    //        with_prob,
+    //        gen_q_opt,
+    //        no_sequence,
+    //        hmm,
+    //        utl::get_actual_filenames(seq_filenames, ".seq", "sequences")?,
+    //    );
 
     Ok(())
 }
