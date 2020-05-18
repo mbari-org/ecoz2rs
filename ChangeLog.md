@@ -1,5 +1,6 @@
 2020-05
 
+- add c12n module as helper for classification results/confusion matrix
 - adding NBayes learning and classification.
 
        $ ecoz2 nbayes learn data/sequences/TRAIN/M2048/B
@@ -7,7 +8,6 @@
 
     As part of this, new `sequence` module to load and display sequences
     generated from C version.
-    TODO modularize classification results/confusion matrix
 
 - 0.3.63 - align with C
 - release using github actions (linux and macos binaries)

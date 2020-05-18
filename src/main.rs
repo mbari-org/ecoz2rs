@@ -12,6 +12,7 @@ extern crate lazy_static;
 use structopt::clap::crate_version;
 use structopt::StructOpt;
 
+mod c12n;
 mod comet_client;
 mod csvutil;
 mod ecoz2_lib;
