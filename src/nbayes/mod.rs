@@ -80,9 +80,10 @@ pub fn main_nbayes_learn(opts: NBayesLearnOpts) -> Result<(), Box<dyn Error>> {
 
     let seq_filenames = utl::get_actual_filenames(sequences, ".seq", "sequences")?;
 
-    println!("num_actual_sequences: {}", seq_filenames.len());
+    println!("nbayes learn: num sequences={}", seq_filenames.len());
 
     let mut model = nb::learn(seq_filenames)?;
+
     let codebook_size = model.frequencies.len();
     let nb_dir_str = format!("data/nbs/M{}", codebook_size);
     let nb_dir = Path::new(&nb_dir_str);

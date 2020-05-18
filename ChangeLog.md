@@ -1,6 +1,12 @@
 2020-05
 
+- add basic markov model learning and classification.
+
+       $ ecoz2 mm learn data/sequences/TRAIN/M2048/B
+       $ ecoz2 mm classify --models data/mms/M${M} --sequences data/sequences/TRAIN/M${M}
+
 - add c12n module as helper for classification results/confusion matrix
+
 - adding NBayes learning and classification.
 
        $ ecoz2 nbayes learn data/sequences/TRAIN/M2048/B

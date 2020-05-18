@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use std::error::Error;
 use std::fs::File;
 use std::io::BufReader;
@@ -6,15 +7,15 @@ use std::path::PathBuf;
 use c12n;
 use sequence;
 
-/// A trained NBayes model.
+/// A trained Markov model.
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
-pub struct NBayes {
+pub struct MM {
     pub class_name: String,
-    pub total_symbols: usize,
-    pub frequencies: Vec<usize>,
+    pub pi: Vec<f64>,
+    pub a: Vec<Vec<f64>>,
 }
 
-impl NBayes {
+impl MM {
     pub fn save(&mut self, filename: &str) -> Result<(), Box<dyn Error>> {
         let f = File::create(filename)?;
         serde_cbor::to_writer(f, &self)?;
@@ -22,58 +23,58 @@ impl NBayes {
     }
 
     pub fn show(&mut self) {
-        let codebook_size = self.frequencies.len();
+        let codebook_size = self.pi.len();
         println!(
-            "# class_name='{}', M={} total_symbols={}",
-            self.class_name, codebook_size, self.total_symbols,
+            "# class_name='{}', codebook_size={}",
+            self.class_name, codebook_size,
         );
 
-        println!("{:4}, {:4}, {}", "m", "frequency", "prob");
-
-        for (s, f) in self.frequencies.iter().enumerate() {
-            let prob = self.prob_symbol(s);
-            println!("{:4}, {:4}, {:.7}", s, f, prob);
+        println!("pi = {}", self.pi.iter().join(", "));
+        println!(" A = ");
+        for row in &self.a {
+            println!("     {}", row.iter().join(", "));
         }
-    }
-
-    /// probability of generating the symbol, using an m-estimate
-    pub fn prob_symbol(&self, symbol: usize) -> f64 {
-        let codebook_size = self.frequencies.len();
-        let f = self.frequencies[symbol] as f64;
-        (f + 1.0) / (self.total_symbols + codebook_size) as f64
-    }
-
-    /// log probability of generating the symbol
-    pub fn log_prob_symbol(&self, symbol: usize) -> f64 {
-        self.prob_symbol(symbol).log10()
     }
 
     /// log probability of generating the symbol sequence
     pub fn log_prob_sequence(&self, seq: &sequence::Sequence) -> f64 {
-        seq.symbols.iter().fold(0_f64, |acc, s| {
-            acc + self.log_prob_symbol(*s as usize) as f64
-        })
+        let codebook_size = self.pi.len();
+        let mut p = self.pi[seq.symbols[0] as usize].log10();
+        for t in 0..seq.symbols.len() - 1 {
+            p += self.a[seq.symbols[t] as usize][seq.symbols[t + 1] as usize].log10();
+        }
+        p
     }
 }
 
-pub fn load(filename: &str) -> Result<NBayes, Box<dyn Error>> {
+pub fn load(filename: &str) -> Result<MM, Box<dyn Error>> {
     let f = File::open(filename)?;
     let br = BufReader::new(f);
-    let nbayes = serde_cbor::from_reader(br)?;
-    Ok(nbayes)
+    let mm = serde_cbor::from_reader(br)?;
+    Ok(mm)
 }
 
-pub fn learn(seq_filenames: Vec<PathBuf>) -> Result<NBayes, Box<dyn Error>> {
+pub fn learn(seq_filenames: &Vec<PathBuf>) -> Result<MM, Box<dyn Error>> {
     // get relevant dimensions from first given sequence;
     let seq = sequence::load(seq_filenames[0].to_str().unwrap())?;
 
     let class_name = seq.class_name;
     let codebook_size = seq.codebook_size as usize;
 
-    let mut total_symbols: usize = 0;
-    let mut frequencies = vec![0_usize; seq.codebook_size as usize];
+    let mut counts = vec![0_usize; codebook_size];
+    let mut pi = vec![0f64; codebook_size];
+    let mut a = vec![vec![0f64; codebook_size]; codebook_size];
 
-    // for simplicity, let this reload that 1st sequence again
+    // init:
+    for i in 0..codebook_size {
+        pi[i] = 1_f64;
+        counts[i] = 0;
+        for j in 0..codebook_size {
+            a[i][j] = 1_f64;
+        }
+    }
+
+    // capture counts:  (for simplicity, let this reload that 1st sequence again)
     for seq_filename in seq_filenames {
         let filename = seq_filename.to_str().unwrap();
         let seq = sequence::load(filename)?;
@@ -95,26 +96,33 @@ pub fn learn(seq_filenames: Vec<PathBuf>) -> Result<NBayes, Box<dyn Error>> {
             .into());
         }
 
-        total_symbols += seq.symbols.len();
-        for s in seq.symbols {
-            frequencies[s as usize] += 1;
+        // count:
+        pi[seq.symbols[0] as usize] += 1_f64;
+        for t in 0..seq.symbols.len() - 1 {
+            counts[seq.symbols[t] as usize] += 1;
+            a[seq.symbols[t] as usize][seq.symbols[t + 1] as usize] += 1_f64;
         }
     }
 
-    Ok(NBayes {
-        class_name,
-        total_symbols,
-        frequencies,
-    })
+    // normalize:
+    let num_seqs = seq_filenames.len() as f64;
+    for i in 0..codebook_size {
+        pi[i] /= num_seqs + codebook_size as f64;
+        for j in 0..codebook_size {
+            a[i][j] /= counts[i] as f64 + codebook_size as f64;
+        }
+    }
+
+    Ok(MM { class_name, pi, a })
 }
 
 pub fn classify(
-    nb_filenames: Vec<PathBuf>,
+    mm_filenames: Vec<PathBuf>,
     seq_filenames: Vec<PathBuf>,
     show_ranked: bool,
 ) -> Result<(), Box<dyn Error>> {
-    println!("Loading NBayes models");
-    let models: Vec<NBayes> = nb_filenames
+    println!("Loading MM models");
+    let models: Vec<MM> = mm_filenames
         .iter()
         .map(|n| load(n.to_str().unwrap()).unwrap())
         .collect();
@@ -137,7 +145,7 @@ pub fn classify(
     println!();
 
     let class_names: Vec<&String> = models.iter().map(|m| &m.class_name).collect();
-    c12n.report_results(class_names, "nb-classification.json".to_string());
+    c12n.report_results(class_names, "mm-classification.json".to_string());
 
     Ok(())
 }

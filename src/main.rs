@@ -18,6 +18,7 @@ mod csvutil;
 mod ecoz2_lib;
 mod hmm;
 mod lpc;
+mod mm;
 mod nbayes;
 mod prd;
 mod seq;
@@ -53,6 +54,9 @@ enum Ecoz {
 
     #[structopt(about = "Sequence file operations")]
     Seq(seq::SeqMainOpts),
+
+    #[structopt(about = "MM operations")]
+    Mm(mm::MMMainOpts),
 
     #[structopt(about = "NBayes operations")]
     Nbayes(nbayes::NBayesMainOpts),
@@ -90,6 +94,10 @@ fn main() {
 
         Ecoz::Seq(opts) => {
             seq::main(opts);
+        }
+
+        Ecoz::Mm(opts) => {
+            mm::main(opts);
         }
 
         Ecoz::Nbayes(opts) => {
