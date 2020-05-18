@@ -5,8 +5,8 @@ use std::path::PathBuf;
 
 use structopt::StructOpt;
 
-use ecoz2_lib::seq_show_files;
-use utl;
+//use ecoz2_lib::seq_show_files;
+//use utl;
 
 use self::EcozSeqCommand::Show;
 

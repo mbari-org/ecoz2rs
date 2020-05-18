@@ -3,6 +3,7 @@ extern crate itertools;
 extern crate num_cpus;
 extern crate openmp_sys;
 extern crate reqwest;
+extern crate serde_json;
 extern crate structopt;
 
 #[macro_use]

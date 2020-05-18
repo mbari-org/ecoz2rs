@@ -9,7 +9,6 @@ use std::path::Path;
 use std::path::PathBuf;
 
 use byteorder::*;
-use itertools::Itertools;
 
 use self::walkdir::WalkDir;
 

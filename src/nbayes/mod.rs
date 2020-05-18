@@ -1,4 +1,5 @@
 use std::error::Error;
+use std::path::Path;
 use std::path::PathBuf;
 
 use structopt::StructOpt;
@@ -33,7 +34,7 @@ pub struct NBayesLearnOpts {
     /// Training sequences.
     /// If directories are included, then all `.seq` under them will be used.
     #[structopt(parse(from_os_str))]
-    sequence_filenames: Vec<PathBuf>,
+    sequences: Vec<PathBuf>,
 }
 
 #[derive(StructOpt, Debug)]
@@ -43,26 +44,14 @@ pub struct NBayesClassifyOpts {
     show_ranked: bool,
 
     /// NBayes models.
-    /// If directories are included, then all `.nbayes` under them will be used.
-    #[structopt(
-        short,
-        long = "models",
-        required = true,
-        min_values = 1,
-        parse(from_os_str)
-    )]
-    model_filenames: Vec<PathBuf>,
+    /// If directories are included, then all `.nb` under them will be used.
+    #[structopt(long, required = true, min_values = 1, parse(from_os_str))]
+    models: Vec<PathBuf>,
 
     /// Sequences to classify.
     /// If directories are included, then all `.seq` under them will be used.
-    #[structopt(
-        short,
-        long = "sequences",
-        required = true,
-        min_values = 1,
-        parse(from_os_str)
-    )]
-    sequence_filenames: Vec<PathBuf>,
+    #[structopt(long, required = true, min_values = 1, parse(from_os_str))]
+    sequences: Vec<PathBuf>,
 }
 
 #[derive(StructOpt, Debug)]
@@ -87,15 +76,18 @@ pub fn main(opts: NBayesMainOpts) {
 }
 
 pub fn main_nbayes_learn(opts: NBayesLearnOpts) -> Result<(), Box<dyn Error>> {
-    let NBayesLearnOpts { sequence_filenames } = opts;
+    let NBayesLearnOpts { sequences } = opts;
 
-    let actual_sequence_filenames =
-        utl::get_actual_filenames(sequence_filenames, ".seq", "sequences")?;
+    let seq_filenames = utl::get_actual_filenames(sequences, ".seq", "sequences")?;
 
-    println!("num_actual_sequences: {}", actual_sequence_filenames.len());
+    println!("num_actual_sequences: {}", seq_filenames.len());
 
-    let mut model = nb::learn(actual_sequence_filenames)?;
-    let filename = format!("./{}.nb", model.class_name);
+    let mut model = nb::learn(seq_filenames)?;
+    let codebook_size = model.frequencies.len();
+    let nb_dir_str = format!("data/nbs/M{}", codebook_size);
+    let nb_dir = Path::new(&nb_dir_str);
+    std::fs::create_dir_all(nb_dir)?;
+    let filename = format!("{}/{}.nb", nb_dir.to_str().unwrap(), model.class_name);
     println!("NBayes model trained: {}", filename);
     model.save(&filename.as_str())
 }
@@ -103,29 +95,22 @@ pub fn main_nbayes_learn(opts: NBayesLearnOpts) -> Result<(), Box<dyn Error>> {
 pub fn main_nbayes_classify(opts: NBayesClassifyOpts) -> Result<(), Box<dyn Error>> {
     let NBayesClassifyOpts {
         show_ranked,
-        model_filenames,
-        sequence_filenames,
+        models,
+        sequences,
     } = opts;
 
-    let actual_model_filenames = utl::get_actual_filenames(model_filenames, ".nbayes", "models")?;
+    let nb_filenames = utl::get_actual_filenames(models, ".nb", "models")?;
 
-    let actual_sequence_filenames =
-        utl::get_actual_filenames(sequence_filenames, ".seq", "sequences")?;
+    let seq_filenames = utl::get_actual_filenames(sequences, ".seq", "sequences")?;
 
     println!(
         "number of NBayes models: {}  number of sequences: {}",
-        actual_model_filenames.len(),
-        actual_sequence_filenames.len()
+        nb_filenames.len(),
+        seq_filenames.len()
     );
     println!("show_ranked = {}", show_ranked);
 
-    //    nbayes_classify(
-    //        actual_model_filenames,
-    //        actual_sequence_filenames,
-    //        show_ranked,
-    //    );
-
-    Ok(())
+    nb::classify(nb_filenames, seq_filenames, show_ranked)
 }
 
 pub fn main_nbayes_show(opts: NBayesShowOpts) -> Result<(), Box<dyn Error>> {
