@@ -1,5 +1,6 @@
 2020-05
 
+- enable serde for ndarray
 - use 2018 edition with the help of `cargo fix --edition`
 
 - some minor adjs.

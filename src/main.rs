@@ -5,6 +5,7 @@ extern crate ndarray;
 extern crate num_cpus;
 extern crate openmp_sys;
 extern crate reqwest;
+extern crate serde;
 extern crate serde_json;
 extern crate structopt;
 

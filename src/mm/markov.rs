@@ -1,4 +1,8 @@
+extern crate itertools;
+
 use std::error::Error;
+use std::fs::File;
+use std::io::BufReader;
 use std::io::Write;
 use std::path::PathBuf;
 
@@ -7,9 +11,10 @@ use ndarray::prelude::*;
 use ndarray::Zip;
 
 use crate::sequence;
+use crate::serde;
 
 /// A trained Markov model.
-//#[derive(serde::Serialize, serde::Deserialize, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
 pub struct MM {
     pub class_name: String,
     pub pi: Array1<f64>,
@@ -17,24 +22,20 @@ pub struct MM {
 }
 
 impl MM {
-    pub fn save(&mut self, _filename: &str) -> Result<(), Box<dyn Error>> {
-        //        let f = File::create(filename)?;
-        //        serde_json::to_writer(f, &self)?;
+    pub fn save(&mut self, filename: &str) -> Result<(), Box<dyn Error>> {
+        let f = File::create(filename)?;
+        serde_cbor::to_writer(f, &self)?;
         Ok(())
     }
 
     pub fn show(&mut self) {
-        //        let codebook_size = self.pi.len();
-        //        println!(
-        //            "# class_name='{}', codebook_size={}",
-        //            self.class_name, codebook_size,
-        //        );
-        //
-        //        println!("pi = {}", self.pi.iter().join(", "));
-        //        println!(" A = ");
-        //        for row in &self.a {
-        //            println!("     {}", row.iter().join(", "));
-        //        }
+        let codebook_size = self.pi.len();
+        println!(
+            "class_name='{}', codebook_size={}",
+            self.class_name, codebook_size,
+        );
+        println!("pi = {}", self.pi);
+        println!(" A = {}", self.a);
     }
 
     /// log probability of generating the symbol sequence
@@ -47,12 +48,11 @@ impl MM {
     }
 }
 
-pub fn load(_filename: &str) -> Result<MM, Box<dyn Error>> {
-    //    let f = File::open(filename)?;
-    //    let br = BufReader::new(f);
-    //    let mm = serde_json::from_reader(br)?;
-    //    Ok(mm)
-    Err("TODO".into())
+pub fn load(filename: &str) -> Result<MM, Box<dyn Error>> {
+    let f = File::open(filename)?;
+    let br = BufReader::new(f);
+    let mm = serde_cbor::from_reader(br)?;
+    Ok(mm)
 }
 
 pub fn learn(seq_filenames: &Vec<PathBuf>) -> Result<MM, Box<dyn Error>> {
