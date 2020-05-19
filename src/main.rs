@@ -1,6 +1,7 @@
 extern crate byteorder;
 extern crate colored;
 extern crate itertools;
+extern crate ndarray;
 extern crate num_cpus;
 extern crate openmp_sys;
 extern crate reqwest;
