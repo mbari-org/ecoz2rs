@@ -10,6 +10,7 @@ use colored::*;
 use ndarray::prelude::*;
 use ndarray::Zip;
 
+use crate::c12n;
 use crate::sequence;
 use crate::serde;
 
@@ -120,36 +121,35 @@ pub fn learn(seq_filenames: &Vec<PathBuf>) -> Result<MM, Box<dyn Error>> {
 }
 
 pub fn classify(
-    _mm_filenames: Vec<PathBuf>,
-    _seq_filenames: Vec<PathBuf>,
-    _show_ranked: bool,
+    mm_filenames: Vec<PathBuf>,
+    seq_filenames: Vec<PathBuf>,
+    show_ranked: bool,
 ) -> Result<(), Box<dyn Error>> {
-    Err("TODO".into())
-    //    println!("Loading MM models");
-    //    let models: Vec<MM> = mm_filenames
-    //        .iter()
-    //        .map(|n| load(n.to_str().unwrap()).unwrap())
-    //        .collect();
-    //
-    //    let num_models = models.len();
-    //
-    //    let mut c12n = c12n::C12nResults::new(num_models);
-    //
-    //    println!("Classifying sequences");
-    //    for filename in seq_filenames {
-    //        let seq = sequence::load(filename.to_str().unwrap())?;
-    //
-    //        let class_id_opt = &models.iter().position(|m| m.class_name == seq.class_name);
-    //        if let Some(class_id) = *class_id_opt {
-    //            let probs: Vec<f64> = models.iter().map(|m| m.log_prob_sequence(&seq)).collect();
-    //            c12n.add_case(class_id, probs);
-    //        }
-    //    }
-    //
-    //    println!();
-    //
-    //    let class_names: Vec<&String> = models.iter().map(|m| &m.class_name).collect();
-    //    c12n.report_results(class_names, "mm-classification.json".to_string());
-    //
-    //    Ok(())
+    println!("Loading MM models");
+    let models: Vec<MM> = mm_filenames
+        .iter()
+        .map(|n| load(n.to_str().unwrap()).unwrap())
+        .collect();
+
+    let num_models = models.len();
+
+    let mut c12n = c12n::C12nResults::new(num_models);
+
+    println!("Classifying sequences");
+    for filename in seq_filenames {
+        let seq = sequence::load(filename.to_str().unwrap())?;
+
+        let class_id_opt = &models.iter().position(|m| m.class_name == seq.class_name);
+        if let Some(class_id) = *class_id_opt {
+            let probs: Vec<f64> = models.iter().map(|m| m.log_prob_sequence(&seq)).collect();
+            c12n.add_case(class_id, probs);
+        }
+    }
+
+    println!();
+
+    let class_names: Vec<&String> = models.iter().map(|m| &m.class_name).collect();
+    c12n.report_results(class_names, "mm-classification.json".to_string());
+
+    Ok(())
 }
