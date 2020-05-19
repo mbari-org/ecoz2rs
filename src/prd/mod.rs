@@ -8,7 +8,7 @@ use std::path::PathBuf;
 
 use structopt::StructOpt;
 
-use ecoz2_lib::prd_show_file;
+use crate::ecoz2_lib::prd_show_file;
 
 use self::EcozPrdCommand::Show;
 

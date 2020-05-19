@@ -5,11 +5,11 @@ use std::path::PathBuf;
 
 use structopt::StructOpt;
 
-use ecoz2_lib::vq_classify;
-use ecoz2_lib::vq_learn;
-use ecoz2_lib::vq_quantize;
-use ecoz2_lib::vq_show;
-use utl;
+use crate::ecoz2_lib::vq_classify;
+use crate::ecoz2_lib::vq_learn;
+use crate::ecoz2_lib::vq_quantize;
+use crate::ecoz2_lib::vq_show;
+use crate::utl;
 
 use self::EcozVqCommand::{Classify, Learn, Quantize, Show};
 

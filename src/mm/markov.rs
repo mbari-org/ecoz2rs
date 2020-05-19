@@ -1,16 +1,12 @@
 use std::error::Error;
-use std::fs::File;
-use std::io::BufReader;
 use std::io::Write;
 use std::path::PathBuf;
 
 use colored::*;
-use itertools::Itertools;
 use ndarray::prelude::*;
-use ndarray::{array, Zip};
+use ndarray::Zip;
 
-use c12n;
-use sequence;
+use crate::sequence;
 
 /// A trained Markov model.
 //#[derive(serde::Serialize, serde::Deserialize, Debug)]
@@ -21,7 +17,7 @@ pub struct MM {
 }
 
 impl MM {
-    pub fn save(&mut self, filename: &str) -> Result<(), Box<dyn Error>> {
+    pub fn save(&mut self, _filename: &str) -> Result<(), Box<dyn Error>> {
         //        let f = File::create(filename)?;
         //        serde_json::to_writer(f, &self)?;
         Ok(())
@@ -43,7 +39,6 @@ impl MM {
 
     /// log probability of generating the symbol sequence
     pub fn log_prob_sequence(&self, seq: &sequence::Sequence) -> f64 {
-        let codebook_size = self.pi.len();
         let mut p = self.pi[seq.symbols[0] as usize].log10();
         for t in 0..seq.symbols.len() - 1 {
             p += self.a[[seq.symbols[t] as usize, seq.symbols[t + 1] as usize]].log10();
@@ -52,7 +47,7 @@ impl MM {
     }
 }
 
-pub fn load(filename: &str) -> Result<MM, Box<dyn Error>> {
+pub fn load(_filename: &str) -> Result<MM, Box<dyn Error>> {
     //    let f = File::open(filename)?;
     //    let br = BufReader::new(f);
     //    let mm = serde_json::from_reader(br)?;
@@ -125,9 +120,9 @@ pub fn learn(seq_filenames: &Vec<PathBuf>) -> Result<MM, Box<dyn Error>> {
 }
 
 pub fn classify(
-    mm_filenames: Vec<PathBuf>,
-    seq_filenames: Vec<PathBuf>,
-    show_ranked: bool,
+    _mm_filenames: Vec<PathBuf>,
+    _seq_filenames: Vec<PathBuf>,
+    _show_ranked: bool,
 ) -> Result<(), Box<dyn Error>> {
     Err("TODO".into())
     //    println!("Loading MM models");

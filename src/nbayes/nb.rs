@@ -6,8 +6,8 @@ use std::path::PathBuf;
 
 use colored::*;
 
-use c12n;
-use sequence;
+use crate::c12n;
+use crate::sequence;
 
 /// A trained NBayes model.
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
@@ -118,7 +118,7 @@ pub fn learn(seq_filenames: Vec<PathBuf>) -> Result<NBayes, Box<dyn Error>> {
 pub fn classify(
     nb_filenames: Vec<PathBuf>,
     seq_filenames: Vec<PathBuf>,
-    show_ranked: bool,
+    _show_ranked: bool,
 ) -> Result<(), Box<dyn Error>> {
     println!("Loading NBayes models");
     let models: Vec<NBayes> = nb_filenames

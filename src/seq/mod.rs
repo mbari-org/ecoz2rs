@@ -59,14 +59,14 @@ pub fn main(opts: SeqMainOpts) {
 
 pub fn seq_show(opts: SeqShowOpts) -> Result<(), Box<dyn Error>> {
     let SeqShowOpts {
-        with_prob,
-        gen_q_opt,
-        no_sequence,
-        hmm,
+        with_prob: _,
+        gen_q_opt: _,
+        no_sequence: _,
+        hmm: _,
         seq_filenames,
     } = opts;
 
-    use sequence::load;
+    use crate::sequence::load;
     for seq_filename in seq_filenames {
         let mut seq = load(seq_filename.to_str().unwrap())?;
         seq.show();

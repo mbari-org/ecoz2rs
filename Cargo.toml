@@ -15,7 +15,7 @@ keywords = [
     "machine-learning",
 ]
 
-#edition = "2018"
+edition = "2018"
 
 # https://doc.rust-lang.org/cargo/reference/build-scripts.html
 build = "build.rs"

@@ -6,12 +6,12 @@ use std::path::PathBuf;
 
 use structopt::StructOpt;
 
-use ecoz2_lib::hmm_classify;
-use ecoz2_lib::hmm_learn;
-use ecoz2_lib::hmm_show;
-use ecoz2_lib::set_random_seed;
-use ecoz2_lib::version;
-use utl;
+use crate::ecoz2_lib::hmm_classify;
+use crate::ecoz2_lib::hmm_learn;
+use crate::ecoz2_lib::hmm_show;
+use crate::ecoz2_lib::set_random_seed;
+use crate::ecoz2_lib::version;
+use crate::utl;
 
 use self::EcozHmmCommand::{Classify, Learn, Show};
 

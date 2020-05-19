@@ -9,7 +9,7 @@ use std::path::PathBuf;
 
 use structopt::StructOpt;
 
-use csvutil::{load_instances, Instance};
+use crate::csvutil::{load_instances, Instance};
 
 use self::itertools::Itertools;
 use self::EcozSgnCommand::{Extract, Show};

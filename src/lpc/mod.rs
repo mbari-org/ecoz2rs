@@ -5,8 +5,8 @@ use std::path::PathBuf;
 
 use structopt::StructOpt;
 
-use ecoz2_lib::lpc_signals;
-use utl;
+use crate::ecoz2_lib::lpc_signals;
+use crate::utl;
 
 mod libpar;
 mod lpc_rs;

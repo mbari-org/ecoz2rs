@@ -8,9 +8,9 @@ use std::time::Instant;
 // perf note: instead of using Rust impl of lpca:
 //use super::lpca_rs::lpca;
 // use the C impl:
-use ecoz2_lib::lpca_c::lpca;
-use prd::Predictor;
-use sgn;
+use crate::ecoz2_lib::lpca_c::lpca;
+use crate::prd::Predictor;
+use crate::sgn;
 
 use super::lpc_rs::create_hamming;
 

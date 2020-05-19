@@ -4,7 +4,7 @@ use std::path::PathBuf;
 
 use structopt::StructOpt;
 
-use utl;
+use crate::utl;
 
 use self::EcozMMCommand::{Classify, Learn, Show};
 

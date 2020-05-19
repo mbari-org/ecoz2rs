@@ -3,7 +3,7 @@ use std::error::Error;
 use std::fs::File;
 use std::io::BufReader;
 
-use utl;
+use crate::utl;
 
 #[derive(Debug)]
 pub struct Sequence {

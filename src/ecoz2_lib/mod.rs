@@ -11,7 +11,7 @@ use std::sync::Arc;
 use std::sync::RwLock;
 use std::thread;
 
-use comet_client::CometClient;
+use crate::comet_client::CometClient;
 
 use self::libc::{c_char, c_double, c_int, c_uint};
 
