@@ -1,6 +1,10 @@
 use std::fs::File;
 use std::io::Write;
 
+use colored::*;
+
+// note: just a quick direct translation of my C code from the early 90s ;)
+
 /// Classification results
 pub struct C12nResults {
     num_models: usize,
@@ -31,7 +35,7 @@ impl C12nResults {
         probs.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap());
 
         let correct = class_id == probs[num_models - 1].0;
-        print!("{}", if correct { "*" } else { "_" });
+        print!("{}", if correct { "*".green() } else { "_".red() });
         std::io::stdout().flush().unwrap();
 
         //TODO if show_ranked && !correct {}
@@ -39,7 +43,7 @@ impl C12nResults {
         self.confusion[class_id][probs[num_models - 1].0] += 1_i32;
 
         // did best candidate correctly classify the instance?
-        if probs[num_models - 1].0 == class_id {
+        if correct {
             self.result[num_models][1] += 1_i32;
             self.result[class_id][1] += 1_i32;
         } else {

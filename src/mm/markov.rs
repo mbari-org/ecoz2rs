@@ -1,8 +1,11 @@
-use itertools::Itertools;
 use std::error::Error;
 use std::fs::File;
 use std::io::BufReader;
+use std::io::Write;
 use std::path::PathBuf;
+
+use colored::*;
+use itertools::Itertools;
 
 use c12n;
 use sequence;
@@ -78,7 +81,10 @@ pub fn learn(seq_filenames: &Vec<PathBuf>) -> Result<MM, Box<dyn Error>> {
     for seq_filename in seq_filenames {
         let filename = seq_filename.to_str().unwrap();
         let seq = sequence::load(filename)?;
-        println!(" {}: '{:?}'", filename, seq.class_name);
+
+        //println!(" {}: '{}'", filename, seq.class_name);
+        print!("{}", ".".magenta());
+        std::io::stdout().flush().unwrap();
 
         // conformity checks:
         if codebook_size != seq.codebook_size as usize {
@@ -112,6 +118,8 @@ pub fn learn(seq_filenames: &Vec<PathBuf>) -> Result<MM, Box<dyn Error>> {
             a[i][j] /= counts[i] as f64 + codebook_size as f64;
         }
     }
+
+    println!();
 
     Ok(MM { class_name, pi, a })
 }

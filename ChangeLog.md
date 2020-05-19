@@ -1,5 +1,8 @@
 2020-05
 
+- some minor adjs.
+  TODO use ndarray
+
 - add basic markov model learning and classification.
 
        $ ecoz2 mm learn data/sequences/TRAIN/M2048/B
