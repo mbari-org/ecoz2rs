@@ -1,3 +1,5 @@
+#[macro_use]
+extern crate assert_approx_eq;
 extern crate byteorder;
 extern crate colored;
 extern crate itertools;

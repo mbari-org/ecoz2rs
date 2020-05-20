@@ -73,6 +73,13 @@ pub fn learn(seq_filenames: Vec<PathBuf>) -> Result<NBayes, Box<dyn Error>> {
     let class_name = seq.class_name;
     let codebook_size = seq.codebook_size as usize;
 
+    println!(
+        "NB learn: num sequences={} class='{}' codebook_size={}",
+        seq_filenames.len(),
+        class_name,
+        codebook_size
+    );
+
     let mut total_symbols: usize = 0;
     let mut frequencies = vec![0_usize; seq.codebook_size as usize];
 
@@ -105,7 +112,6 @@ pub fn learn(seq_filenames: Vec<PathBuf>) -> Result<NBayes, Box<dyn Error>> {
             frequencies[s as usize] += 1;
         }
     }
-
     println!();
 
     Ok(NBayes {

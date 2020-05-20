@@ -80,8 +80,6 @@ pub fn main_nbayes_learn(opts: NBayesLearnOpts) -> Result<(), Box<dyn Error>> {
 
     let seq_filenames = utl::get_actual_filenames(sequences, ".seq", "sequences")?;
 
-    println!("nbayes learn: num sequences={}", seq_filenames.len());
-
     let mut model = nb::learn(seq_filenames)?;
 
     let codebook_size = model.frequencies.len();
@@ -89,8 +87,10 @@ pub fn main_nbayes_learn(opts: NBayesLearnOpts) -> Result<(), Box<dyn Error>> {
     let nb_dir = Path::new(&nb_dir_str);
     std::fs::create_dir_all(nb_dir)?;
     let filename = format!("{}/{}.nb", nb_dir.to_str().unwrap(), model.class_name);
-    println!("NBayes model trained: {}", filename);
-    model.save(&filename.as_str())
+    println!("NB model trained");
+    model.save(&filename.as_str())?;
+    println!("NB model saved: {}\n\n", filename);
+    Ok(())
 }
 
 pub fn main_nbayes_classify(opts: NBayesClassifyOpts) -> Result<(), Box<dyn Error>> {

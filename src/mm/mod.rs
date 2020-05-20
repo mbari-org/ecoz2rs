@@ -80,8 +80,6 @@ pub fn main_mm_learn(opts: MMLearnOpts) -> Result<(), Box<dyn Error>> {
 
     let seq_filenames = utl::get_actual_filenames(sequences, ".seq", "sequences")?;
 
-    println!("mm learn: num sequences={}", seq_filenames.len());
-
     let mut model = markov::learn(&seq_filenames)?;
 
     let codebook_size = model.pi.len();
@@ -89,8 +87,10 @@ pub fn main_mm_learn(opts: MMLearnOpts) -> Result<(), Box<dyn Error>> {
     let mm_dir = Path::new(&mm_dir_str);
     std::fs::create_dir_all(mm_dir)?;
     let filename = format!("{}/{}.mm", mm_dir.to_str().unwrap(), model.class_name);
-    println!("MM model trained: {}", filename);
-    model.save(&filename.as_str())
+    println!("MM model trained");
+    model.save(&filename.as_str())?;
+    println!("MM model saved: {}\n\n", filename);
+    Ok(())
 }
 
 pub fn main_mm_classify(opts: MMClassifyOpts) -> Result<(), Box<dyn Error>> {

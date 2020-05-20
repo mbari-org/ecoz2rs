@@ -8,11 +8,12 @@ use std::path::PathBuf;
 
 use colored::*;
 use ndarray::prelude::*;
-use ndarray::Zip;
 
 use crate::c12n;
 use crate::sequence;
 use crate::serde;
+
+const EQ_EPSILON: f64 = 1e-10;
 
 /// A trained Markov model.
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
@@ -63,10 +64,18 @@ pub fn learn(seq_filenames: &Vec<PathBuf>) -> Result<MM, Box<dyn Error>> {
     let class_name = seq.class_name;
     let codebook_size = seq.codebook_size as usize;
 
-    // init:
-    let mut counts = Array1::from_elem(codebook_size, 0);
+    println!(
+        "MM learn: num sequences={} class='{}' codebook_size={}",
+        seq_filenames.len(),
+        class_name,
+        codebook_size
+    );
+
+    // init counters:
     let mut pi = Array1::from_elem(codebook_size, 1_f64);
+    let mut n_js = Array1::from_elem(codebook_size, 0);
     let mut a = Array2::from_elem((codebook_size, codebook_size), 1_f64);
+    // note: pi and are initially just counters.
 
     // capture counts:  (for simplicity, let this reload that 1st sequence again)
     for seq_filename in seq_filenames {
@@ -93,29 +102,28 @@ pub fn learn(seq_filenames: &Vec<PathBuf>) -> Result<MM, Box<dyn Error>> {
             .into());
         }
 
-        // count:
+        // update counts:
         pi[seq.symbols[0] as usize] += 1_f64;
-        for t in 0..seq.symbols.len() - 1 {
-            counts[seq.symbols[t] as usize] += 1;
-            a[[seq.symbols[t] as usize, seq.symbols[t + 1] as usize]] += 1_f64;
+        for jk in seq.symbols.windows(2) {
+            let j = jk[0] as usize;
+            let k = jk[1] as usize;
+            n_js[j] += 1; // one more transition from symbol j
+            a[[j, k]] += 1_f64; // one more j->k transition
         }
     }
+    println!();
 
     let num_seqs = seq_filenames.len() as f64;
 
     // normalize pi:
-    for p in pi.iter_mut() {
-        *p /= num_seqs + codebook_size as f64;
-    }
+    pi /= num_seqs + codebook_size as f64;
+    assert_approx_eq!(pi.sum(), 1.0, EQ_EPSILON);
 
-    // normalize a:
-    for mut row in a.genrows_mut() {
-        Zip::from(&mut row).and(&counts).apply(|a_elm, &count| {
-            *a_elm /= count as f64 + codebook_size as f64;
-        });
+    // normalize rows in a:
+    for (j, mut a_row) in a.axis_iter_mut(Axis(0)).enumerate() {
+        a_row /= n_js[j] as f64 + codebook_size as f64;
+        assert_approx_eq!(a_row.sum(), 1.0, EQ_EPSILON);
     }
-
-    println!();
 
     Ok(MM { class_name, pi, a })
 }
