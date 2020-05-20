@@ -2,6 +2,7 @@ use std::error::Error;
 use std::path::Path;
 use std::path::PathBuf;
 
+use std::time::Instant;
 use structopt::StructOpt;
 
 use crate::utl;
@@ -80,7 +81,12 @@ pub fn main_mm_learn(opts: MMLearnOpts) -> Result<(), Box<dyn Error>> {
 
     let seq_filenames = utl::get_actual_filenames(sequences, ".seq", "sequences")?;
 
+    let before = Instant::now();
     let mut model = markov::learn(&seq_filenames)?;
+    let elapsed = before.elapsed();
+    if elapsed.as_secs() > 0 {
+        println!("MM learn took: {:.2?}", elapsed);
+    }
 
     let codebook_size = model.pi.len();
     let mm_dir_str = format!("data/mms/M{}", codebook_size);
@@ -88,7 +94,13 @@ pub fn main_mm_learn(opts: MMLearnOpts) -> Result<(), Box<dyn Error>> {
     std::fs::create_dir_all(mm_dir)?;
     let filename = format!("{}/{}.mm", mm_dir.to_str().unwrap(), model.class_name);
     println!("MM model trained");
+
+    let before = Instant::now();
     model.save(&filename.as_str())?;
+    let elapsed = before.elapsed();
+    if elapsed.as_secs() > 2 {
+        println!("MM model save took: {:.2?}", elapsed);
+    }
     println!("MM model saved: {}\n\n", filename);
     Ok(())
 }

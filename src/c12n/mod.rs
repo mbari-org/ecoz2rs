@@ -1,7 +1,7 @@
-use std::fs::File;
-use std::io::Write;
-
 use colored::*;
+use std::fs::File;
+use std::io::BufWriter;
+use std::io::Write;
 
 // note: just a quick direct translation of my C code from the early 90s ;)
 
@@ -168,7 +168,8 @@ impl C12nResults {
 
 fn report_summary(summary: Summary, summary_name: String) {
     let f = File::create(summary_name).unwrap();
-    serde_json::to_writer(f, &summary).unwrap();
+    let bw = BufWriter::new(f);
+    serde_json::to_writer(bw, &summary).unwrap();
 }
 
 #[derive(serde::Serialize)]

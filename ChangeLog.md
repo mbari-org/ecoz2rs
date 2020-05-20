@@ -1,10 +1,10 @@
 2020-05
 
+- some adjs
 - enable serde for ndarray
 - use 2018 edition with the help of `cargo fix --edition`
 
 - some minor adjs.
-  TODO use ndarray
 
 - add basic markov model learning and classification.
 
