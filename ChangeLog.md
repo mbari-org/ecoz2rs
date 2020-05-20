@@ -1,6 +1,9 @@
 2020-05
 
-- some adjs
+- some adjs and cleanup.
+  Quickly tried pickle as the output format for MM models, but it takes
+  significantly more space wrt CBOR; also there's python loaders for CBOR.
+
 - enable serde for ndarray
 - use 2018 edition with the help of `cargo fix --edition`
 
