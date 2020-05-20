@@ -7,25 +7,29 @@ use std::io::Write;
 
 /// Classification results
 pub struct C12nResults {
-    num_models: usize,
+    model_class_names: Vec<String>,
     result: Vec<Vec<i32>>,
     confusion: Vec<Vec<i32>>,
 }
 
 impl C12nResults {
-    pub fn new(num_models: usize) -> C12nResults {
+    pub fn new(model_class_names: Vec<String>) -> C12nResults {
+        let num_models = model_class_names.len();
         let result = vec![vec![0i32; num_models + 1]; num_models + 1];
         let confusion = vec![vec![0i32; num_models + 1]; num_models + 1];
 
         C12nResults {
-            num_models,
+            model_class_names,
             result,
             confusion,
         }
     }
 
-    pub fn add_case(&mut self, class_id: usize, probs: Vec<f64>) {
-        let num_models = self.num_models as usize;
+    pub fn add_case<F>(&mut self, class_id: usize, probs: Vec<f64>, show_ranked: bool, f: F)
+    where
+        F: FnOnce() -> String,
+    {
+        let num_models = self.model_class_names.len();
 
         self.result[num_models][0] += 1_i32;
         self.result[class_id][0] += 1_i32;
@@ -38,7 +42,30 @@ impl C12nResults {
         print!("{}", if correct { "*".green() } else { "_".red() });
         std::io::stdout().flush().unwrap();
 
-        //TODO if show_ranked && !correct {}
+        if show_ranked && !correct {
+            let header_line = f();
+            println!("{}", header_line);
+
+            let mut index = 0;
+            for r in (0..num_models).rev() {
+                let model_id = probs[r].0;
+                let model_class_name = &self.model_class_names[r];
+
+                let mark = if class_id == model_id { "*" } else { "" };
+
+                println!(
+                    "  [{:>2}] {:1} model: <{:>2}>  {:e}  : '{}'  r={}",
+                    index, mark, model_id, probs[model_id].1, model_class_name, r
+                );
+
+                // only show until corresponding model:
+                if class_id == model_id {
+                    break;
+                }
+                index += 1;
+            }
+            println!();
+        }
 
         self.confusion[class_id][probs[num_models - 1].0] += 1_i32;
 
@@ -59,7 +86,7 @@ impl C12nResults {
     }
 
     pub fn report_results(&mut self, class_names: Vec<&String>, summary_name: String) {
-        let num_models = self.num_models as usize;
+        let num_models = self.model_class_names.len();
 
         //    println!("result = {:?}\n", self.result);
         //    println!("confusion = {:?}\n", self.confusion);

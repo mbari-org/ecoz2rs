@@ -125,7 +125,7 @@ pub fn learn(seq_filenames: Vec<PathBuf>) -> Result<NBayes, Box<dyn Error>> {
 pub fn classify(
     nb_filenames: Vec<PathBuf>,
     seq_filenames: Vec<PathBuf>,
-    _show_ranked: bool,
+    show_ranked: bool,
 ) -> Result<(), Box<dyn Error>> {
     println!("Loading NBayes models");
     let models: Vec<NBayes> = nb_filenames
@@ -133,18 +133,21 @@ pub fn classify(
         .map(|n| load(n.to_str().unwrap()).unwrap())
         .collect();
 
-    let num_models = models.len();
+    let model_class_names = models.iter().map(|m| m.class_name.clone()).collect();
 
-    let mut c12n = c12n::C12nResults::new(num_models);
+    let mut c12n = c12n::C12nResults::new(model_class_names);
 
     println!("Classifying sequences");
     for filename in seq_filenames {
-        let seq = sequence::load(filename.to_str().unwrap())?;
+        let filename = filename.to_str().unwrap();
+        let seq = sequence::load(filename)?;
 
         let class_id_opt = &models.iter().position(|m| m.class_name == seq.class_name);
         if let Some(class_id) = *class_id_opt {
             let probs: Vec<f64> = models.iter().map(|m| m.log_prob_sequence(&seq)).collect();
-            c12n.add_case(class_id, probs);
+            c12n.add_case(class_id, probs, show_ranked, || {
+                format!("\n{}: '{}'\n", filename, seq.class_name)
+            });
         }
     }
 
