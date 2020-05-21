@@ -1,5 +1,12 @@
 2020-05
 
+- new `util split` command to generate list of train/test filenames:
+
+        ecoz2 util split --files <files>... 
+                         --file-ext <ext>
+                         --train-fraction <fraction>
+                         --output <file.csv>
+
 - `sgn extract` now accepts `--select range ...` to indicate desired
   selection ranges for the extraction:
 

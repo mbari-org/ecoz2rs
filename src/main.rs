@@ -29,6 +29,7 @@ mod prd;
 mod seq;
 mod sequence;
 mod sgn;
+mod util;
 mod utl;
 mod vq;
 
@@ -65,6 +66,9 @@ enum Ecoz {
 
     #[structopt(about = "NBayes operations")]
     Nbayes(nbayes::NBayesMainOpts),
+
+    #[structopt(about = "Utilities")]
+    Util(util::UtilMainOpts),
 }
 
 fn main() {
@@ -107,6 +111,10 @@ fn main() {
 
         Ecoz::Nbayes(opts) => {
             nbayes::main(opts);
+        }
+
+        Ecoz::Util(opts) => {
+            util::main(opts);
         }
     }
 }
