@@ -73,6 +73,10 @@ pub struct VqQuantizeOpts {
     /// LPC vector sequences to be quantized.
     #[structopt(parse(from_os_str))]
     predictor_filenames: Vec<PathBuf>,
+
+    /// Show file names are they are processed.
+    #[structopt(short, long)]
+    show_filenames: bool,
 }
 
 #[derive(StructOpt, Debug)]
@@ -173,6 +177,7 @@ pub fn main_vq_quantize(opts: VqQuantizeOpts) -> Result<(), Box<dyn Error>> {
     let VqQuantizeOpts {
         codebook,
         predictor_filenames,
+        show_filenames,
     } = opts;
 
     let actual_prd_filenames =
@@ -180,7 +185,7 @@ pub fn main_vq_quantize(opts: VqQuantizeOpts) -> Result<(), Box<dyn Error>> {
 
     println!("number of predictor files: {}", actual_prd_filenames.len());
 
-    vq_quantize(codebook, actual_prd_filenames);
+    vq_quantize(codebook, actual_prd_filenames, show_filenames);
 
     Ok(())
 }

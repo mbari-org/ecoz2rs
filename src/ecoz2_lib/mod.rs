@@ -120,6 +120,7 @@ extern "C" {
         nom_raas: *const c_char,
         predictor_filenames: *const *const c_char,
         num_predictors: c_int,
+        show_filenames: c_int,
     );
 
     fn ecoz2_vq_classify(
@@ -310,7 +311,7 @@ pub fn vq_learn(
     child.join().unwrap();
 }
 
-pub fn vq_quantize(nom_raas: PathBuf, predictor_filenames: Vec<PathBuf>) {
+pub fn vq_quantize(nom_raas: PathBuf, predictor_filenames: Vec<PathBuf>, show_filenames: bool) {
     println!("nom_raas = {}", nom_raas.display());
 
     let codebook_c_string = CString::new(nom_raas.to_str().unwrap()).unwrap();
@@ -324,6 +325,7 @@ pub fn vq_quantize(nom_raas: PathBuf, predictor_filenames: Vec<PathBuf>) {
             raas_name,
             vpc_predictors.as_ptr(),
             vpc_predictors.len() as c_int,
+            (if show_filenames { 1 } else { 0 }) as c_int,
         )
     }
 }
