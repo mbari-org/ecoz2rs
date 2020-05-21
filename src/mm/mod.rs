@@ -78,7 +78,7 @@ pub fn main(opts: MMMainOpts) {
 pub fn main_mm_learn(opts: MMLearnOpts) -> Result<(), Box<dyn Error>> {
     let MMLearnOpts { sequences } = opts;
 
-    let seq_filenames = utl::get_actual_filenames(sequences, ".seq", "sequences")?;
+    let seq_filenames = utl::resolve_filenames(sequences, ".seq", "sequences")?;
 
     let mut model = markov::learn(&seq_filenames)?;
 
@@ -101,9 +101,9 @@ pub fn main_mm_classify(opts: MMClassifyOpts) -> Result<(), Box<dyn Error>> {
         sequences,
     } = opts;
 
-    let mm_filenames = utl::get_actual_filenames(models, ".mm", "models")?;
+    let mm_filenames = utl::resolve_filenames(models, ".mm", "models")?;
 
-    let seq_filenames = utl::get_actual_filenames(sequences, ".seq", "sequences")?;
+    let seq_filenames = utl::resolve_filenames(sequences, ".seq", "sequences")?;
 
     println!(
         "number of MM models: {}  number of sequences: {}",

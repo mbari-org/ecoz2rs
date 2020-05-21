@@ -1,5 +1,7 @@
 2020-05
 
+- `vq learn` now accepts a .csv to indicate the .prd files to be
+  used for training
 - new `util split` command to generate list of train/test filenames:
 
         ecoz2 util split --files <files>... 

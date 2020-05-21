@@ -78,7 +78,7 @@ pub fn main(opts: NBayesMainOpts) {
 pub fn main_nbayes_learn(opts: NBayesLearnOpts) -> Result<(), Box<dyn Error>> {
     let NBayesLearnOpts { sequences } = opts;
 
-    let seq_filenames = utl::get_actual_filenames(sequences, ".seq", "sequences")?;
+    let seq_filenames = utl::resolve_filenames(sequences, ".seq", "sequences")?;
 
     let mut model = nb::learn(seq_filenames)?;
 
@@ -100,9 +100,9 @@ pub fn main_nbayes_classify(opts: NBayesClassifyOpts) -> Result<(), Box<dyn Erro
         sequences,
     } = opts;
 
-    let nb_filenames = utl::get_actual_filenames(models, ".nb", "models")?;
+    let nb_filenames = utl::resolve_filenames(models, ".nb", "models")?;
 
-    let seq_filenames = utl::get_actual_filenames(sequences, ".seq", "sequences")?;
+    let seq_filenames = utl::resolve_filenames(sequences, ".seq", "sequences")?;
 
     println!(
         "number of NBayes models: {}  number of sequences: {}",

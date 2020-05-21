@@ -74,8 +74,7 @@ fn split(opts: UtilSplitOpts) -> Result<(), Box<dyn Error>> {
     }
 
     let filenames =
-        utl::get_actual_filenames(files, &file_ext, format!("{} files", file_ext).as_str())
-            .unwrap();
+        utl::resolve_filenames(files, &file_ext, format!("{} files", file_ext).as_str()).unwrap();
 
     let num_train = (train_fraction * filenames.len() as f32) as usize;
     let num_test = filenames.len() - num_train;

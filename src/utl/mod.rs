@@ -52,10 +52,10 @@ pub fn read_u16(br: &mut BufReader<File>) -> Result<u16, Box<dyn Error>> {
     }
 }
 
-/// Returns the given list of files but expanding
-/// any directories.
-///
-pub fn get_actual_filenames(
+/// Returns the list of files resulting from "resolving" the given list.
+/// This will contain the same regular files in the list (but having the
+/// given extension) plus files under any given directories.
+pub fn resolve_filenames(
     filenames: Vec<PathBuf>,
     file_ext: &str,
     subjects_msg_if_empty: &str,

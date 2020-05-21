@@ -74,19 +74,19 @@ pub fn main_lpc(opts: LpcOpts) -> Result<(), Box<dyn Error>> {
         zrsp,
     } = opts;
 
-    let actual_sgn_filenames = utl::get_actual_filenames(sgn_filenames, ".wav", "signals")?;
+    let sgn_filenames = utl::resolve_filenames(sgn_filenames, ".wav", "signals")?;
 
     if zrs {
         assert!(!zrsp);
         main_lpc_rs(
-            actual_sgn_filenames,
+            sgn_filenames,
             prediction_order,
             window_length_ms,
             offset_length_ms,
         );
     } else if zrsp {
         main_lpc_par_rs(
-            actual_sgn_filenames,
+            sgn_filenames,
             prediction_order,
             window_length_ms,
             offset_length_ms,
@@ -98,7 +98,7 @@ pub fn main_lpc(opts: LpcOpts) -> Result<(), Box<dyn Error>> {
             offset_length_ms,
             minpc,
             split,
-            actual_sgn_filenames,
+            sgn_filenames,
             mintrpt,
         );
     }

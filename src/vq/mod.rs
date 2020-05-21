@@ -38,24 +38,25 @@ enum EcozVqCommand {
 #[derive(StructOpt, Debug)]
 pub struct VqLearnOpts {
     /// Start training from this base codebook.
-    #[structopt(short = "B", long)]
+    #[structopt(short = "B", long, name = "codebook")]
     base_codebook: Option<String>,
 
     /// Prediction order (required if -B not given).
-    #[structopt(short = "P", long)]
+    #[structopt(short = "P", long, name = "P")]
     prediction_order: Option<usize>,
 
     /// Epsilon parameter for convergence.
-    #[structopt(short = "e", long = "epsilon", default_value = "0.05")]
+    #[structopt(short = "e", long = "epsilon", default_value = "0.05", name = "ε")]
     epsilon: f64,
 
     /// Class name ID to associate to codebook (ignored if -B given).
-    #[structopt(short = "w", long = "class-name")]
+    #[structopt(short = "w", long = "class-name", name = "class")]
     class_name: Option<String>,
 
-    /// Predictor files for training. If directories are included, then
-    /// all `.prd` under them will be used.
-    #[structopt(parse(from_os_str))]
+    /// Predictor files for training.
+    /// If a single `.csv` file is given, then the "TRAIN" files indicated there will be used.
+    /// Otherwise, if directories are included, then all `.prd` under them will be used.
+    #[structopt(long = "predictors", parse(from_os_str), name = "files")]
     predictor_filenames: Vec<PathBuf>,
 
     /// Experiment key to log to comet.
@@ -158,15 +159,14 @@ pub fn main_vq_learn(opts: VqLearnOpts) -> Result<(), Box<dyn Error>> {
         None => "_".to_string(),
     };
 
-    let actual_prd_filenames =
-        utl::get_actual_filenames(predictor_filenames, ".prd", "predictors")?;
+    let prd_filenames = utl::resolve_filenames(predictor_filenames, ".prd", "predictors")?;
 
     vq_learn(
         base_codebook,
         prediction_order,
         epsilon,
         codebook_class_name,
-        actual_prd_filenames,
+        prd_filenames,
         exp_key,
     );
 
@@ -180,12 +180,11 @@ pub fn main_vq_quantize(opts: VqQuantizeOpts) -> Result<(), Box<dyn Error>> {
         show_filenames,
     } = opts;
 
-    let actual_prd_filenames =
-        utl::get_actual_filenames(predictor_filenames, ".prd", "predictors")?;
+    let prd_filenames = utl::resolve_filenames(predictor_filenames, ".prd", "predictors")?;
 
-    println!("number of predictor files: {}", actual_prd_filenames.len());
+    println!("number of predictor files: {}", prd_filenames.len());
 
-    vq_quantize(codebook, actual_prd_filenames, show_filenames);
+    vq_quantize(codebook, prd_filenames, show_filenames);
 
     Ok(())
 }
@@ -197,18 +196,18 @@ pub fn main_vq_classify(opts: VqClassifyOpts) -> Result<(), Box<dyn Error>> {
         prd_filenames,
     } = opts;
 
-    let actual_cb_filenames = utl::get_actual_filenames(cb_filenames, ".cb", "codebooks")?;
+    let cb_filenames = utl::resolve_filenames(cb_filenames, ".cb", "codebooks")?;
 
-    let actual_prd_filenames = utl::get_actual_filenames(prd_filenames, ".prd", "predictors")?;
+    let prd_filenames = utl::resolve_filenames(prd_filenames, ".prd", "predictors")?;
 
     println!(
         "number of codebooks: {}  number of predictors: {}",
-        actual_cb_filenames.len(),
-        actual_prd_filenames.len()
+        cb_filenames.len(),
+        prd_filenames.len()
     );
     println!("show_ranked = {}", show_ranked);
 
-    vq_classify(actual_cb_filenames, actual_prd_filenames, show_ranked);
+    vq_classify(cb_filenames, prd_filenames, show_ranked);
 
     Ok(())
 }
