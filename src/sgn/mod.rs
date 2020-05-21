@@ -7,9 +7,10 @@ use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
 
+use regex::Regex;
 use structopt::StructOpt;
 
-use crate::csvutil::{load_instances, Instance};
+use crate::csvutil::{load_instance_info, InstanceInfo};
 
 use self::itertools::Itertools;
 use self::EcozSgnCommand::{Extract, Show};
@@ -47,6 +48,12 @@ pub struct SgnExtractOpts {
     #[structopt(short, long, parse(from_os_str))]
     segments: PathBuf,
 
+    /// Desired selection ranges. Each string of the form `start-end`
+    /// indicating initial (inclusive) and final (exclusive) selection numbers
+    /// as given in the segments file.
+    #[structopt(long)]
+    select: Vec<String>,
+
     /// Base directory for output wave files
     #[structopt(short, long)]
     out_dir: String,
@@ -83,7 +90,13 @@ struct SgnExtractor {
 
     sgn_filename: String,
 
+    ranges: Vec<std::ops::Range<i32>>,
+
     out_dir: String,
+}
+
+lazy_static! {
+    static ref RANGE_RE: Regex = Regex::new(r"(?x)(?P<start>\d+)-(?P<end>-?\d+)").unwrap();
 }
 
 impl SgnExtractor {
@@ -91,13 +104,14 @@ impl SgnExtractor {
         let SgnExtractOpts {
             wav,
             segments,
+            select,
             out_dir,
         } = opts;
 
         let wav_filename: &str = wav.to_str().unwrap();
 
+        println!("Loading {}", wav_filename);
         let sgn = load(&wav_filename);
-        println!("Signal loaded: {}", wav_filename);
         sgn.show();
 
         let wav_simple_name = Path::new(wav_filename)
@@ -113,17 +127,42 @@ impl SgnExtractor {
 
         let sgn_filename = segments.to_str().unwrap().into();
 
+        let ranges: Vec<std::ops::Range<i32>> = select
+            .iter()
+            .map(|s| {
+                if let Some(caps) = RANGE_RE.captures(s) {
+                    let start: i32 = caps["start"].parse().unwrap();
+                    let end: i32 = caps["end"].parse().unwrap();
+                    Some(start..end)
+                } else {
+                    None
+                }
+            })
+            .flatten()
+            .collect();
+
+        println!("parsed ranges = {:?}", ranges);
+
         SgnExtractor {
             wav_simple_name,
             sgn,
             sample_period,
             sgn_filename,
+            ranges,
             out_dir,
         }
     }
 
+    fn in_ranges(&mut self, selection: i32) -> bool {
+        if self.ranges.is_empty() {
+            true
+        } else {
+            self.ranges.iter().any(|r| r.contains(&selection))
+        }
+    }
+
     pub fn sgn_extract(&mut self) -> Result<(), Box<dyn Error>> {
-        let instances = load_instances(self.sgn_filename.as_str())?;
+        let instances = load_instance_info(self.sgn_filename.as_str())?;
 
         let lookup = &instances
             .iter()
@@ -132,26 +171,36 @@ impl SgnExtractor {
 
         let mut tot_instances = 0;
         for (type_, instances) in lookup {
-            println!("{0: >8}  {1: >3} instances", type_, instances.len());
-            tot_instances += instances.len();
+            let mut type_instances = 0;
             for i in instances {
-                self.extract_instance(i)?;
+                if self.in_ranges(i.selection) {
+                    self.extract_instance(i)?;
+                    type_instances += 1;
+                    tot_instances += 1;
+                }
+            }
+            if type_instances > 0 {
+                println!("{0: >8}  {1: >3} instances", type_, type_instances);
             }
         }
-        println!("{0: >8}  {1: >3} total instances", "", tot_instances);
+        println!(
+            "{0: >8}  {1: >3} total extracted instances",
+            "", tot_instances
+        );
         //    println!("Bmh = {:?}", lookup["Bmh"][0]);
 
         Ok(())
     }
 
-    fn extract_instance(&mut self, i: &Instance) -> Result<(), Box<dyn Error>> {
+    fn extract_instance(&mut self, i: &InstanceInfo) -> Result<(), Box<dyn Error>> {
         let out_dir: PathBuf = [&self.out_dir, &i.type_].iter().collect();
         fs::create_dir_all(&out_dir)?;
 
         let out_name = format!(
-            "{}/from_{}__{}_{}.wav",
+            "{}/from_{}__s{:04}__{}_{}.wav",
             &out_dir.to_str().unwrap(),
             self.wav_simple_name,
+            i.selection,
             i.begin_time,
             i.end_time
         );
@@ -179,7 +228,8 @@ impl SgnExtractor {
             spec,
         };
 
-        segment.save(out_name.as_str());
+        let _dur_secs = segment.save(out_name.as_str());
+        //println!("saved {}  Duration: {:.3} secs", filename, dur_secs);
 
         Ok(())
     }
@@ -198,9 +248,8 @@ pub struct Sgn {
 }
 
 impl Sgn {
-    pub fn save(&self, filename: &str) {
-        println!("save: filename = {}", filename);
-
+    /// returns duration in seconds
+    pub fn save(&self, filename: &str) -> f32 {
         let spec = self.spec;
         let mut writer = hound::WavWriter::create(filename, spec).unwrap();
 
@@ -208,8 +257,8 @@ impl Sgn {
             writer.write_sample(*sample as i16).unwrap();
         }
         let dur_secs = writer.duration() as f32 / spec.sample_rate as f32;
-        println!("Duration: {:.3} secs", dur_secs);
         writer.finalize().unwrap();
+        dur_secs
     }
 
     pub fn show(&self) {

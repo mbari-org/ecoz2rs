@@ -3,11 +3,9 @@ extern crate structopt;
 
 use std::error::Error;
 use std::fs::File;
+use std::io::BufReader;
 use std::path::PathBuf;
 use std::process;
-
-//use serde::Deserialize;
-//use structopt::StructOpt;
 
 #[derive(structopt::StructOpt, Debug)]
 pub struct CsvShowOpts {
@@ -18,7 +16,7 @@ pub struct CsvShowOpts {
 
 #[derive(Debug, serde::Deserialize)]
 #[serde(rename_all = "PascalCase")]
-pub struct Instance {
+pub struct InstanceInfo {
     pub selection: i32,
 
     #[serde(rename = "Begin Time (s)")]
@@ -36,7 +34,7 @@ pub fn main_csv_show(opts: CsvShowOpts) {
 
     let filename: &str = file.to_str().unwrap();
 
-    match load_instances(&filename) {
+    match load_instance_info(&filename) {
         Ok(instances) => {
             for instance in instances {
                 println!("{:?}", instance);
@@ -49,16 +47,14 @@ pub fn main_csv_show(opts: CsvShowOpts) {
     }
 }
 
-pub fn load_instances(filename: &str) -> Result<Vec<Instance>, Box<dyn Error>> {
+pub fn load_instance_info(filename: &str) -> Result<Vec<InstanceInfo>, Box<dyn Error>> {
     let file = File::open(filename)?;
-    let mut rdr = csv::ReaderBuilder::new().delimiter(b'\t').from_reader(file);
+    let br = BufReader::new(file);
+    let mut rdr = csv::ReaderBuilder::new().delimiter(b'\t').from_reader(br);
 
-    let instances: Vec<Instance> = rdr
+    let instances: Vec<InstanceInfo> = rdr
         .deserialize()
-        .map(|result| {
-            let instance: Instance = result.unwrap();
-            instance
-        })
+        .map(|result| result.unwrap())
         .collect::<Vec<_>>();
 
     Ok(instances)

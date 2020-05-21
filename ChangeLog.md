@@ -1,5 +1,21 @@
 2020-05
 
+- `sgn extract` now accepts `--select range ...` to indicate desired
+  selection ranges for the extraction:
+
+         ecoz2 sgn extract --segments MARS_20161221_000046_SongSession_16kHz_HPF5HzNorm_labels.csv \
+                    --wav ${SOURCE_WAV} --select 0-10 1100-1105 \
+                    --out-dir data/signals
+        ...
+              Bm    1 instances
+              Bu    1 instances
+              I3    3 instances
+               C    3 instances
+              I4    2 instances
+               A    4 instances
+                   14 total extracted instances
+
+
 - some adjs and cleanup.
   Quickly tried pickle as the output format for MM models, but it takes
   significantly more space wrt CBOR; also there's python loaders for CBOR.

@@ -36,6 +36,8 @@ libc = "0.2.62"
 ndarray = { version = "0.13.1", features = ["serde"] }
 num_cpus = "1.0"
 paw = "1.0"
+regex = "1"
+
 reqwest = { version = "0.10", features = ["blocking", "json"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_cbor = "0.10"
