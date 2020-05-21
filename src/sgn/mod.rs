@@ -130,13 +130,11 @@ impl SgnExtractor {
         let ranges: Vec<std::ops::Range<i32>> = select
             .iter()
             .map(|s| {
-                if let Some(caps) = RANGE_RE.captures(s) {
+                RANGE_RE.captures(s).map(|caps| {
                     let start: i32 = caps["start"].parse().unwrap();
                     let end: i32 = caps["end"].parse().unwrap();
-                    Some(start..end)
-                } else {
-                    None
-                }
+                    start..end
+                })
             })
             .flatten()
             .collect();
