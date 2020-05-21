@@ -156,14 +156,15 @@ extern "C" {
 
     fn ecoz2_hmm_show(hmm_filename: *const c_char, format: *const c_char);
 
-    fn ecoz2_seq_show_files(
-        with_prob: c_int,
-        gen_q_opt: c_int,
-        show_sequence: c_int,
-        hmm_filename: *const c_char,
-        sequence_filenames: *const *const c_char,
-        num_sequences: c_int,
-    );
+// TODO to be removed
+//    fn ecoz2_seq_show_files(
+//        with_prob: c_int,
+//        gen_q_opt: c_int,
+//        show_sequence: c_int,
+//        hmm_filename: *const c_char,
+//        sequence_filenames: *const *const c_char,
+//        num_sequences: c_int,
+//    );
 }
 
 pub fn version() -> Result<&'static str, Utf8Error> {
@@ -452,6 +453,8 @@ pub fn hmm_show(hmm_filename: PathBuf, format: String) {
     }
 }
 
+// TODO to be removed once rust impl is completed
+/*
 pub fn seq_show_files(
     with_prob: bool,
     gen_q_opt: bool,
@@ -482,6 +485,7 @@ pub fn seq_show_files(
         );
     }
 }
+*/
 
 fn to_vec_of_ptr_const_c_char(paths: Vec<PathBuf>) -> Vec<*const c_char> {
     let vec_of_cstring: Vec<CString> = paths
