@@ -40,6 +40,14 @@ pub struct HmmLearnOpts {
     #[structopt(short = "N", long, default_value = "5")]
     num_states: usize,
 
+    /// Number of symbols (codebook size)
+    #[structopt(short = "M", long, required = true)]
+    num_symbols: usize,
+
+    /// Class name for the trained model
+    #[structopt(long, name = "class")]
+    class_name: Option<String>,
+
     /// Type of model to generate:
     ///    0: random values for pi, A, and B
     ///    1: uniform distributions
@@ -71,8 +79,9 @@ pub struct HmmLearnOpts {
     ser: bool,
 
     /// Training sequences.
-    /// If directories are included, then all `.seq` under them will be used.
-    #[structopt(parse(from_os_str))]
+    /// If a single `.csv` file is given, then the "TRAIN" files indicated there will be used.
+    /// Otherwise, if directories are included, then all `.seq` under them will be used.
+    #[structopt(long = "sequences", parse(from_os_str), name = "files")]
     sequence_filenames: Vec<PathBuf>,
 }
 
@@ -92,6 +101,14 @@ pub struct HmmClassifyOpts {
         parse(from_os_str)
     )]
     model_filenames: Vec<PathBuf>,
+
+    /// TRAIN or TEST
+    #[structopt(long, required = true)]
+    tt: String,
+
+    /// Number of symbols (codebook size)
+    #[structopt(short = "M", long, required = true)]
+    num_symbols: usize,
 
     /// Sequences to classify.
     /// If directories are included, then all `.seq` under them will be used.
@@ -133,6 +150,8 @@ pub fn main(opts: HmmMainOpts) {
 pub fn main_hmm_learn(opts: HmmLearnOpts) -> Result<(), Box<dyn Error>> {
     let HmmLearnOpts {
         num_states,
+        num_symbols,
+        class_name,
         type_,
         max_iterations,
         epsilon,
@@ -142,7 +161,26 @@ pub fn main_hmm_learn(opts: HmmLearnOpts) -> Result<(), Box<dyn Error>> {
         sequence_filenames,
     } = opts;
 
-    let seq_filenames = utl::resolve_filenames(sequence_filenames, ".seq", "sequences")?;
+    let is_tt_list =
+        sequence_filenames.len() == 1 && sequence_filenames[0].to_str().unwrap().ends_with(".csv");
+
+    let seq_filenames = if is_tt_list {
+        let subdir = format!("sequences/M{}", num_symbols);
+        utl::get_files_from_csv(
+            &sequence_filenames[0],
+            "TRAIN",
+            class_name,
+            subdir.as_str(),
+            ".seq",
+        )?
+    } else {
+        //println!("resolving {:?}", sequence_filenames);
+        utl::resolve_filenames(sequence_filenames, ".seq", "sequences")?
+    };
+
+    //    for seq_filename in seq_filenames {
+    //        println!("  {:?}", seq_filename);
+    //    }
 
     println!("ECOZ2 C version: {}", version()?);
 
@@ -173,12 +211,29 @@ pub fn main_hmm_classify(opts: HmmClassifyOpts) -> Result<(), Box<dyn Error>> {
     let HmmClassifyOpts {
         show_ranked,
         model_filenames,
+        tt,
+        num_symbols,
         sequence_filenames,
     } = opts;
 
     let hmm_filenames = utl::resolve_filenames(model_filenames, ".hmm", "models")?;
 
-    let seq_filenames = utl::resolve_filenames(sequence_filenames, ".seq", "sequences")?;
+    let is_tt_list =
+        sequence_filenames.len() == 1 && sequence_filenames[0].to_str().unwrap().ends_with(".csv");
+
+    let seq_filenames = if is_tt_list {
+        let subdir = format!("sequences/M{}", num_symbols);
+        utl::get_files_from_csv(
+            &sequence_filenames[0],
+            tt.as_str(),
+            None,
+            subdir.as_str(),
+            ".seq",
+        )?
+    } else {
+        //println!("resolving {:?}", sequence_filenames);
+        utl::resolve_filenames(sequence_filenames, ".seq", "sequences")?
+    };
 
     println!("ECOZ2 C version: {}", version()?);
 

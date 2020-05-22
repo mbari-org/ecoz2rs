@@ -56,16 +56,18 @@ pub fn read_u16(br: &mut BufReader<File>) -> Result<u16, Box<dyn Error>> {
 /// A train/Test row
 #[derive(Debug, serde::Deserialize)]
 struct TTRow {
-    pub what: String,
-    pub filename: String,
+    pub tt: String,
+    pub class: String,
+    pub selection: String,
 }
 
-/// Returns the `what` category filenames from the given csv.
+/// Returns the `tt` (TRAIN or TEST) category filenames from the given csv.
 pub fn get_files_from_csv(
     filename: &PathBuf,
-    what: &str,
+    tt: &str,
+    class_name_opt: Option<String>,
+    subdir: &str,
     file_ext: &str,
-    subjects_msg_if_empty: &str,
 ) -> Result<Vec<PathBuf>, Box<dyn Error>> {
     let file = File::open(filename)?;
     let br = BufReader::new(file);
@@ -78,13 +80,24 @@ pub fn get_files_from_csv(
 
     let mut list: Vec<PathBuf> = Vec::new();
 
+    let class_string = class_name_opt.unwrap_or("".to_string());
+    let class: &str = class_string.as_str();
     for row in rows {
-        if row.what == what && row.filename.ends_with(file_ext) {
-            list.push(PathBuf::from(row.filename));
+        if tt != row.tt {
+            continue;
         }
+        if !class.is_empty() && class != row.class {
+            continue;
+        }
+
+        let filename = format!(
+            "data/{}/{}/{}{}",
+            subdir, row.class, row.selection, file_ext
+        );
+        list.push(PathBuf::from(filename));
     }
     if list.is_empty() {
-        return Err(format!("No {} given in given file", subjects_msg_if_empty).into());
+        return Err(format!("No {} given in given file", subdir).into());
     }
     Ok(list)
 }

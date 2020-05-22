@@ -49,8 +49,8 @@ pub struct VqLearnOpts {
     #[structopt(short = "e", long = "epsilon", default_value = "0.05", name = "ε")]
     epsilon: f64,
 
-    /// Class name ID to associate to codebook (ignored if -B given).
-    #[structopt(short = "w", long = "class-name", name = "class")]
+    /// Class name to associate to generated codebook (ignored if -B given).
+    #[structopt(long, name = "class")]
     class_name: Option<String>,
 
     /// Predictor files for training.
@@ -155,7 +155,7 @@ pub fn main_vq_learn(opts: VqLearnOpts) -> Result<(), Box<dyn Error>> {
     }
 
     let codebook_class_name = match class_name {
-        Some(name) => name,
+        Some(name) => name.clone(),
         None => "_".to_string(),
     };
 
@@ -163,11 +163,22 @@ pub fn main_vq_learn(opts: VqLearnOpts) -> Result<(), Box<dyn Error>> {
         && predictor_filenames[0].to_str().unwrap().ends_with(".csv");
 
     let prd_filenames = if is_tt_list {
-        utl::get_files_from_csv(&predictor_filenames[0], "TRAIN", ".prd", "predictors")?
+        let class = codebook_class_name.clone();
+        utl::get_files_from_csv(
+            &predictor_filenames[0],
+            "TRAIN",
+            Some(class),
+            "predictors",
+            ".prd",
+        )?
     } else {
         //println!("resolving {:?}", predictor_filenames);
         utl::resolve_filenames(predictor_filenames, ".prd", "predictors")?
     };
+
+    //    for prd_filename in prd_filenames {
+    //        println!("  {:?}", prd_filename);
+    //    }
 
     vq_learn(
         base_codebook,

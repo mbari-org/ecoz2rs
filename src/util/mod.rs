@@ -5,6 +5,7 @@ use std::path::PathBuf;
 
 use rand::seq::SliceRandom;
 use rand::thread_rng;
+use regex::Regex;
 use structopt::StructOpt;
 
 use crate::utl;
@@ -26,7 +27,7 @@ enum EcozUtilCommand {
 
 #[derive(StructOpt, Debug)]
 pub struct UtilSplitOpts {
-    /// Source files
+    /// Source files only to extract selection number and class
     #[structopt(
         long,
         name = "files",
@@ -36,7 +37,8 @@ pub struct UtilSplitOpts {
     )]
     files: Vec<PathBuf>,
 
-    /// File name extension in case of any directories in source files
+    /// File name extension used for the extraction and also
+    /// in case of any directories in source files
     #[structopt(long, name = "ext", required = true)]
     file_ext: String,
 
@@ -69,22 +71,39 @@ fn split(opts: UtilSplitOpts) -> Result<(), Box<dyn Error>> {
     let filenames =
         utl::resolve_filenames(files, &file_ext, format!("{} files", file_ext).as_str()).unwrap();
 
-    let num_train = (train_fraction * filenames.len() as f32) as usize;
-    let num_test = filenames.len() - num_train;
+    // extract class name and selection number:
+    let split_re: Regex = Regex::new(r".*/([^/]+)/(\d+)\.[^/]+$").unwrap();
+    // Eg.: from "data/predictors/B/00123.prd" -> 1="B", 2="00123"
+    let class_and_selections: Vec<(String, String)> = filenames
+        .iter()
+        .map(|f| {
+            let s = f.to_str().unwrap().to_string();
+            split_re.captures(&s).map(|caps| {
+                let class: String = caps.get(1).unwrap().as_str().to_string();
+                let selection: String = caps.get(2).unwrap().as_str().to_string();
+                (class, selection)
+            })
+        })
+        .flatten()
+        .collect();
+
+    let num_train = (train_fraction * class_and_selections.len() as f32) as usize;
+    let num_test = class_and_selections.len() - num_train;
     //eprintln!("num_train={}  num_test={}", num_train, num_test);
 
-    let mut markers = {
+    // get TRAIN and TEST markers in the given proportion:
+    let mut tt_markers = {
         let mut trains = vec!["TRAIN".to_string(); num_train];
         let mut tests = vec!["TEST".to_string(); num_test];
         trains.append(&mut tests);
         trains
     };
-    markers.shuffle(&mut thread_rng());
-    //println!("shuffled markers = {:?}", markers);
+    // shuffle the markers:
+    tt_markers.shuffle(&mut thread_rng());
 
-    //println!("{},{}", "what", "filename");
-    for (marker, filename) in markers.iter().zip(filenames) {
-        println!("{},{}", marker, filename.to_str().unwrap());
+    // generate output:
+    for (tt, (class, selection)) in tt_markers.iter().zip(class_and_selections) {
+        println!("{},{},{}", tt, class, selection);
     }
 
     Ok(())

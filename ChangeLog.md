@@ -1,18 +1,30 @@
 2020-05
 
+- `util split` now generates `tt,class,selection` rows in csv output
+
+        ecoz2 util split --train-fraction 0.8
+                         --file-ext .prd
+                         --files data/predictors/B 
+
+    output something like:
+
+        tt,class,selection
+        TRAIN,A,00003
+        TRAIN,A,00011
+        TEST,A,00012
+        ...
+
+    This file, along with other relevant parameters depending on the command,
+    is then used as basis to name derived files.
+    TODO already functional per new exerc02 exercise in ecoz2-whale but
+    need further testing.
+
 - `sgn extract` simplify generated filename to only indicate selection number
 
 - `vq learn` now accepts a .csv to indicate the .prd files to be
   used for training
 
         ecoz2 vq learn --prediction-order 36 --epsilon 0.0005 --predictors tt-list.csv
-
-- new `util split` command to generate list of train/test filenames.
-  output goes to stdout.
-
-        ecoz2 util split --train-fraction 0.8
-                         --file-ext .prd
-                         --files data/predictors/B 
 
 - `sgn extract` now accepts `--select range ...` to indicate desired
   selection ranges for the extraction:
