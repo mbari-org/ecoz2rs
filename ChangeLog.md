@@ -26,11 +26,11 @@
 
         ecoz2 vq learn --prediction-order 36 --epsilon 0.0005 --predictors tt-list.csv
 
-- `sgn extract` now accepts `--select range ...` to indicate desired
+- `sgn extract` now accepts `--selection-ranges range ...` to indicate desired
   selection ranges for the extraction:
 
          ecoz2 sgn extract --segments MARS_20161221_000046_SongSession_16kHz_HPF5HzNorm_labels.csv \
-                    --wav ${SOURCE_WAV} --select 0-10 1100-1105 \
+                    --wav ${SOURCE_WAV} --selection-ranges 0-10 1100-1105 \
                     --out-dir data/signals
         ...
               Bm    1 instances

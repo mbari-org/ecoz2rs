@@ -51,7 +51,7 @@ pub struct SgnExtractOpts {
     /// indicating initial (inclusive) and final (exclusive) selection numbers
     /// as given in the segments file.
     #[structopt(long)]
-    select: Vec<String>,
+    selection_ranges: Vec<String>,
 
     /// Base directory for output wave files
     #[structopt(short, long)]
@@ -102,7 +102,7 @@ impl SgnExtractor {
         let SgnExtractOpts {
             wav,
             segments,
-            select,
+            selection_ranges: select,
             out_dir,
         } = opts;
 
