@@ -67,12 +67,10 @@ pub fn load(filename: &str) -> Result<NBayes, Box<dyn Error>> {
     Ok(nbayes)
 }
 
-pub fn learn(seq_filenames: Vec<PathBuf>) -> Result<NBayes, Box<dyn Error>> {
-    // get relevant dimensions from first given sequence;
+pub fn learn(codebook_size: usize, seq_filenames: Vec<PathBuf>) -> Result<NBayes, Box<dyn Error>> {
+    // get class name from first sequence
     let seq = sequence::load(seq_filenames[0].to_str().unwrap())?;
-
     let class_name = seq.class_name;
-    let codebook_size = seq.codebook_size as usize;
 
     println!(
         "NB learn: num sequences={} class='{}' codebook_size={}",

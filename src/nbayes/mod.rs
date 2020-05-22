@@ -31,17 +31,34 @@ enum EcozNBayesCommand {
 
 #[derive(StructOpt, Debug)]
 pub struct NBayesLearnOpts {
+    /// Number of symbols (codebook size)
+    #[structopt(short = "M", long, required = true)]
+    codebook_size: usize,
+
+    /// Class name for the trained model
+    #[structopt(long, name = "class")]
+    class_name: Option<String>,
+
     /// Training sequences.
-    /// If directories are included, then all `.seq` under them will be used.
-    #[structopt(parse(from_os_str))]
+    /// If a single `.csv` file is given, then the "TRAIN" files indicated there will be used.
+    /// Otherwise, if directories are included, then all `.seq` under them will be used.
+    #[structopt(long, parse(from_os_str), name = "files")]
     sequences: Vec<PathBuf>,
 }
 
 #[derive(StructOpt, Debug)]
 pub struct NBayesClassifyOpts {
+    /// Number of symbols (codebook size)
+    #[structopt(short = "M", long, required = true)]
+    codebook_size: usize,
+
     /// Show ranked models for incorrect classifications
     #[structopt(short = "r", long)]
     show_ranked: bool,
+
+    /// TRAIN or TEST
+    #[structopt(long, required = true)]
+    tt: String,
 
     /// NBayes models.
     /// If directories are included, then all `.nb` under them will be used.
@@ -76,13 +93,24 @@ pub fn main(opts: NBayesMainOpts) {
 }
 
 pub fn main_nbayes_learn(opts: NBayesLearnOpts) -> Result<(), Box<dyn Error>> {
-    let NBayesLearnOpts { sequences } = opts;
+    let NBayesLearnOpts {
+        codebook_size,
+        class_name,
+        sequences,
+    } = opts;
 
-    let seq_filenames = utl::resolve_filenames(sequences, ".seq", "sequences")?;
+    let is_tt_list = sequences.len() == 1 && sequences[0].to_str().unwrap().ends_with(".csv");
 
-    let mut model = nb::learn(seq_filenames)?;
+    let seq_filenames = if is_tt_list {
+        let subdir = format!("sequences/M{}", codebook_size);
+        utl::get_files_from_csv(&sequences[0], "TRAIN", class_name, subdir.as_str(), ".seq")?
+    } else {
+        //println!("resolving {:?}", sequence_filenames);
+        utl::resolve_filenames(sequences, ".seq", "sequences")?
+    };
 
-    let codebook_size = model.frequencies.len();
+    let mut model = nb::learn(codebook_size, seq_filenames)?;
+
     let nb_dir_str = format!("data/nbs/M{}", codebook_size);
     let nb_dir = Path::new(&nb_dir_str);
     std::fs::create_dir_all(nb_dir)?;
@@ -95,14 +123,24 @@ pub fn main_nbayes_learn(opts: NBayesLearnOpts) -> Result<(), Box<dyn Error>> {
 
 pub fn main_nbayes_classify(opts: NBayesClassifyOpts) -> Result<(), Box<dyn Error>> {
     let NBayesClassifyOpts {
+        codebook_size,
         show_ranked,
+        tt,
         models,
         sequences,
     } = opts;
 
     let nb_filenames = utl::resolve_filenames(models, ".nb", "models")?;
 
-    let seq_filenames = utl::resolve_filenames(sequences, ".seq", "sequences")?;
+    let is_tt_list = sequences.len() == 1 && sequences[0].to_str().unwrap().ends_with(".csv");
+
+    let seq_filenames = if is_tt_list {
+        let subdir = format!("sequences/M{}", codebook_size);
+        utl::get_files_from_csv(&sequences[0], tt.as_str(), None, subdir.as_str(), ".seq")?
+    } else {
+        //println!("resolving {:?}", sequences);
+        utl::resolve_filenames(sequences, ".seq", "sequences")?
+    };
 
     println!(
         "number of NBayes models: {}  number of sequences: {}",
