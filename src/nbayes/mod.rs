@@ -99,15 +99,13 @@ pub fn main_nbayes_learn(opts: NBayesLearnOpts) -> Result<(), Box<dyn Error>> {
         sequences,
     } = opts;
 
-    let is_tt_list = sequences.len() == 1 && sequences[0].to_str().unwrap().ends_with(".csv");
-
-    let seq_filenames = if is_tt_list {
-        let subdir = format!("sequences/M{}", codebook_size);
-        utl::get_files_from_csv(&sequences[0], "TRAIN", class_name, subdir.as_str(), ".seq")?
-    } else {
-        //println!("resolving {:?}", sequence_filenames);
-        utl::resolve_filenames(sequences, ".seq", "sequences")?
-    };
+    let seq_filenames = utl::resolve_files(
+        sequences,
+        "TRAIN",
+        class_name,
+        format!("sequences/M{}", codebook_size),
+        ".seq",
+    )?;
 
     let mut model = nb::learn(codebook_size, seq_filenames)?;
 
@@ -132,15 +130,13 @@ pub fn main_nbayes_classify(opts: NBayesClassifyOpts) -> Result<(), Box<dyn Erro
 
     let nb_filenames = utl::resolve_filenames(models, ".nb", "models")?;
 
-    let is_tt_list = sequences.len() == 1 && sequences[0].to_str().unwrap().ends_with(".csv");
-
-    let seq_filenames = if is_tt_list {
-        let subdir = format!("sequences/M{}", codebook_size);
-        utl::get_files_from_csv(&sequences[0], tt.as_str(), None, subdir.as_str(), ".seq")?
-    } else {
-        //println!("resolving {:?}", sequences);
-        utl::resolve_filenames(sequences, ".seq", "sequences")?
-    };
+    let seq_filenames = utl::resolve_files(
+        sequences,
+        tt.as_str(),
+        None,
+        format!("sequences/M{}", codebook_size),
+        ".seq",
+    )?;
 
     println!(
         "number of NBayes models: {}  number of sequences: {}",

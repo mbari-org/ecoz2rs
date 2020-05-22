@@ -56,8 +56,8 @@ pub struct VqLearnOpts {
     /// Predictor files for training.
     /// If a single `.csv` file is given, then the "TRAIN" files indicated there will be used.
     /// Otherwise, if directories are included, then all `.prd` under them will be used.
-    #[structopt(long = "predictors", parse(from_os_str), name = "files")]
-    predictor_filenames: Vec<PathBuf>,
+    #[structopt(long, parse(from_os_str), name = "files")]
+    predictors: Vec<PathBuf>,
 
     /// Experiment key to log to comet.
     /// Only has effect if the COMET_API_KEY env var is defined.
@@ -73,7 +73,7 @@ pub struct VqQuantizeOpts {
 
     /// LPC vector sequences to be quantized.
     #[structopt(parse(from_os_str))]
-    predictor_filenames: Vec<PathBuf>,
+    predictors: Vec<PathBuf>,
 
     /// Show file names are they are processed.
     #[structopt(short, long)]
@@ -146,7 +146,7 @@ pub fn main_vq_learn(opts: VqLearnOpts) -> Result<(), Box<dyn Error>> {
         prediction_order,
         epsilon,
         class_name,
-        predictor_filenames,
+        predictors,
         exp_key,
     } = opts;
 
@@ -154,31 +154,18 @@ pub fn main_vq_learn(opts: VqLearnOpts) -> Result<(), Box<dyn Error>> {
         return Err("Only one of base codebook or prediction order expected").unwrap();
     }
 
-    let codebook_class_name = match class_name {
+    let codebook_class_name = match &class_name {
         Some(name) => name.clone(),
         None => "_".to_string(),
     };
 
-    let is_tt_list = predictor_filenames.len() == 1
-        && predictor_filenames[0].to_str().unwrap().ends_with(".csv");
-
-    let prd_filenames = if is_tt_list {
-        let class = codebook_class_name.clone();
-        utl::get_files_from_csv(
-            &predictor_filenames[0],
-            "TRAIN",
-            Some(class),
-            "predictors",
-            ".prd",
-        )?
-    } else {
-        //println!("resolving {:?}", predictor_filenames);
-        utl::resolve_filenames(predictor_filenames, ".prd", "predictors")?
-    };
-
-    //    for prd_filename in prd_filenames {
-    //        println!("  {:?}", prd_filename);
-    //    }
+    let prd_filenames = utl::resolve_files(
+        predictors,
+        "TRAIN",
+        class_name,
+        "predictors".to_string(),
+        ".prd",
+    )?;
 
     vq_learn(
         base_codebook,
@@ -195,11 +182,11 @@ pub fn main_vq_learn(opts: VqLearnOpts) -> Result<(), Box<dyn Error>> {
 pub fn main_vq_quantize(opts: VqQuantizeOpts) -> Result<(), Box<dyn Error>> {
     let VqQuantizeOpts {
         codebook,
-        predictor_filenames,
+        predictors,
         show_filenames,
     } = opts;
 
-    let prd_filenames = utl::resolve_filenames(predictor_filenames, ".prd", "predictors")?;
+    let prd_filenames = utl::resolve_filenames(predictors, ".prd", "predictors")?;
 
     println!("number of predictor files: {}", prd_filenames.len());
 

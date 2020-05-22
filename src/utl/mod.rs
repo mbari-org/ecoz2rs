@@ -53,6 +53,34 @@ pub fn read_u16(br: &mut BufReader<File>) -> Result<u16, Box<dyn Error>> {
     }
 }
 
+/// General "resolution" for a file listing including case with a single given
+/// `.csv` indicating such list plus some filtering (tt, class_name).
+///
+/// * `filenames` - given list of files
+/// * `tt` - TRAIN or TEST if under `.csv` case
+/// * `class_name_opt` - desired class name if under `.csv` case
+/// * `subdir` - to compose names in returned list
+/// * `file_ext` - to compose names in returned list or for filtering
+///
+pub fn resolve_files(
+    filenames: Vec<PathBuf>,
+    tt: &str,
+    class_name_opt: Option<String>,
+    subdir: String,
+    file_ext: &str,
+) -> Result<Vec<PathBuf>, Box<dyn Error>> {
+    let subdir = subdir.as_str();
+    let is_tt_list = filenames.len() == 1 && filenames[0].to_str().unwrap().ends_with(".csv");
+
+    let filenames = if is_tt_list {
+        get_files_from_csv(&filenames[0], tt, class_name_opt, subdir, file_ext)?
+    } else {
+        resolve_filenames(filenames, file_ext, subdir)?
+    };
+
+    Ok(filenames)
+}
+
 /// A train/Test row
 #[derive(Debug, serde::Deserialize)]
 struct TTRow {

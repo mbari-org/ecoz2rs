@@ -149,19 +149,13 @@ pub fn main_hmm_learn(opts: HmmLearnOpts) -> Result<(), Box<dyn Error>> {
         sequences,
     } = opts;
 
-    let is_tt_list = sequences.len() == 1 && sequences[0].to_str().unwrap().ends_with(".csv");
-
-    let seq_filenames = if is_tt_list {
-        let subdir = format!("sequences/M{}", codebook_size);
-        utl::get_files_from_csv(&sequences[0], "TRAIN", class_name, subdir.as_str(), ".seq")?
-    } else {
-        //println!("resolving {:?}", sequences);
-        utl::resolve_filenames(sequences, ".seq", "sequences")?
-    };
-
-    //    for seq_filename in seq_filenames {
-    //        println!("  {:?}", seq_filename);
-    //    }
+    let seq_filenames = utl::resolve_files(
+        sequences,
+        "TRAIN",
+        class_name,
+        format!("sequences/M{}", codebook_size),
+        ".seq",
+    )?;
 
     println!("ECOZ2 C version: {}", version()?);
 
@@ -199,15 +193,13 @@ pub fn main_hmm_classify(opts: HmmClassifyOpts) -> Result<(), Box<dyn Error>> {
 
     let hmm_filenames = utl::resolve_filenames(models, ".hmm", "models")?;
 
-    let is_tt_list = sequences.len() == 1 && sequences[0].to_str().unwrap().ends_with(".csv");
-
-    let seq_filenames = if is_tt_list {
-        let subdir = format!("sequences/M{}", codebook_size);
-        utl::get_files_from_csv(&sequences[0], tt.as_str(), None, subdir.as_str(), ".seq")?
-    } else {
-        //println!("resolving {:?}", sequences);
-        utl::resolve_filenames(sequences, ".seq", "sequences")?
-    };
+    let seq_filenames = utl::resolve_files(
+        sequences,
+        tt.as_str(),
+        None,
+        format!("sequences/M{}", codebook_size),
+        ".seq",
+    )?;
 
     println!("ECOZ2 C version: {}", version()?);
 
