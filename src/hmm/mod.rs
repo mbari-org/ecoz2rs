@@ -42,7 +42,7 @@ pub struct HmmLearnOpts {
 
     /// Number of symbols (codebook size)
     #[structopt(short = "M", long, required = true)]
-    num_symbols: usize,
+    codebook_size: usize,
 
     /// Class name for the trained model
     #[structopt(long, name = "class")]
@@ -81,8 +81,8 @@ pub struct HmmLearnOpts {
     /// Training sequences.
     /// If a single `.csv` file is given, then the "TRAIN" files indicated there will be used.
     /// Otherwise, if directories are included, then all `.seq` under them will be used.
-    #[structopt(long = "sequences", parse(from_os_str), name = "files")]
-    sequence_filenames: Vec<PathBuf>,
+    #[structopt(long, parse(from_os_str), name = "files")]
+    sequences: Vec<PathBuf>,
 }
 
 #[derive(StructOpt, Debug)]
@@ -93,14 +93,8 @@ pub struct HmmClassifyOpts {
 
     /// HMM models.
     /// If directories are included, then all `.hmm` under them will be used.
-    #[structopt(
-        short,
-        long = "models",
-        required = true,
-        min_values = 1,
-        parse(from_os_str)
-    )]
-    model_filenames: Vec<PathBuf>,
+    #[structopt(short, long, required = true, min_values = 1, parse(from_os_str))]
+    models: Vec<PathBuf>,
 
     /// TRAIN or TEST
     #[structopt(long, required = true)]
@@ -108,18 +102,12 @@ pub struct HmmClassifyOpts {
 
     /// Number of symbols (codebook size)
     #[structopt(short = "M", long, required = true)]
-    num_symbols: usize,
+    codebook_size: usize,
 
     /// Sequences to classify.
     /// If directories are included, then all `.seq` under them will be used.
-    #[structopt(
-        short,
-        long = "sequences",
-        required = true,
-        min_values = 1,
-        parse(from_os_str)
-    )]
-    sequence_filenames: Vec<PathBuf>,
+    #[structopt(short, long, required = true, min_values = 1, parse(from_os_str))]
+    sequences: Vec<PathBuf>,
 }
 
 #[derive(StructOpt, Debug)]
@@ -150,7 +138,7 @@ pub fn main(opts: HmmMainOpts) {
 pub fn main_hmm_learn(opts: HmmLearnOpts) -> Result<(), Box<dyn Error>> {
     let HmmLearnOpts {
         num_states,
-        num_symbols,
+        codebook_size,
         class_name,
         type_,
         max_iterations,
@@ -158,24 +146,17 @@ pub fn main_hmm_learn(opts: HmmLearnOpts) -> Result<(), Box<dyn Error>> {
         val_auto,
         seed,
         ser,
-        sequence_filenames,
+        sequences,
     } = opts;
 
-    let is_tt_list =
-        sequence_filenames.len() == 1 && sequence_filenames[0].to_str().unwrap().ends_with(".csv");
+    let is_tt_list = sequences.len() == 1 && sequences[0].to_str().unwrap().ends_with(".csv");
 
     let seq_filenames = if is_tt_list {
-        let subdir = format!("sequences/M{}", num_symbols);
-        utl::get_files_from_csv(
-            &sequence_filenames[0],
-            "TRAIN",
-            class_name,
-            subdir.as_str(),
-            ".seq",
-        )?
+        let subdir = format!("sequences/M{}", codebook_size);
+        utl::get_files_from_csv(&sequences[0], "TRAIN", class_name, subdir.as_str(), ".seq")?
     } else {
-        //println!("resolving {:?}", sequence_filenames);
-        utl::resolve_filenames(sequence_filenames, ".seq", "sequences")?
+        //println!("resolving {:?}", sequences);
+        utl::resolve_filenames(sequences, ".seq", "sequences")?
     };
 
     //    for seq_filename in seq_filenames {
@@ -210,29 +191,22 @@ pub fn main_hmm_learn(opts: HmmLearnOpts) -> Result<(), Box<dyn Error>> {
 pub fn main_hmm_classify(opts: HmmClassifyOpts) -> Result<(), Box<dyn Error>> {
     let HmmClassifyOpts {
         show_ranked,
-        model_filenames,
+        models,
         tt,
-        num_symbols,
-        sequence_filenames,
+        codebook_size,
+        sequences,
     } = opts;
 
-    let hmm_filenames = utl::resolve_filenames(model_filenames, ".hmm", "models")?;
+    let hmm_filenames = utl::resolve_filenames(models, ".hmm", "models")?;
 
-    let is_tt_list =
-        sequence_filenames.len() == 1 && sequence_filenames[0].to_str().unwrap().ends_with(".csv");
+    let is_tt_list = sequences.len() == 1 && sequences[0].to_str().unwrap().ends_with(".csv");
 
     let seq_filenames = if is_tt_list {
-        let subdir = format!("sequences/M{}", num_symbols);
-        utl::get_files_from_csv(
-            &sequence_filenames[0],
-            tt.as_str(),
-            None,
-            subdir.as_str(),
-            ".seq",
-        )?
+        let subdir = format!("sequences/M{}", codebook_size);
+        utl::get_files_from_csv(&sequences[0], tt.as_str(), None, subdir.as_str(), ".seq")?
     } else {
-        //println!("resolving {:?}", sequence_filenames);
-        utl::resolve_filenames(sequence_filenames, ".seq", "sequences")?
+        //println!("resolving {:?}", sequences);
+        utl::resolve_filenames(sequences, ".seq", "sequences")?
     };
 
     println!("ECOZ2 C version: {}", version()?);
