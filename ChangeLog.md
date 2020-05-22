@@ -7,12 +7,12 @@
 
         ecoz2 vq learn --prediction-order 36 --epsilon 0.0005 --predictors tt-list.csv
 
-- new `util split` command to generate list of train/test filenames:
+- new `util split` command to generate list of train/test filenames.
+  output goes to stdout.
 
         ecoz2 util split --train-fraction 0.8
                          --file-ext .prd
                          --files data/predictors/B 
-                         --output tt-list.csv
 
 - `sgn extract` now accepts `--select range ...` to indicate desired
   selection ranges for the extraction:

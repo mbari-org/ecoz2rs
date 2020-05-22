@@ -1,8 +1,6 @@
 extern crate structopt;
 
 use std::error::Error;
-use std::fs::File;
-use std::io::{BufWriter, Write};
 use std::path::PathBuf;
 
 use rand::seq::SliceRandom;
@@ -45,10 +43,6 @@ pub struct UtilSplitOpts {
     /// Fraction for training
     #[structopt(long, name = "fraction", required = true)]
     train_fraction: f32,
-
-    /// Output file to report train/test filename list (csv format)
-    #[structopt(long, name = "file.csv", parse(from_os_str))]
-    output: PathBuf,
 }
 
 pub fn main(opts: UtilMainOpts) {
@@ -66,7 +60,6 @@ fn split(opts: UtilSplitOpts) -> Result<(), Box<dyn Error>> {
         files,
         file_ext,
         train_fraction,
-        output,
     } = opts;
 
     if train_fraction < 0f32 || train_fraction > 1f32 {
@@ -78,7 +71,7 @@ fn split(opts: UtilSplitOpts) -> Result<(), Box<dyn Error>> {
 
     let num_train = (train_fraction * filenames.len() as f32) as usize;
     let num_test = filenames.len() - num_train;
-    println!("num_train={}  num_test={}", num_train, num_test);
+    //eprintln!("num_train={}  num_test={}", num_train, num_test);
 
     let mut markers = {
         let mut trains = vec!["TRAIN".to_string(); num_train];
@@ -89,12 +82,9 @@ fn split(opts: UtilSplitOpts) -> Result<(), Box<dyn Error>> {
     markers.shuffle(&mut thread_rng());
     //println!("shuffled markers = {:?}", markers);
 
-    let f = File::create(output)?;
-    let mut bw = BufWriter::new(f);
-    writeln!(bw, "{},{}", "what", "filename")?;
-
+    //println!("{},{}", "what", "filename");
     for (marker, filename) in markers.iter().zip(filenames) {
-        writeln!(bw, "{},{}", marker, filename.to_str().unwrap())?;
+        println!("{},{}", marker, filename.to_str().unwrap());
     }
 
     Ok(())

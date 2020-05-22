@@ -79,7 +79,6 @@ pub fn get_files_from_csv(
     let mut list: Vec<PathBuf> = Vec::new();
 
     for row in rows {
-        println!("XXX row={:?}", row);
         if row.what == what && row.filename.ends_with(file_ext) {
             list.push(PathBuf::from(row.filename));
         }
