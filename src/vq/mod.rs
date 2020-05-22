@@ -159,7 +159,15 @@ pub fn main_vq_learn(opts: VqLearnOpts) -> Result<(), Box<dyn Error>> {
         None => "_".to_string(),
     };
 
-    let prd_filenames = utl::resolve_filenames(predictor_filenames, ".prd", "predictors")?;
+    let is_tt_list = predictor_filenames.len() == 1
+        && predictor_filenames[0].to_str().unwrap().ends_with(".csv");
+
+    let prd_filenames = if is_tt_list {
+        utl::get_files_from_csv(&predictor_filenames[0], "TRAIN", ".prd", "predictors")?
+    } else {
+        //println!("resolving {:?}", predictor_filenames);
+        utl::resolve_filenames(predictor_filenames, ".prd", "predictors")?
+    };
 
     vq_learn(
         base_codebook,

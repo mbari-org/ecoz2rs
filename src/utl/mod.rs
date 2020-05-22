@@ -1,3 +1,4 @@
+extern crate serde;
 extern crate walkdir;
 
 use std::error::Error;
@@ -50,6 +51,43 @@ pub fn read_u16(br: &mut BufReader<File>) -> Result<u16, Box<dyn Error>> {
         Ok(v) => Ok(v),
         Err(e) => Err(e.into()),
     }
+}
+
+/// A train/Test row
+#[derive(Debug, serde::Deserialize)]
+struct TTRow {
+    pub what: String,
+    pub filename: String,
+}
+
+/// Returns the `what` category filenames from the given csv.
+pub fn get_files_from_csv(
+    filename: &PathBuf,
+    what: &str,
+    file_ext: &str,
+    subjects_msg_if_empty: &str,
+) -> Result<Vec<PathBuf>, Box<dyn Error>> {
+    let file = File::open(filename)?;
+    let br = BufReader::new(file);
+    let mut rdr = csv::ReaderBuilder::new().delimiter(b',').from_reader(br);
+
+    let rows: Vec<TTRow> = rdr
+        .deserialize()
+        .map(|result| result.unwrap())
+        .collect::<Vec<_>>();
+
+    let mut list: Vec<PathBuf> = Vec::new();
+
+    for row in rows {
+        println!("XXX row={:?}", row);
+        if row.what == what && row.filename.ends_with(file_ext) {
+            list.push(PathBuf::from(row.filename));
+        }
+    }
+    if list.is_empty() {
+        return Err(format!("No {} given in given file", subjects_msg_if_empty).into());
+    }
+    Ok(list)
 }
 
 /// Returns the list of files resulting from "resolving" the given list.

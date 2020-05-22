@@ -91,10 +91,10 @@ fn split(opts: UtilSplitOpts) -> Result<(), Box<dyn Error>> {
 
     let f = File::create(output)?;
     let mut bw = BufWriter::new(f);
-    writeln!(bw, "{:>5}, {}", "what", "filename")?;
+    writeln!(bw, "{},{}", "what", "filename")?;
 
     for (marker, filename) in markers.iter().zip(filenames) {
-        writeln!(bw, "{:>5}, {}", marker, filename.to_str().unwrap())?;
+        writeln!(bw, "{},{}", marker, filename.to_str().unwrap())?;
     }
 
     Ok(())
