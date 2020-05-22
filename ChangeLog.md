@@ -1,5 +1,7 @@
 2020-05
 
+- `sgn extract` simplify generated filename to only indicate selection number
+
 - `vq learn` now accepts a .csv to indicate the .prd files to be
   used for training
 

@@ -4,7 +4,6 @@ extern crate structopt;
 
 use std::error::Error;
 use std::fs;
-use std::path::Path;
 use std::path::PathBuf;
 
 use regex::Regex;
@@ -83,7 +82,6 @@ pub fn sgn_show(opts: SgnShowOpts) -> Result<(), Box<dyn Error>> {
 }
 
 struct SgnExtractor {
-    wav_simple_name: String,
     sgn: Sgn,
 
     sample_period: f32,
@@ -114,13 +112,6 @@ impl SgnExtractor {
         let sgn = load(&wav_filename);
         sgn.show();
 
-        let wav_simple_name = Path::new(wav_filename)
-            .file_name()
-            .unwrap()
-            .to_str()
-            .unwrap()
-            .into();
-
         let duration = sgn.num_samples / sgn.sample_rate;
         let sample_period = 1.0 / sgn.sample_rate as f32;
         println!("duration: {}  sample_period: {}", duration, sample_period);
@@ -142,7 +133,6 @@ impl SgnExtractor {
         println!("parsed ranges = {:?}", ranges);
 
         SgnExtractor {
-            wav_simple_name,
             sgn,
             sample_period,
             sgn_filename,
@@ -194,14 +184,7 @@ impl SgnExtractor {
         let out_dir: PathBuf = [&self.out_dir, &i.type_].iter().collect();
         fs::create_dir_all(&out_dir)?;
 
-        let out_name = format!(
-            "{}/from_{}__s{:04}__{}_{}.wav",
-            &out_dir.to_str().unwrap(),
-            self.wav_simple_name,
-            i.selection,
-            i.begin_time,
-            i.end_time
-        );
+        let out_name = format!("{}/{:05}.wav", &out_dir.to_str().unwrap(), i.selection,);
 
         //println!("\t\t extract_instance {} => {}", i.selection, out_name);
 
