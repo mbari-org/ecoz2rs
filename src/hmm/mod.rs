@@ -4,6 +4,7 @@ extern crate structopt;
 use std::error::Error;
 use std::path::PathBuf;
 
+use colored::*;
 use structopt::StructOpt;
 
 use crate::ecoz2_lib::hmm_classify;
@@ -131,7 +132,7 @@ pub fn main(opts: HmmMainOpts) {
     };
 
     if let Err(err) = res {
-        println!("{}", err);
+        println!("{}", err.to_string().red());
     }
 }
 
