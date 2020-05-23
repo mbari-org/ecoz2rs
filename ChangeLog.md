@@ -1,5 +1,7 @@
 2020-05
 
+- `sgn extract` now also with optional `--time-ranges`
+
 - `util split` now generates `tt,class,selection` rows in csv output
 
         ecoz2 util split --train-fraction 0.8

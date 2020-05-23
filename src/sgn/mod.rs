@@ -53,6 +53,12 @@ pub struct SgnExtractOpts {
     #[structopt(long)]
     selection_ranges: Vec<String>,
 
+    /// Desired time ranges. Each string of the form `start-end`
+    /// indicating initial (inclusive) and final (exclusive) times in seconds.
+    /// Only segments fully contained in a given range are extracted.
+    #[structopt(long)]
+    time_ranges: Vec<String>,
+
     /// Base directory for output wave files
     #[structopt(short, long)]
     out_dir: String,
@@ -88,13 +94,10 @@ struct SgnExtractor {
 
     sgn_filename: String,
 
-    ranges: Vec<std::ops::Range<i32>>,
+    selection_ranges: Vec<std::ops::Range<i32>>,
+    time_ranges: Vec<(f32, f32)>,
 
     out_dir: String,
-}
-
-lazy_static! {
-    static ref RANGE_RE: Regex = Regex::new(r"(?x)(?P<start>\d+)-(?P<end>-?\d+)").unwrap();
 }
 
 impl SgnExtractor {
@@ -102,7 +105,8 @@ impl SgnExtractor {
         let SgnExtractOpts {
             wav,
             segments,
-            selection_ranges: select,
+            selection_ranges,
+            time_ranges,
             out_dir,
         } = opts;
 
@@ -118,10 +122,11 @@ impl SgnExtractor {
 
         let sgn_filename = segments.to_str().unwrap().into();
 
-        let ranges: Vec<std::ops::Range<i32>> = select
+        let sel_range_re: Regex = Regex::new(r"(?x)(?P<start>\d+)-(?P<end>-?\d+)").unwrap();
+        let selection_ranges: Vec<std::ops::Range<i32>> = selection_ranges
             .iter()
             .map(|s| {
-                RANGE_RE.captures(s).map(|caps| {
+                sel_range_re.captures(s).map(|caps| {
                     let start: i32 = caps["start"].parse().unwrap();
                     let end: i32 = caps["end"].parse().unwrap();
                     start..end
@@ -129,23 +134,51 @@ impl SgnExtractor {
             })
             .flatten()
             .collect();
+        println!("parsed selection_ranges = {:?}", selection_ranges);
 
-        println!("parsed ranges = {:?}", ranges);
+        let time_range_re: Regex =
+            Regex::new(r"(?x)(?P<start>(\d|\.)+)-(?P<end>(\d|\.)+)").unwrap();
+        let time_ranges: Vec<(f32, f32)> = time_ranges
+            .iter()
+            .map(|s| {
+                time_range_re.captures(s).map(|caps| {
+                    let start: f32 = caps["start"].parse().unwrap();
+                    let end: f32 = caps["end"].parse().unwrap();
+                    if start > end {
+                        panic!("invalid time range: start={} > end={}", start, end);
+                    }
+                    (start, end)
+                })
+            })
+            .flatten()
+            .collect();
+        println!("parsed time_ranges = {:?}", time_ranges);
 
         SgnExtractor {
             sgn,
             sample_period,
             sgn_filename,
-            ranges,
+            selection_ranges,
+            time_ranges,
             out_dir,
         }
     }
 
-    fn in_ranges(&mut self, selection: i32) -> bool {
-        if self.ranges.is_empty() {
+    fn in_ranges(&mut self, i: &InstanceInfo) -> bool {
+        let in_selection = if self.selection_ranges.is_empty() {
             true
         } else {
-            self.ranges.iter().any(|r| r.contains(&selection))
+            self.selection_ranges
+                .iter()
+                .any(|r| r.contains(&i.selection))
+        };
+
+        if self.time_ranges.is_empty() {
+            in_selection
+        } else {
+            self.time_ranges
+                .iter()
+                .any(|r| i.begin_time <= r.0 && i.end_time <= r.1)
         }
     }
 
@@ -161,7 +194,7 @@ impl SgnExtractor {
         for (type_, instances) in lookup {
             let mut type_instances = 0;
             for i in instances {
-                if self.in_ranges(i.selection) {
+                if self.in_ranges(i) {
                     self.extract_instance(i)?;
                     type_instances += 1;
                     tot_instances += 1;
