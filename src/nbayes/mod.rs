@@ -32,7 +32,7 @@ enum EcozNBayesCommand {
 #[derive(StructOpt, Debug)]
 pub struct NBayesLearnOpts {
     /// Number of symbols (codebook size)
-    #[structopt(short = "M", long, required = true)]
+    #[structopt(short = "M", long, name = "M", required = true)]
     codebook_size: usize,
 
     /// Class name for the trained model
@@ -42,7 +42,7 @@ pub struct NBayesLearnOpts {
     /// Training sequences.
     /// If a single `.csv` file is given, then the "TRAIN" files indicated there will be used.
     /// Otherwise, if directories are included, then all `.seq` under them will be used.
-    #[structopt(long, parse(from_os_str), name = "files")]
+    #[structopt(parse(from_os_str))]
     sequences: Vec<PathBuf>,
 }
 

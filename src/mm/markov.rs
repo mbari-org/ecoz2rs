@@ -59,12 +59,10 @@ pub fn load(filename: &str) -> Result<MM, Box<dyn Error>> {
     Ok(mm)
 }
 
-pub fn learn(seq_filenames: &Vec<PathBuf>) -> Result<MM, Box<dyn Error>> {
-    // get relevant dimensions from first given sequence;
+pub fn learn(codebook_size: usize, seq_filenames: &Vec<PathBuf>) -> Result<MM, Box<dyn Error>> {
+    // get class name from first sequence
     let seq = sequence::load(seq_filenames[0].to_str().unwrap())?;
-
     let class_name = seq.class_name;
-    let codebook_size = seq.codebook_size as usize;
 
     println!(
         "MM learn: num sequences={} class='{}' codebook_size={}",

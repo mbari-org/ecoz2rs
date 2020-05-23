@@ -31,8 +31,17 @@ enum EcozMMCommand {
 
 #[derive(StructOpt, Debug)]
 pub struct MMLearnOpts {
+    /// Number of symbols (codebook size)
+    #[structopt(short = "M", long, name = "M", required = true)]
+    codebook_size: usize,
+
+    /// Class name for the trained model
+    #[structopt(long, name = "class")]
+    class_name: Option<String>,
+
     /// Training sequences.
-    /// If directories are included, then all `.seq` under them will be used.
+    /// If a single `.csv` file is given, then the "TRAIN" files indicated there will be used.
+    /// Otherwise, if directories are included, then all `.seq` under them will be used.
     #[structopt(parse(from_os_str))]
     sequences: Vec<PathBuf>,
 }
@@ -76,19 +85,27 @@ pub fn main(opts: MMMainOpts) {
 }
 
 pub fn main_mm_learn(opts: MMLearnOpts) -> Result<(), Box<dyn Error>> {
-    let MMLearnOpts { sequences } = opts;
+    let MMLearnOpts {
+        codebook_size,
+        class_name,
+        sequences,
+    } = opts;
 
-    let seq_filenames = utl::resolve_filenames(sequences, ".seq", "sequences")?;
+    let seq_filenames = utl::resolve_files(
+        sequences,
+        "TRAIN",
+        class_name,
+        format!("sequences/M{}", codebook_size),
+        ".seq",
+    )?;
 
-    let mut model = markov::learn(&seq_filenames)?;
+    let mut model = markov::learn(codebook_size, &seq_filenames)?;
 
-    let codebook_size = model.pi.len();
     let mm_dir_str = format!("data/mms/M{}", codebook_size);
     let mm_dir = Path::new(&mm_dir_str);
     std::fs::create_dir_all(mm_dir)?;
     let filename = format!("{}/{}.mm", mm_dir.to_str().unwrap(), model.class_name);
     println!("MM model trained");
-
     model.save(&filename.as_str())?;
     println!("MM model saved: {}\n\n", filename);
     Ok(())
