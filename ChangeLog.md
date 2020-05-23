@@ -1,5 +1,6 @@
 2020-05
 
+- 0.4.3 to align with c
 - update ecoz2 pointer (which generates csv with hmm training measure)
 
 - `sgn extract` now also with optional `--time-ranges`

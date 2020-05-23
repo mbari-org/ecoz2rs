@@ -4,7 +4,7 @@ pub mod lpca_c;
 
 use std::ffi::CStr;
 use std::ffi::CString;
-use std::os::raw::c_float;
+use std::os::raw::{c_float, c_long, c_ulong};
 use std::path::PathBuf;
 use std::str::Utf8Error;
 use std::sync::Arc;
@@ -75,7 +75,7 @@ impl Ecoz2ObserverRef {
 extern "C" {
     fn ecoz2_version() -> *const c_char;
 
-    fn ecoz2_set_random_seed(seed: c_int);
+    fn ecoz2_set_random_seed(seed: c_long) -> c_ulong;
 
     fn ecoz2_lpc_signals(
         prediction_order: c_int,
@@ -175,10 +175,8 @@ pub fn version() -> Result<&'static str, Utf8Error> {
     }
 }
 
-pub fn set_random_seed(seed: i32) {
-    unsafe {
-        ecoz2_set_random_seed(seed as c_int);
-    }
+pub fn set_random_seed(seed: i64) -> u64 {
+    unsafe { ecoz2_set_random_seed(seed as c_long) as u64 }
 }
 
 pub fn lpc_signals(

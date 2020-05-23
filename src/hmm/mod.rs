@@ -73,7 +73,7 @@ pub struct HmmLearnOpts {
     /// Seed for random numbers. Negative means random seed.
     /// Otherwise, the given seed is used, which will allow for reproducibility.
     #[structopt(short = "s", long, default_value = "-1")]
-    seed: i32,
+    seed: i64,
 
     /// Use serialized implementation
     #[structopt(long)]
