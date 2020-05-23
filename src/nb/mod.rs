@@ -8,7 +8,7 @@ use crate::utl;
 
 use self::EcozNBayesCommand::{Classify, Learn, Show};
 
-mod nb;
+mod nbayes;
 
 #[derive(StructOpt, Debug)]
 pub struct NBayesMainOpts {
@@ -107,7 +107,7 @@ pub fn main_nbayes_learn(opts: NBayesLearnOpts) -> Result<(), Box<dyn Error>> {
         ".seq",
     )?;
 
-    let mut model = nb::learn(codebook_size, seq_filenames)?;
+    let mut model = nbayes::learn(codebook_size, seq_filenames)?;
 
     let nb_dir_str = format!("data/nbs/M{}", codebook_size);
     let nb_dir = Path::new(&nb_dir_str);
@@ -145,13 +145,13 @@ pub fn main_nbayes_classify(opts: NBayesClassifyOpts) -> Result<(), Box<dyn Erro
     );
     println!("show_ranked = {}", show_ranked);
 
-    nb::classify(nb_filenames, seq_filenames, show_ranked)
+    nbayes::classify(nb_filenames, seq_filenames, show_ranked)
 }
 
 pub fn main_nbayes_show(opts: NBayesShowOpts) -> Result<(), Box<dyn Error>> {
     let NBayesShowOpts { model } = opts;
 
-    let mut model = nb::load(model.to_str().unwrap())?;
+    let mut model = nbayes::load(model.to_str().unwrap())?;
     &model.show();
 
     Ok(())

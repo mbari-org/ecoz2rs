@@ -24,7 +24,7 @@ mod ecoz2_lib;
 mod hmm;
 mod lpc;
 mod mm;
-mod nbayes;
+mod nb;
 mod prd;
 mod seq;
 mod sequence;
@@ -65,7 +65,7 @@ enum Ecoz {
     Mm(mm::MMMainOpts),
 
     #[structopt(about = "NBayes operations")]
-    Nbayes(nbayes::NBayesMainOpts),
+    Nb(nb::NBayesMainOpts),
 
     #[structopt(about = "Utilities")]
     Util(util::UtilMainOpts),
@@ -109,8 +109,8 @@ fn main() {
             mm::main(opts);
         }
 
-        Ecoz::Nbayes(opts) => {
-            nbayes::main(opts);
+        Ecoz::Nb(opts) => {
+            nb::main(opts);
         }
 
         Ecoz::Util(opts) => {
