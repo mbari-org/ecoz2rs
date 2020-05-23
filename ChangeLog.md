@@ -1,5 +1,7 @@
 2020-05
 
+- update ecoz2 pointer (which generates csv with hmm training measure)
+
 - `sgn extract` now also with optional `--time-ranges`
 
 - `util split` now generates `tt,class,selection` rows in csv output
