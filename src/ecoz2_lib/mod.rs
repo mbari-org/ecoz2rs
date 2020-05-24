@@ -152,6 +152,7 @@ extern "C" {
         sequence_filenames: *const *const c_char,
         num_sequences: c_uint,
         show_ranked: c_int,
+        classification_filename: *const c_char,
     );
 
     fn ecoz2_hmm_show(hmm_filename: *const c_char, format: *const c_char);
@@ -417,10 +418,16 @@ pub fn hmm_classify(
     model_filenames: Vec<PathBuf>,
     sequence_filenames: Vec<PathBuf>,
     show_ranked: bool,
+    classification_filename: Option<PathBuf>,
 ) {
     let vpc_models: Vec<*const c_char> = to_vec_of_ptr_const_c_char(model_filenames);
 
     let vpc_sequences: Vec<*const c_char> = to_vec_of_ptr_const_c_char(sequence_filenames);
+
+    let classification_filename: *const c_char = match classification_filename {
+        Some(filename) => to_ptr_const_c_char(filename),
+        None => std::ptr::null(),
+    };
 
     unsafe {
         ecoz2_hmm_classify(
@@ -429,6 +436,7 @@ pub fn hmm_classify(
             vpc_sequences.as_ptr(),
             vpc_sequences.len() as c_uint,
             show_ranked as c_int,
+            classification_filename,
         );
     }
 }
@@ -488,8 +496,8 @@ pub fn seq_show_files(
 fn to_vec_of_ptr_const_c_char(paths: Vec<PathBuf>) -> Vec<*const c_char> {
     let vec_of_cstring: Vec<CString> = paths
         .into_iter()
-        .map(|predictor_filename| {
-            let str = predictor_filename.to_str().unwrap();
+        .map(|path| {
+            let str = path.to_str().unwrap();
             CString::new(str).unwrap()
         })
         .collect();
@@ -502,4 +510,15 @@ fn to_vec_of_ptr_const_c_char(paths: Vec<PathBuf>) -> Vec<*const c_char> {
             ptr
         })
         .collect()
+}
+
+fn to_ptr_const_c_char(path: PathBuf) -> *const c_char {
+    let c_string = {
+        let str = path.to_str().unwrap();
+        CString::new(str).unwrap()
+    };
+
+    let ptr = c_string.as_ptr();
+    std::mem::forget(c_string);
+    ptr
 }

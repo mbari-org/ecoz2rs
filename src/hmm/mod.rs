@@ -92,6 +92,10 @@ pub struct HmmClassifyOpts {
     #[structopt(short = "r", long)]
     show_ranked: bool,
 
+    /// File to report classification results for each sequence.
+    #[structopt(short, long = "c12n", parse(from_os_str))]
+    classification_filename: Option<PathBuf>,
+
     /// HMM models.
     /// If directories are included, then all `.hmm` under them will be used.
     #[structopt(short, long, required = true, min_values = 1, parse(from_os_str))]
@@ -186,6 +190,7 @@ pub fn main_hmm_learn(opts: HmmLearnOpts) -> Result<(), Box<dyn Error>> {
 pub fn main_hmm_classify(opts: HmmClassifyOpts) -> Result<(), Box<dyn Error>> {
     let HmmClassifyOpts {
         show_ranked,
+        classification_filename,
         models,
         tt,
         codebook_size,
@@ -211,7 +216,12 @@ pub fn main_hmm_classify(opts: HmmClassifyOpts) -> Result<(), Box<dyn Error>> {
     );
     println!("show_ranked = {}", show_ranked);
 
-    hmm_classify(hmm_filenames, seq_filenames, show_ranked);
+    hmm_classify(
+        hmm_filenames,
+        seq_filenames,
+        show_ranked,
+        classification_filename,
+    );
 
     Ok(())
 }

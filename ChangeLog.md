@@ -1,5 +1,18 @@
 2020-05
 
+- `hmm classify` with option `--c12n` to generate classification results file.
+
+        # num_models=18  M=256  num_seqs=408
+        seq_filename,seq_class_name,correct,rank
+        data/sequences/M256/A/00004.seq,A,*,1
+        data/sequences/M256/Bd/00119.seq,Bd,!,2
+        data/sequences/M256/Bu/00250.seq,Bu,!,3
+        data/sequences/M256/E1/00823.seq,E1,!,13
+        data/sequences/M256/E1/01000.seq,E1,*,1
+        ...
+
+    Note: rank now shown starting from 1 (not 0).
+
 - rename nbayes command to nb
 - 0.4.3 to align with c
 - update ecoz2 pointer (which generates csv with hmm training measure)
