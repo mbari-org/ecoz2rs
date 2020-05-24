@@ -2,6 +2,7 @@ use std::error::Error;
 use std::path::Path;
 use std::path::PathBuf;
 
+use colored::*;
 use structopt::StructOpt;
 
 use crate::utl;
@@ -48,9 +49,17 @@ pub struct MMLearnOpts {
 
 #[derive(StructOpt, Debug)]
 pub struct MMClassifyOpts {
+    /// Number of symbols (codebook size)
+    #[structopt(short = "M", long, required = true)]
+    codebook_size: usize,
+
     /// Show ranked models for incorrect classifications
     #[structopt(short = "r", long)]
     show_ranked: bool,
+
+    /// TRAIN or TEST
+    #[structopt(long, required = true)]
+    tt: String,
 
     /// MM models.
     /// If directories are included, then all `.mm` under them will be used.
@@ -80,7 +89,7 @@ pub fn main(opts: MMMainOpts) {
     };
 
     if let Err(err) = res {
-        println!("{}", err);
+        println!("{}", err.to_string().red());
     }
 }
 
@@ -113,14 +122,22 @@ pub fn main_mm_learn(opts: MMLearnOpts) -> Result<(), Box<dyn Error>> {
 
 pub fn main_mm_classify(opts: MMClassifyOpts) -> Result<(), Box<dyn Error>> {
     let MMClassifyOpts {
+        codebook_size,
         show_ranked,
+        tt,
         models,
         sequences,
     } = opts;
 
     let mm_filenames = utl::resolve_filenames(models, ".mm", "models")?;
 
-    let seq_filenames = utl::resolve_filenames(sequences, ".seq", "sequences")?;
+    let seq_filenames = utl::resolve_files(
+        sequences,
+        tt.as_str(),
+        None,
+        format!("sequences/M{}", codebook_size),
+        ".seq",
+    )?;
 
     println!(
         "number of MM models: {}  number of sequences: {}",
