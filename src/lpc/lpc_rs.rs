@@ -8,6 +8,7 @@ use std::time::Instant;
 use crate::ecoz2_lib::lpca_c::lpca;
 use crate::prd::Predictor;
 use crate::sgn;
+use crate::utl;
 
 use super::lpca_rs::lpca_save_input;
 
@@ -38,13 +39,13 @@ pub fn lpc_rs(
     }
 
     let class_name = "_".to_string();
-    let mut predictor = Predictor {
+    let predictor = Predictor {
         class_name,
         prediction_order,
         vectors,
     };
 
-    predictor.save(out_filename).unwrap();
+    utl::save_ser(&predictor, &out_filename).unwrap();
     println!(
         "{} saved.  Class: '{}':  {} vectors",
         out_filename,

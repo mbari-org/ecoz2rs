@@ -3,7 +3,6 @@ extern crate itertools;
 use std::error::Error;
 use std::fs::File;
 use std::io::BufReader;
-use std::io::BufWriter;
 use std::io::Write;
 use std::path::PathBuf;
 
@@ -25,13 +24,6 @@ pub struct MM {
 }
 
 impl MM {
-    pub fn save(&mut self, filename: &str) -> Result<(), Box<dyn Error>> {
-        let f = File::create(filename)?;
-        let bw = BufWriter::new(f);
-        serde_cbor::to_writer(bw, &self)?;
-        Ok(())
-    }
-
     pub fn show(&mut self) {
         let codebook_size = self.pi.len();
         println!(

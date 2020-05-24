@@ -3,7 +3,7 @@ extern crate structopt;
 
 use std::error::Error;
 use std::fs::File;
-use std::io::{BufReader, BufWriter};
+use std::io::BufReader;
 use std::path::PathBuf;
 
 use structopt::StructOpt;
@@ -93,13 +93,6 @@ pub struct Predictor {
 }
 
 impl Predictor {
-    pub fn save(&mut self, filename: &str) -> Result<(), Box<dyn Error>> {
-        let f = File::create(filename)?;
-        let bw = BufWriter::new(f);
-        serde_cbor::to_writer(bw, &self)?;
-        Ok(())
-    }
-
     pub fn show(&mut self, show_reflections: bool, from: usize, to: usize) {
         let p = self.prediction_order;
         let to_ = if to == 0 || to > p { p } else { to };

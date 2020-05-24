@@ -107,14 +107,14 @@ pub fn main_nbayes_learn(opts: NBayesLearnOpts) -> Result<(), Box<dyn Error>> {
         ".seq",
     )?;
 
-    let mut model = nbayes::learn(codebook_size, seq_filenames)?;
+    let model = nbayes::learn(codebook_size, seq_filenames)?;
 
     let nb_dir_str = format!("data/nbs/M{}", codebook_size);
     let nb_dir = Path::new(&nb_dir_str);
     std::fs::create_dir_all(nb_dir)?;
     let filename = format!("{}/{}.nb", nb_dir.to_str().unwrap(), model.class_name);
     println!("NB model trained");
-    model.save(&filename.as_str())?;
+    utl::save_ser(&model, &filename.as_str())?;
     println!("NB model saved: {}\n\n", filename);
     Ok(())
 }

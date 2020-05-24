@@ -1,7 +1,7 @@
 use std::error::Error;
 use std::fs::File;
+use std::io::BufReader;
 use std::io::Write;
-use std::io::{BufReader, BufWriter};
 use std::path::PathBuf;
 
 use colored::*;
@@ -18,13 +18,6 @@ pub struct NBayes {
 }
 
 impl NBayes {
-    pub fn save(&mut self, filename: &str) -> Result<(), Box<dyn Error>> {
-        let f = File::create(filename)?;
-        let bw = BufWriter::new(f);
-        serde_cbor::to_writer(bw, &self)?;
-        Ok(())
-    }
-
     pub fn show(&mut self) {
         let codebook_size = self.frequencies.len();
         println!(

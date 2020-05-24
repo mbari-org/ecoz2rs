@@ -6,6 +6,7 @@ use std::fs::File;
 use std::io;
 use std::io::prelude::*;
 use std::io::BufReader;
+use std::io::BufWriter;
 use std::path::Path;
 use std::path::PathBuf;
 
@@ -170,4 +171,11 @@ pub fn list_files(directory: &Path, file_ext: &str) -> io::Result<Vec<PathBuf>> 
         }
     }
     Ok(list)
+}
+
+pub fn save_ser<T: serde::Serialize>(model: &T, filename: &str) -> Result<(), Box<dyn Error>> {
+    let f = File::create(filename)?;
+    let bw = BufWriter::new(f);
+    serde_cbor::to_writer(bw, &model)?;
+    Ok(())
 }
