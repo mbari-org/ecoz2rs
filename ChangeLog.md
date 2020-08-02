@@ -1,3 +1,9 @@
+2020-08
+
+- exploring some iterator use in lpca
+  - `cargo bench` includes lpca1 (as before) and lpca2 (with some interators)
+  - `cargo test test_lpca` to verify lpca1's and lpca2's outputs are the same
+
 2020-07-31
 
 - Reset my local dev environment since usual build was not working upon
