@@ -49,12 +49,15 @@ pub struct VqLearnOpts {
     #[structopt(short = "e", long = "epsilon", default_value = "0.05", name = "ε")]
     epsilon: f64,
 
-    /// Class name to associate to generated codebook (ignored if -B given).
+    /// Class name to associate to generated codebook (ignored if -B given)
+    /// and also, if a `.csv` file is given with the `--predictors` option,
+    /// to only consider instances of such given class.
     #[structopt(long, name = "class")]
     class_name: Option<String>,
 
     /// Predictor files for training.
-    /// If a single `.csv` file is given, then the "TRAIN" files indicated there will be used.
+    /// If a single `.csv` file is given, then the "TRAIN" files indicated there will be used
+    /// (and only, if `--class-name` is given, the ones for the corresponding class).
     /// Otherwise, if directories are included, then all `.prd` under them will be used.
     #[structopt(long, parse(from_os_str), name = "files")]
     predictors: Vec<PathBuf>,
@@ -88,25 +91,18 @@ pub struct VqClassifyOpts {
 
     /// Codebook models.
     /// If directories are included, then all `.cb` under them will be used.
-    #[structopt(
-        short,
-        long = "codebooks",
-        required = true,
-        min_values = 1,
-        parse(from_os_str)
-    )]
-    cb_filenames: Vec<PathBuf>,
+    #[structopt(long, required = true, min_values = 1, parse(from_os_str))]
+    codebooks: Vec<PathBuf>,
+
+    /// TRAIN or TEST
+    #[structopt(long, required = true)]
+    tt: String,
 
     /// Predictor files to classify.
-    /// If directories are included, then all `.prd` under them will be used.
-    #[structopt(
-        short,
-        long = "predictors",
-        required = true,
-        min_values = 1,
-        parse(from_os_str)
-    )]
-    prd_filenames: Vec<PathBuf>,
+    /// If a single `.csv` file is given, then only the ones indicated with `--tt` will be used.
+    /// Otherwise, if directories are included, then all `.prd` under them will be used.
+    #[structopt(long, required = true, min_values = 1, parse(from_os_str))]
+    predictors: Vec<PathBuf>,
 }
 
 #[derive(StructOpt, Debug)]
@@ -198,13 +194,20 @@ pub fn main_vq_quantize(opts: VqQuantizeOpts) -> Result<(), Box<dyn Error>> {
 pub fn main_vq_classify(opts: VqClassifyOpts) -> Result<(), Box<dyn Error>> {
     let VqClassifyOpts {
         show_ranked,
-        cb_filenames,
-        prd_filenames,
+        codebooks,
+        tt,
+        predictors,
     } = opts;
 
-    let cb_filenames = utl::resolve_filenames(cb_filenames, ".cb", "codebooks")?;
+    let cb_filenames = utl::resolve_filenames(codebooks, ".cbook", "codebooks")?;
 
-    let prd_filenames = utl::resolve_filenames(prd_filenames, ".prd", "predictors")?;
+    let prd_filenames = utl::resolve_files(
+        predictors,
+        tt.as_str(),
+        None,
+        "predictors".to_string(),
+        ".prd",
+    )?;
 
     println!(
         "number of codebooks: {}  number of predictors: {}",
