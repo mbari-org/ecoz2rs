@@ -14,7 +14,7 @@ extern crate structopt;
 #[macro_use]
 extern crate lazy_static;
 
-use structopt::clap::crate_version;
+use structopt::clap::{self, crate_version};
 use structopt::StructOpt;
 
 mod c12n;
@@ -34,6 +34,7 @@ mod utl;
 mod vq;
 
 #[derive(StructOpt, Debug)]
+#[structopt(global_setting(clap::AppSettings::ColoredHelp))]
 #[structopt(name = "ecoz2", about = "ECOZ2 System")]
 #[structopt(version = crate_version!())]
 enum Ecoz {
