@@ -52,12 +52,12 @@ Starting with a set of acoustic signals (WAV format) on your machine,
 the typical use of the system will involve the following main subcommands
 in this general order:
 
-- `ecoz2 lpc`:         takes `*.wav` and generates perdictor files `*.prd`
+- `ecoz2 lpc`:         takes `*.wav` and generates predictor files `*.prd`
 - `ecoz2 vq learn`     takes `*.prd` and generates codebooks `*.cb`
 - `ecoz2 vq quantize`  takes `*.cb` and `*.prd` and generates observation sequences `*.seq`
 - `ecoz2 hmm learn`    takes `*.seq` and generates an HMM model `*.hmm`
-- `ecoz2 hmm classify` takes `*.hmm` and `*.seq` and reports classification
-  of the sequences
+- `ecoz2 hmm classify` takes `*.hmm` and `*.seq`, performs classification
+  of the sequences and reports the results
 
 
 ## Development

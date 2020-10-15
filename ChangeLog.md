@@ -3,7 +3,7 @@
 - adjustments in `vq classify`
 
 - exploring some iterator use in lpca
-  - `cargo bench` includes lpca1 (as before) and lpca2 (with some interators)
+  - `cargo bench` includes lpca1 (as before) and lpca2 (with some iterators)
   - `cargo test test_lpca` to verify lpca1's and lpca2's outputs are the same
 
 2020-07-31
