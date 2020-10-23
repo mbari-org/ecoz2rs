@@ -59,6 +59,10 @@ pub struct SgnExtractOpts {
     #[structopt(long)]
     time_ranges: Vec<String>,
 
+    /// Only extract a class if it has at least this number of instances
+    #[structopt(short = "m", long, default_value = "0")]
+    minpc: usize,
+
     /// Base directory for output wave files
     #[structopt(short, long)]
     out_dir: String,
@@ -97,6 +101,8 @@ struct SgnExtractor {
     selection_ranges: Vec<std::ops::Range<i32>>,
     time_ranges: Vec<(f32, f32)>,
 
+    minpc: usize,
+
     out_dir: String,
 }
 
@@ -107,6 +113,7 @@ impl SgnExtractor {
             segments,
             selection_ranges,
             time_ranges,
+            minpc,
             out_dir,
         } = opts;
 
@@ -160,6 +167,7 @@ impl SgnExtractor {
             sgn_filename,
             selection_ranges,
             time_ranges,
+            minpc,
             out_dir,
         }
     }
@@ -193,6 +201,9 @@ impl SgnExtractor {
         let mut tot_instances = 0;
         for (type_, instances) in lookup {
             let mut type_instances = 0;
+            if self.minpc > 0 && instances.len() < self.minpc {
+                continue;
+            }
             for i in instances {
                 if self.in_ranges(i) {
                     self.extract_instance(i)?;

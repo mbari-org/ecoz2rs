@@ -1,3 +1,8 @@
+2020-10
+
+- 0.5.0: add `-m` option to `sgn extract` to indicate minimum
+  of number of instances to extract a class.
+
 2020-08
 
 - adjustments in `vq classify`
