@@ -34,6 +34,7 @@ between the C and Rust impls.
   enabled for Rust, thus explaining the difference in performance: 
     - https://internals.rust-lang.org/t/pre-rfc-whats-the-best-way-to-implement-ffast-math/5740
     - https://github.com/rust-lang/rust/issues/21690
+    - https://www.reidatcheson.com/hpc/architecture/performance/rust/c++/2019/10/19/measure-cache.html
     - https://stackoverflow.com/questions/7420665/what-does-gccs-ffast-math-actually-do
 
 - for now, for the Rust impl of the lpc subcommand I'm enabling the C impl of the lpca operation.
