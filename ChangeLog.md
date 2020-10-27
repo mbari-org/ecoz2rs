@@ -1,5 +1,9 @@
 2020-10
 
+- 0.5.1: per C impl, can now override `prob_t` type, eg:
+ 
+        CC=gcc-10 PROB_T=double cargo build --release
+
 - 0.5.0: add `-m` option to `sgn extract` to indicate minimum
   number of instances to extract a class.
 
