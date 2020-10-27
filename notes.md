@@ -1,14 +1,24 @@
 ## Implementation in Rust
 
-Some rather preliminary notes/exercises toward a possible
+Some preliminary notes/exercises toward a possible
 implementation of the ECOZ2 programs in Rust.
 
 ### To keep in mind
 
-- `long double` is used to represent probabilities in HMM models.
-  However:
+- `long double` has been used since the origins of the C implementation to represent
+   probabilities in HMM models.
+
+    But:
     - Not yet a `f128` type in Rust - https://github.com/rust-lang/rfcs/issues/2629
     - "long double becomes u128" - https://github.com/rust-lang/rust-bindgen/issues/1549
+    - https://users.rust-lang.org/t/are-there-any-floating-types-with-precision-beyond-that-of-f64/50601/2
+    - https://github.com/jkarns275/f128/ (but "in maintenance mode")
+    
+    One other approach is to use `f64`, especially given the more recent additions related
+    with scaling factors. Actually, I already tried something like this (in C land) a few months
+    ago, but that was rather hasty and with no satisfactory results, probably for other reasons, 
+    so, worth trying again. 
+    
 
 - for python binding
     - https://github.com/PyO3/pyo3
