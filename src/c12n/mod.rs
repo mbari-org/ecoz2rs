@@ -142,7 +142,7 @@ impl C12nResults {
 
         println!("\n");
         print!("{:margin$} ", "", margin = margin);
-        println!("class     accuracy    tests      candidate order");
+        println!("class     accuracy   tests       candidate order");
 
         let mut num_classes = 0;
 
@@ -174,10 +174,10 @@ impl C12nResults {
                 summary.accuracy = acc;
             }
 
-            print!("  {:6.2}%   {:3}        ", 100_f32 * acc, num_tests);
+            print!("  {:6.2}%    {:4}       ", 100_f32 * acc, num_tests);
 
             for i in 1..=num_models {
-                print!("{:3} ", self.result[class_id][i]);
+                print!("{:4} ", self.result[class_id][i]);
             }
             println!();
         }
@@ -185,8 +185,8 @@ impl C12nResults {
         summary.accuracy *= 100_f32;
         summary.avg_accuracy = summary.avg_accuracy * 100_f32 / num_classes as f32;
 
-        println!("  avg_accuracy  {}%", summary.avg_accuracy);
-        println!("    error_rate  {}%", 100_f32 - summary.avg_accuracy);
+        println!("  avg_accuracy  {:6.2}%", summary.avg_accuracy);
+        //println!("    error_rate  {:6.2}%", 100_f32 - summary.avg_accuracy);
         println!();
 
         report_summary(summary, summary_name);
