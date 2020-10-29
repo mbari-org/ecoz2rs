@@ -31,7 +31,12 @@ impl MM {
             self.class_name, codebook_size,
         );
         println!("pi = {}", self.pi);
-        println!(" A = {}", self.a);
+        assert_approx_eq!(self.pi.sum(), 1_f32, EQ_EPSILON);
+        println!("A =");
+        for (j, a_row) in self.a.axis_iter(Axis(0)).enumerate() {
+            println!(" [{}]: {}", j, a_row);
+            assert_approx_eq!(a_row.sum(), 1_f32, EQ_EPSILON);
+        }
     }
 
     /// log probability of generating the symbol sequence
@@ -67,7 +72,7 @@ pub fn learn(codebook_size: usize, seq_filenames: &Vec<PathBuf>) -> Result<MM, B
     let mut pi = Array1::from_elem(codebook_size, 1_f32);
     let mut n_js = Array1::from_elem(codebook_size, 0);
     let mut a = Array2::from_elem((codebook_size, codebook_size), 1_f32);
-    // note: pi and are initially just counters.
+    // note: pi and a are initially just counters.
 
     // capture counts:  (for simplicity, let this reload that 1st sequence again)
     for seq_filename in seq_filenames {
