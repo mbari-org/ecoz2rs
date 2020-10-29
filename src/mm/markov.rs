@@ -13,14 +13,14 @@ use crate::c12n;
 use crate::sequence;
 use crate::serde;
 
-const EQ_EPSILON: f64 = 1e-10;
+const EQ_EPSILON: f32 = 1e-5;
 
 /// A trained Markov model.
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
 pub struct MM {
     pub class_name: String,
-    pub pi: Array1<f64>,
-    pub a: Array2<f64>,
+    pub pi: Array1<f32>,
+    pub a: Array2<f32>,
 }
 
 impl MM {
@@ -35,7 +35,7 @@ impl MM {
     }
 
     /// log probability of generating the symbol sequence
-    pub fn log_prob_sequence(&self, seq: &sequence::Sequence) -> f64 {
+    pub fn log_prob_sequence(&self, seq: &sequence::Sequence) -> f32 {
         let mut p = self.pi[seq.symbols[0] as usize].log10();
         for t in 0..seq.symbols.len() - 1 {
             p += self.a[[seq.symbols[t] as usize, seq.symbols[t + 1] as usize]].log10();
@@ -64,9 +64,9 @@ pub fn learn(codebook_size: usize, seq_filenames: &Vec<PathBuf>) -> Result<MM, B
     );
 
     // init counters:
-    let mut pi = Array1::from_elem(codebook_size, 1_f64);
+    let mut pi = Array1::from_elem(codebook_size, 1_f32);
     let mut n_js = Array1::from_elem(codebook_size, 0);
-    let mut a = Array2::from_elem((codebook_size, codebook_size), 1_f64);
+    let mut a = Array2::from_elem((codebook_size, codebook_size), 1_f32);
     // note: pi and are initially just counters.
 
     // capture counts:  (for simplicity, let this reload that 1st sequence again)
@@ -95,26 +95,26 @@ pub fn learn(codebook_size: usize, seq_filenames: &Vec<PathBuf>) -> Result<MM, B
         }
 
         // update counts:
-        pi[seq.symbols[0] as usize] += 1_f64;
+        pi[seq.symbols[0] as usize] += 1_f32;
         for jk in seq.symbols.windows(2) {
             let j = jk[0] as usize;
             let k = jk[1] as usize;
             n_js[j] += 1; // one more transition from symbol j
-            a[[j, k]] += 1_f64; // one more j->k transition
+            a[[j, k]] += 1_f32; // one more j->k transition
         }
     }
     println!();
 
-    let num_seqs = seq_filenames.len() as f64;
+    let num_seqs = seq_filenames.len() as f32;
 
     // normalize pi:
-    pi /= num_seqs + codebook_size as f64;
-    assert_approx_eq!(pi.sum(), 1.0, EQ_EPSILON);
+    pi /= num_seqs + codebook_size as f32;
+    assert_approx_eq!(pi.sum(), 1_f32, EQ_EPSILON);
 
     // normalize rows in a:
     for (j, mut a_row) in a.axis_iter_mut(Axis(0)).enumerate() {
-        a_row /= n_js[j] as f64 + codebook_size as f64;
-        assert_approx_eq!(a_row.sum(), 1.0, EQ_EPSILON);
+        a_row /= n_js[j] as f32 + codebook_size as f32;
+        assert_approx_eq!(a_row.sum(), 1_f32, EQ_EPSILON);
     }
 
     Ok(MM { class_name, pi, a })
@@ -141,7 +141,10 @@ pub fn classify(
 
         let class_id_opt = &models.iter().position(|m| m.class_name == seq.class_name);
         if let Some(class_id) = *class_id_opt {
-            let probs: Vec<f64> = models.iter().map(|m| m.log_prob_sequence(&seq)).collect();
+            let probs: Vec<f64> = models
+                .iter()
+                .map(|m| m.log_prob_sequence(&seq) as f64)
+                .collect();
             c12n.add_case(class_id, probs, show_ranked, || {
                 format!("\n{}: '{}'", filename, seq.class_name)
             });

@@ -1,5 +1,7 @@
 2020-10
 
+- change mm probability type to `f32`
+
 - 0.5.1: per C impl, can now override `prob_t` type, eg:
  
         CC=gcc-10 PROB_T=double cargo build --release
