@@ -1,9 +1,11 @@
 use itertools::Itertools;
 use std::error::Error;
 use std::fs::File;
-use std::io::BufReader;
+use std::io::{BufReader, BufWriter, Write};
 
+use crate::seq;
 use crate::utl;
+use std::path::PathBuf;
 
 #[derive(Debug)]
 pub struct Sequence {
@@ -13,9 +15,21 @@ pub struct Sequence {
 }
 
 impl Sequence {
-    pub fn show(&mut self) {
-        // sure, this can be improved
-        let symbols_to_show = if self.symbols.len() > 30 {
+    pub fn show(&mut self, opts: &seq::SeqShowOpts) {
+        if let Some(pickle_filename) = &opts.pickle {
+            self.to_pickle(pickle_filename);
+        }
+        if opts.no_sequence {
+            return;
+        }
+        if opts.only_length {
+            println!("{}", self.symbols.len());
+            return;
+        }
+
+        let symbols_to_show = if opts.full || self.symbols.len() <= 30 {
+            self.symbols.iter().join(", ")
+        } else {
             let v = self.symbols[..10].to_vec();
             let w = self.symbols[self.symbols.len() - 10..].to_vec();
             format!(
@@ -24,16 +38,22 @@ impl Sequence {
                 ", ..., ",
                 w.iter().join(", ")
             )
-        } else {
-            self.symbols.iter().join(", ")
         };
-        print!(
+        println!(
             "<{}(M={},L={}): {}>",
             self.class_name,
             self.codebook_size,
             self.symbols.len(),
             symbols_to_show,
         );
+    }
+
+    fn to_pickle(&self, filename: &PathBuf) {
+        let serialized = serde_pickle::to_vec(&self.symbols, true).unwrap();
+        let f = File::create(filename).unwrap();
+        let mut bw = BufWriter::new(f);
+        bw.write_all(&serialized[..]).unwrap();
+        println!(" Sequence saved to: {:?}", filename);
     }
 }
 

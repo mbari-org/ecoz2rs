@@ -1,5 +1,7 @@
 2020-10
 
+- `seq show`: add option `--pickle` to save sequence in pickle format
+
 - change mm probability type to `f32`
 
 - 0.5.1: per C impl, can now override `prob_t` type, eg:

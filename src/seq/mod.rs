@@ -25,31 +25,44 @@ enum EcozSeqCommand {
 
 #[derive(StructOpt, Debug)]
 pub struct SeqShowOpts {
-    /// Show associated probabilities
+    // The TODO's because of pending impl on rust side.
+    /// (TODO) Show associated probabilities
     #[structopt(short = "P")]
-    with_prob: bool,
+    pub with_prob: bool,
 
-    /// Show most likely state sequence
+    /// (TODO) Show most likely state sequence
     #[structopt(short = "Q")]
-    gen_q_opt: bool,
+    pub gen_q_opt: bool,
 
     /// Do not show sequence
     #[structopt(short = "c")]
-    no_sequence: bool,
+    pub no_sequence: bool,
 
-    /// HMM model
+    /// (TODO) HMM model
     #[structopt(long, parse(from_os_str))]
-    hmm: Option<PathBuf>,
+    pub hmm: Option<PathBuf>,
+
+    /// Only show length of the sequence
+    #[structopt(short = "L")]
+    pub only_length: bool,
+
+    /// Show full sequence (by default, abbreviated unless very short)
+    #[structopt(long)]
+    pub full: bool,
+
+    /// Export to the given file in pickle format.
+    #[structopt(long, parse(from_os_str))]
+    pub pickle: Option<PathBuf>,
 
     /// Sequences.
     /// If directories are included, then all `.seq` under them will be used.
     #[structopt(required = true, min_values = 1, parse(from_os_str))]
-    seq_filenames: Vec<PathBuf>,
+    pub seq_filenames: Vec<PathBuf>,
 }
 
 pub fn main(opts: SeqMainOpts) {
     let res = match opts.cmd {
-        Show(opts) => seq_show(opts),
+        Show(opts) => seq_show(&opts),
     };
 
     if let Err(err) = res {
@@ -57,21 +70,20 @@ pub fn main(opts: SeqMainOpts) {
     }
 }
 
-pub fn seq_show(opts: SeqShowOpts) -> Result<(), Box<dyn Error>> {
-    let SeqShowOpts {
-        with_prob: _,
-        gen_q_opt: _,
-        no_sequence: _,
-        hmm: _,
-        seq_filenames,
-    } = opts;
-
+pub fn seq_show(opts: &SeqShowOpts) -> Result<(), Box<dyn Error>> {
     use crate::sequence::load;
-    for seq_filename in seq_filenames {
+    for seq_filename in &opts.seq_filenames {
         let mut seq = load(seq_filename.to_str().unwrap())?;
-        seq.show();
+        seq.show(opts);
     }
 
+    // let SeqShowOpts {
+    //     with_prob: _,
+    //     gen_q_opt: _,
+    //     no_sequence: _,
+    //     hmm: _,
+    //     seq_filenames,
+    // } = opts;
     //    seq_show_files(
     //        with_prob,
     //        gen_q_opt,
