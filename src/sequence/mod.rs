@@ -16,9 +16,6 @@ pub struct Sequence {
 
 impl Sequence {
     pub fn show(&mut self, opts: &seq::SeqShowOpts) {
-        if let Some(pickle_filename) = &opts.pickle {
-            self.to_pickle(pickle_filename);
-        }
         if opts.no_sequence {
             return;
         }
@@ -47,14 +44,14 @@ impl Sequence {
             symbols_to_show,
         );
     }
+}
 
-    fn to_pickle(&self, filename: &PathBuf) {
-        let serialized = serde_pickle::to_vec(&self.symbols, true).unwrap();
-        let f = File::create(filename).unwrap();
-        let mut bw = BufWriter::new(f);
-        bw.write_all(&serialized[..]).unwrap();
-        println!(" Sequence saved to: {:?}", filename);
-    }
+pub fn to_pickle<T: serde::Serialize>(obj: &T, filename: &PathBuf) -> Result<(), Box<dyn Error>> {
+    let serialized = serde_pickle::to_vec(&obj, true).unwrap();
+    let f = File::create(filename)?;
+    let mut bw = BufWriter::new(f);
+    bw.write_all(&serialized[..])?;
+    Ok(())
 }
 
 pub fn load(filename: &str) -> Result<Sequence, Box<dyn Error>> {

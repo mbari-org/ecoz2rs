@@ -9,6 +9,7 @@ use structopt::StructOpt;
 //use utl;
 
 use self::EcozSeqCommand::Show;
+use crate::sequence::to_pickle;
 
 #[derive(StructOpt, Debug)]
 pub struct SeqMainOpts {
@@ -50,8 +51,9 @@ pub struct SeqShowOpts {
     #[structopt(long)]
     pub full: bool,
 
-    /// Export to the given file in pickle format.
-    #[structopt(long, parse(from_os_str))]
+    /// Export all the given sequences to the given file (in pickle format).
+    /// Other options ignored.
+    #[structopt(long, name = "filename", parse(from_os_str))]
     pub pickle: Option<PathBuf>,
 
     /// Sequences.
@@ -72,6 +74,27 @@ pub fn main(opts: SeqMainOpts) {
 
 pub fn seq_show(opts: &SeqShowOpts) -> Result<(), Box<dyn Error>> {
     use crate::sequence::load;
+
+    if let Some(pickle_filename) = &opts.pickle {
+        let list_of_sequences = &opts
+            .seq_filenames
+            .iter()
+            .map(|seq_filename| {
+                let str = seq_filename.to_str().unwrap();
+                load(str).unwrap()
+            })
+            .map(|sequence| sequence.symbols)
+            .collect::<Vec<_>>();
+
+        to_pickle(&list_of_sequences, pickle_filename)?;
+        println!(
+            "{} sequence(s) saved to {:?}",
+            list_of_sequences.len(),
+            pickle_filename
+        );
+        return Ok(()).into();
+    }
+
     for seq_filename in &opts.seq_filenames {
         let mut seq = load(seq_filename.to_str().unwrap())?;
         seq.show(opts);
