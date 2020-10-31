@@ -74,9 +74,30 @@ pub fn resolve_files(
     let is_tt_list = filenames.len() == 1 && filenames[0].to_str().unwrap().ends_with(".csv");
 
     let filenames = if is_tt_list {
-        get_files_from_csv(&filenames[0], tt, class_name_opt, subdir, file_ext)?
+        get_files_from_csv(&filenames[0], tt, &class_name_opt, subdir, file_ext)?
     } else {
         resolve_filenames(filenames, file_ext, subdir)?
+    };
+
+    Ok(filenames)
+}
+
+// TODO some "unification" as variations of some methods were added rather hastily
+
+pub fn resolve_files2(
+    filenames: &Vec<PathBuf>,
+    tt: &str,
+    class_name_opt: &Option<String>,
+    subdir: String,
+    file_ext: &str,
+) -> Result<Vec<PathBuf>, Box<dyn Error>> {
+    let subdir = subdir.as_str();
+    let is_tt_list = filenames.len() == 1 && filenames[0].to_str().unwrap().ends_with(".csv");
+
+    let filenames = if is_tt_list {
+        get_files_from_csv(&filenames[0], tt, class_name_opt, subdir, file_ext)?
+    } else {
+        resolve_filenames2(filenames, file_ext, subdir)?
     };
 
     Ok(filenames)
@@ -94,7 +115,7 @@ struct TTRow {
 pub fn get_files_from_csv(
     filename: &PathBuf,
     tt: &str,
-    class_name_opt: Option<String>,
+    class_name_opt: &Option<String>,
     subdir: &str,
     file_ext: &str,
 ) -> Result<Vec<PathBuf>, Box<dyn Error>> {
@@ -109,7 +130,8 @@ pub fn get_files_from_csv(
 
     let mut list: Vec<PathBuf> = Vec::new();
 
-    let class_string = class_name_opt.unwrap_or("".to_string());
+    let stuff = &"".to_string();
+    let class_string = class_name_opt.as_ref().unwrap_or(stuff);
     let class: &str = class_string.as_str();
     for row in rows {
         if tt != row.tt {
@@ -131,11 +153,37 @@ pub fn get_files_from_csv(
     Ok(list)
 }
 
+// TODO unify the following with resolve_filenames2
+// so use only one with more flexible parameter: `filenames: &Vec<PathBuf>`
+
 /// Returns the list of files resulting from "resolving" the given list.
 /// This will contain the same regular files in the list (but having the
 /// given extension) plus files under any given directories.
 pub fn resolve_filenames(
     filenames: Vec<PathBuf>,
+    file_ext: &str,
+    subjects_msg_if_empty: &str,
+) -> Result<Vec<PathBuf>, Box<dyn Error>> {
+    let mut list: Vec<PathBuf> = Vec::new();
+    for filename in filenames {
+        let path = Path::new(&filename);
+        if path.is_dir() {
+            let dir_files = list_files(path, file_ext)?;
+            list.extend(dir_files);
+        } else if path.is_file() && path.to_str().unwrap().ends_with(file_ext) {
+            list.push(path.to_path_buf());
+        }
+    }
+    if !list.is_empty() {
+        list.sort_by(|a, b| a.cmp(b));
+    } else if !subjects_msg_if_empty.is_empty() {
+        return Err(format!("No {} given", subjects_msg_if_empty).into());
+    }
+    Ok(list)
+}
+
+pub fn resolve_filenames2(
+    filenames: &Vec<PathBuf>,
     file_ext: &str,
     subjects_msg_if_empty: &str,
 ) -> Result<Vec<PathBuf>, Box<dyn Error>> {

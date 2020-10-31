@@ -1,6 +1,16 @@
 2020-10
 
-- `seq show`: add option `--pickle` to save sequence in pickle format
+- `seq show`: add option `--pickle` to save sequence in pickle format.
+  If given, also `--codebook-size`, `--tt` to be given, and
+  optionally `--class-name`.
+
+    Example: export all 'A' test instances with associated M=32:
+
+        ecoz2 seq show --pickle M32_TEST_sequences_A.pickle \
+                       --codebook-size=32 --tt=TEST \
+                       --class-name=A  tt-list.csv
+
+     TODO some cleanup in `utl` module.
 
 - change mm probability type to `f32`
 

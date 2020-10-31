@@ -10,6 +10,7 @@ use structopt::StructOpt;
 
 use self::EcozSeqCommand::Show;
 use crate::sequence::to_pickle;
+use crate::utl;
 
 #[derive(StructOpt, Debug)]
 pub struct SeqMainOpts {
@@ -52,12 +53,22 @@ pub struct SeqShowOpts {
     pub full: bool,
 
     /// Export all the given sequences to the given file (in pickle format).
-    /// Other options ignored.
     #[structopt(long, name = "filename", parse(from_os_str))]
     pub pickle: Option<PathBuf>,
 
-    /// Sequences.
-    /// If directories are included, then all `.seq` under them will be used.
+    /// Desired class name when `--pickle` is given
+    #[structopt(long, name = "class")]
+    class_name: Option<String>,
+
+    /// TRAIN or TEST when `--pickle` is given
+    #[structopt(long)]
+    tt: String,
+
+    /// Codebook size when `--pickle` is given
+    #[structopt(short = "M", long, name = "#")]
+    codebook_size: usize,
+
+    /// Sequences, gathered according to various parameters.
     #[structopt(required = true, min_values = 1, parse(from_os_str))]
     pub seq_filenames: Vec<PathBuf>,
 }
@@ -76,8 +87,16 @@ pub fn seq_show(opts: &SeqShowOpts) -> Result<(), Box<dyn Error>> {
     use crate::sequence::load;
 
     if let Some(pickle_filename) = &opts.pickle {
-        let list_of_sequences = &opts
-            .seq_filenames
+        let codebook_size = &opts.codebook_size;
+        let seq_filenames = utl::resolve_files2(
+            &opts.seq_filenames,
+            &opts.tt,
+            &opts.class_name,
+            format!("sequences/M{}", codebook_size),
+            ".seq",
+        )?;
+
+        let list_of_sequences = &seq_filenames
             .iter()
             .map(|seq_filename| {
                 let str = seq_filename.to_str().unwrap();
@@ -95,6 +114,7 @@ pub fn seq_show(opts: &SeqShowOpts) -> Result<(), Box<dyn Error>> {
         return Ok(()).into();
     }
 
+    // NOTE here the gathered sequences are just as explicitly given
     for seq_filename in &opts.seq_filenames {
         let mut seq = load(seq_filename.to_str().unwrap())?;
         seq.show(opts);
