@@ -1,11 +1,11 @@
-use itertools::Itertools;
 use std::error::Error;
 use std::fs::File;
-use std::io::{BufReader, BufWriter, Write};
+use std::io::BufReader;
+
+use itertools::Itertools;
 
 use crate::seq;
 use crate::utl;
-use std::path::PathBuf;
 
 #[derive(Debug)]
 pub struct Sequence {
@@ -44,14 +44,6 @@ impl Sequence {
             symbols_to_show,
         );
     }
-}
-
-pub fn to_pickle<T: serde::Serialize>(obj: &T, filename: &PathBuf) -> Result<(), Box<dyn Error>> {
-    let serialized = serde_pickle::to_vec(&obj, true).unwrap();
-    let f = File::create(filename)?;
-    let mut bw = BufWriter::new(f);
-    bw.write_all(&serialized[..])?;
-    Ok(())
 }
 
 pub fn load(filename: &str) -> Result<Sequence, Box<dyn Error>> {

@@ -1,15 +1,22 @@
+use crate::utl;
 use colored::*;
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::BufWriter;
 use std::io::Write;
+use std::path::PathBuf;
 
 // note: just a quick direct translation of my C code from the early 90s ;)
 
 /// Classification results
 pub struct C12nResults {
     model_class_names: Vec<String>,
+
     result: Vec<Vec<i32>>,
     confusion: Vec<Vec<i32>>,
+    // TODO eventually remove some to the above
+    y_true: Vec<String>,
+    y_pred: Vec<String>,
 }
 
 impl C12nResults {
@@ -18,15 +25,26 @@ impl C12nResults {
         let result = vec![vec![0i32; num_models + 1]; num_models + 1];
         let confusion = vec![vec![0i32; num_models + 1]; num_models + 1];
 
+        let y_true = Vec::new();
+        let y_pred = Vec::new();
+
         C12nResults {
             model_class_names,
             result,
             confusion,
+            y_true,
+            y_pred,
         }
     }
 
-    pub fn add_case<F>(&mut self, class_id: usize, probs: Vec<f64>, show_ranked: bool, f: F)
-    where
+    pub fn add_case<F>(
+        &mut self,
+        class_id: usize,
+        seq_classname: &String,
+        probs: Vec<f64>,
+        show_ranked: bool,
+        f: F,
+    ) where
         F: FnOnce() -> String,
     {
         let num_models = self.model_class_names.len();
@@ -38,9 +56,15 @@ impl C12nResults {
         let mut probs: Vec<(usize, &f64)> = probs.iter().enumerate().collect();
         probs.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap());
 
-        let correct = class_id == probs[num_models - 1].0;
+        let predicted_id = probs[num_models - 1].0;
+        let correct = class_id == predicted_id;
         print!("{}", if correct { "*".green() } else { "_".red() });
         std::io::stdout().flush().unwrap();
+
+        self.y_true.push(seq_classname.to_string());
+
+        let predicted_class_name = &self.model_class_names[predicted_id];
+        self.y_pred.push(predicted_class_name.to_string());
 
         if show_ranked && !correct {
             let header_line = f();
@@ -190,6 +214,15 @@ impl C12nResults {
         println!();
 
         report_summary(summary, summary_name);
+
+        let mut y_true_pred = HashMap::new();
+        y_true_pred.insert("y_true".to_string(), &self.y_true);
+        y_true_pred.insert("y_pred".to_string(), &self.y_pred);
+
+        // TODO appropriate file name
+        let mut y_true_pred_path = PathBuf::new();
+        y_true_pred_path.push("y_true_pred_TODO.pickle");
+        utl::to_pickle(&y_true_pred, &y_true_pred_path).unwrap();
     }
 }
 

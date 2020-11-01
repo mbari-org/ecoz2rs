@@ -1,5 +1,8 @@
 2020-10
 
+- c12n: export y_true and y_pred to facilitate use of external tools
+  for confusion matrix and the like
+ 
 - `seq show`: add option `--pickle` to save sequence in pickle format.
   If given, also `--codebook-size`, `--tt` to be given, and
   optionally `--class-name`.

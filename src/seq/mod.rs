@@ -9,7 +9,6 @@ use structopt::StructOpt;
 //use utl;
 
 use self::EcozSeqCommand::Show;
-use crate::sequence::to_pickle;
 use crate::utl;
 
 #[derive(StructOpt, Debug)]
@@ -105,7 +104,7 @@ pub fn seq_show(opts: &SeqShowOpts) -> Result<(), Box<dyn Error>> {
             .map(|sequence| sequence.symbols)
             .collect::<Vec<_>>();
 
-        to_pickle(&list_of_sequences, pickle_filename)?;
+        utl::to_pickle(&list_of_sequences, pickle_filename)?;
         println!(
             "{} sequence(s) saved to {:?}",
             list_of_sequences.len(),

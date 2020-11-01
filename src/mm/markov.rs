@@ -150,7 +150,7 @@ pub fn classify(
                 .iter()
                 .map(|m| m.log_prob_sequence(&seq) as f64)
                 .collect();
-            c12n.add_case(class_id, probs, show_ranked, || {
+            c12n.add_case(class_id, &seq.class_name, probs, show_ranked, || {
                 format!("\n{}: '{}'", filename, seq.class_name)
             });
         }

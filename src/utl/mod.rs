@@ -227,3 +227,11 @@ pub fn save_ser<T: serde::Serialize>(model: &T, filename: &str) -> Result<(), Bo
     serde_cbor::to_writer(bw, &model)?;
     Ok(())
 }
+
+pub fn to_pickle<T: serde::Serialize>(obj: &T, filename: &PathBuf) -> Result<(), Box<dyn Error>> {
+    let serialized = serde_pickle::to_vec(&obj, true).unwrap();
+    let f = File::create(filename)?;
+    let mut bw = BufWriter::new(f);
+    bw.write_all(&serialized[..])?;
+    Ok(())
+}
