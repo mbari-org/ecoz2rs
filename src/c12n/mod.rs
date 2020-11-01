@@ -1,10 +1,6 @@
 use crate::utl;
 use colored::*;
-use std::collections::HashMap;
-use std::fs::File;
-use std::io::BufWriter;
 use std::io::Write;
-use std::path::PathBuf;
 
 // note: just a quick direct translation of my C code from the early 90s ;)
 
@@ -213,27 +209,30 @@ impl C12nResults {
         //println!("    error_rate  {:6.2}%", 100_f32 - summary.avg_accuracy);
         println!();
 
-        report_summary(summary, summary_name);
+        utl::save_json(&summary, &summary_name).unwrap();
 
-        let mut y_true_pred = HashMap::new();
-        y_true_pred.insert("y_true".to_string(), &self.y_true);
-        y_true_pred.insert("y_pred".to_string(), &self.y_pred);
-
+        let y_true = &self.y_true;
+        let y_pred = &self.y_pred;
+        let true_pred = TruePred {
+            y_true: y_true.to_vec(),
+            y_pred: y_pred.to_vec(),
+        };
         // TODO appropriate file name
-        let mut y_true_pred_path = PathBuf::new();
-        y_true_pred_path.push("y_true_pred_TODO.pickle");
-        utl::to_pickle(&y_true_pred, &y_true_pred_path).unwrap();
+        let true_pred_filename = "y_true_pred_TODO.json";
+        utl::save_json(&true_pred, &true_pred_filename).unwrap();
+        println!("{} saved", true_pred_filename);
     }
-}
-
-fn report_summary(summary: Summary, summary_name: String) {
-    let f = File::create(summary_name).unwrap();
-    let bw = BufWriter::new(f);
-    serde_json::to_writer(bw, &summary).unwrap();
 }
 
 #[derive(serde::Serialize)]
 struct Summary {
     accuracy: f32,
     avg_accuracy: f32,
+}
+
+// TODO instead, generate a c12n CSV as the HMM C code does.
+#[derive(serde::Serialize)]
+struct TruePred {
+    y_true: Vec<String>,
+    y_pred: Vec<String>,
 }
