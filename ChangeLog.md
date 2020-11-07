@@ -1,3 +1,7 @@
+2020-11
+
+- 0.5.2: update openmp-sys to 1.0.0 (from 0.1.7)
+
 2020-10
 
 - c12n: export y_true and y_pred to facilitate use of external tools

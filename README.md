@@ -13,13 +13,18 @@ Linux and MacOS, which you can find under
 Alternatively, you can also install the executable using
 [`Rust`](https://www.rust-lang.org/tools/install).
 For this you will also need a GNU gcc compiler on your machine.
+
 On Linux you can run:
 
-    $ CC=gcc cargo install ecoz2
+    $ export CC=gcc
+    $ export PROB_T=double    # this will be the default in a future version
+    $ cargo install ecoz2
 
 and on a MacOS, something like:
 
-    $ CC=gcc-9 cargo install ecoz2
+    $ export CC=gcc-10
+    $ export PROB_T=double
+    $ cargo install ecoz2
 
 This may take some time to complete (example of output
 [here](https://gist.github.com/carueda/0b4ede3e0152d3d670b0a0f2fc7098ce)).
@@ -27,7 +32,7 @@ This may take some time to complete (example of output
 Running:
 
     $ ecoz2
-    ecoz2 0.3.35
+    ecoz2 0.5.2
     ECOZ2 System
     
     USAGE:
@@ -43,9 +48,12 @@ Running:
         help        Prints this message or the help of the given subcommand(s)
         hmm         HMM operations
         lpc         Linear prediction coding
+        mm          MM operations
+        nb          NBayes operations
         prd         Predictor file operations
         seq         Sequence file operations
         sgn         Signal operations
+        util        Utilities
         vq          VQ operations
 
 Starting with a set of acoustic signals (WAV format) on your machine,
@@ -66,4 +74,9 @@ in this general order:
 with selected functionality exposed via
 https://doc.rust-lang.org/cargo/reference/build-scripts.html.
 
+    $ export CC=gcc-10
+    $ export PROB_T=double
+     
     $ cargo build [--release]
+    
+    $ cargo install --path .

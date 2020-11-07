@@ -1,6 +1,6 @@
 [package]
 name = "ecoz2"
-version = "0.5.1"
+version = "0.5.2"
 authors = [
     "Carlos A. Rueda <carueda@mbari.org>",
 ]
@@ -48,7 +48,7 @@ walkdir = "2.3.1"
 
 [dependencies.openmp-sys]
 features = ["static"]
-version = "0.1.7"
+version = "1.0.0"
 
 # https://stackoverflow.com/a/34054833/830737
 [profile.dev]
@@ -56,7 +56,7 @@ opt-level = 3
 
 [dev-dependencies]
 criterion = "0.3"
-openmp-sys = { version = "0.1.7", features = ["static"] }
+openmp-sys = { version = "1.0.0", features = ["static"] }
 
 [[bench]]
 name = "my_benchmark"
