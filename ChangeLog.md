@@ -1,5 +1,30 @@
 2020-11
 
+NOTE:
+
+Was able to build on `pam` (x86_64 GNU/Linux; gcc 4.8.5 20150623 (Red Hat 4.8.5-39)) 
+by simply removing the "static" feature for `openmp-sys` in `Cargo.toml`.
+ 
+NOTE: the conditioning added in `Cargo.toml` to accommodate both linux and macos
+is not currently effective for linux per https://github.com/rust-lang/cargo/issues/7914.
+The conditioning is because "Static linking is recommended on macOS."
+
+This is the current situation:
+
+Per https://github.com/rust-lang/cargo/issues/7914#issuecomment-599147541,
+building on linux as follows:
+  
+    $ rustup override set nightly
+        
+Then any of the typical builds, eg:
+    
+    $ cargo +nightly build   -Z features=itarget
+    $ cargo +nightly install -Z features=itarget --path .
+        
+Note: The updated `Cargo.toml` with the conditioning works just fine on MacOs
+without having to set any of the "nightly" stuff, I suppose because the "static"
+feature is always taking effect according to the issue.
+
 - 0.5.2: update openmp-sys to 1.0.0 (from 0.1.7)
 
 2020-10

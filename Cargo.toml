@@ -46,9 +46,21 @@ serde-pickle = "0.6"
 structopt = { version = "0.3", features = [ "paw" ] }
 walkdir = "2.3.1"
 
-[dependencies.openmp-sys]
-features = ["static"]
+# "Static linking is recommended on macOS"
+[target.'cfg(target_os = "macos")'.dependencies.openmp-sys]
 version = "1.0.0"
+features = ["static"]
+
+[target.'cfg(target_os = "linux")'.dependencies.openmp-sys]
+version = "1.0.0"
+
+# "Static linking is recommended on macOS"
+[target.'cfg(target_os = "macos")'.dev-dependencies]
+openmp-sys = { version = "1.0.0", features = ["static"] }
+
+[target.'cfg(target_os = "linux")'.dev-dependencies]
+openmp-sys = "1.0.0"
+
 
 # https://stackoverflow.com/a/34054833/830737
 [profile.dev]
@@ -56,7 +68,6 @@ opt-level = 3
 
 [dev-dependencies]
 criterion = "0.3"
-openmp-sys = { version = "1.0.0", features = ["static"] }
 
 [[bench]]
 name = "my_benchmark"
