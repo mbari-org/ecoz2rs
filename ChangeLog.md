@@ -1,5 +1,7 @@
 2020-11
 
+- 0.5.3: C impl increase of MAX_PREDICTION_ORDER to 70
+
 NOTE:
 
 Was able to build on `pam` (x86_64 GNU/Linux; gcc 4.8.5 20150623 (Red Hat 4.8.5-39)) 
