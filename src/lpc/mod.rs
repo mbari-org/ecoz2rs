@@ -31,14 +31,29 @@ pub struct LpcOpts {
     minpc: usize,
 
     /// Put the generated predictors into two different training
-    /// and test subsets (with the given approx ratio)
+    /// and test subsets (with the given approx ratio).
+    /// DEPRECATED.
     #[structopt(short = "s", long, default_value = "0")]
     split: f32,
 
     /// Signal files to process. If directories are included, then
     /// all `.wav` under them will be used.
-    #[structopt(parse(from_os_str))]
-    sgn_filenames: Vec<PathBuf>,
+    /// If a `.csv` is given, then it's assumed to contain columns
+    /// `tt,class,selection` to process desired signals according to
+    /// `--signals-dir-template`, `--tt`, `--class`.
+    /// TODO --class
+    #[structopt(long, required = true, min_values = 1, parse(from_os_str))]
+    signals: Vec<PathBuf>,
+
+    #[structopt(long, default_value = "data/signals")]
+    signals_dir_template: String,
+
+    /// TRAIN or TEST
+    #[structopt(long)]
+    tt: Option<String>,
+
+    #[structopt(long)]
+    class: Option<String>,
 
     /// Min time in secs to report processing time per signal
     #[structopt(short = "X", default_value = "5")]
@@ -51,6 +66,9 @@ pub struct LpcOpts {
     /// Use Rust "parallel" implementation
     #[structopt(long)]
     zrsp: bool,
+
+    #[structopt(long)]
+    verbose: bool,
 }
 
 pub fn main(opts: LpcOpts) {
@@ -68,13 +86,29 @@ pub fn main_lpc(opts: LpcOpts) -> Result<(), Box<dyn Error>> {
         offset_length_ms,
         minpc,
         split,
-        sgn_filenames,
+        signals,
+        signals_dir_template,
+        tt,
+        class,
         mintrpt,
         zrs,
         zrsp,
+        verbose,
     } = opts;
 
-    let sgn_filenames = utl::resolve_filenames(sgn_filenames, ".wav", "signals")?;
+    let tt = tt.unwrap_or("".to_string());
+
+    let sgn_filenames = utl::resolve_files3(
+        &signals,
+        tt.as_str(),
+        &class,
+        "".to_string(),
+        signals_dir_template,
+        ".wav",
+    )?;
+
+    // println!("sgn_filenames = {:?}", sgn_filenames);
+    // return Ok(()).into();
 
     if zrs {
         assert!(!zrsp);
@@ -100,6 +134,7 @@ pub fn main_lpc(opts: LpcOpts) -> Result<(), Box<dyn Error>> {
             split,
             sgn_filenames,
             mintrpt,
+            verbose,
         );
     }
 

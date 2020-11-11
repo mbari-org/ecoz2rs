@@ -86,6 +86,7 @@ extern "C" {
         sgn_filenames: *const *const c_char,
         num_signals: c_int,
         mintrpt: c_float, // min time in secs to report processing time per signal
+        verbose: c_int,
     );
 
     fn ecoz2_prd_show_file(
@@ -188,6 +189,7 @@ pub fn lpc_signals(
     split: f32,
     sgn_filenames: Vec<PathBuf>,
     mintrpt: f32,
+    verbose: bool,
 ) {
     let vpc_signals: Vec<*const c_char> = to_vec_of_ptr_const_c_char(sgn_filenames);
 
@@ -201,6 +203,7 @@ pub fn lpc_signals(
             vpc_signals.as_ptr(),
             vpc_signals.len() as c_int,
             mintrpt as c_float,
+            verbose as c_int,
         )
     }
 }

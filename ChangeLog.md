@@ -1,5 +1,16 @@
 2020-11
 
+- 0.5.4: 
+    - `lpc`: add options for "tt-list" handling as in other commands.
+      The general idea is train/test splitting should be done on signals.
+      
+      The new options include `--signals-dir-template`, which could be
+      elaborated more in general in a future version.
+      
+        TODO: not have to specify `--tt`
+        
+    - verbose for lpc analysis in C impl
+
 - 0.5.3: C impl increase of MAX_PREDICTION_ORDER to 70
 
 NOTE:

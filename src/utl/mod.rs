@@ -74,7 +74,7 @@ pub fn resolve_files(
     let is_tt_list = filenames.len() == 1 && filenames[0].to_str().unwrap().ends_with(".csv");
 
     let filenames = if is_tt_list {
-        get_files_from_csv(&filenames[0], tt, &class_name_opt, subdir, file_ext)?
+        get_files_from_csv(&filenames[0], tt, &class_name_opt, subdir, file_ext, &None)?
     } else {
         resolve_filenames(filenames, file_ext, subdir)?
     };
@@ -95,7 +95,35 @@ pub fn resolve_files2(
     let is_tt_list = filenames.len() == 1 && filenames[0].to_str().unwrap().ends_with(".csv");
 
     let filenames = if is_tt_list {
-        get_files_from_csv(&filenames[0], tt, class_name_opt, subdir, file_ext)?
+        get_files_from_csv(&filenames[0], tt, class_name_opt, subdir, file_ext, &None)?
+    } else {
+        resolve_filenames2(filenames, file_ext, subdir)?
+    };
+
+    Ok(filenames)
+}
+
+pub fn resolve_files3(
+    filenames: &Vec<PathBuf>,
+    tt: &str,
+    class_name_opt: &Option<String>,
+    subdir: String,
+    subdir_template: String,
+    file_ext: &str,
+) -> Result<Vec<PathBuf>, Box<dyn Error>> {
+    let subdir = subdir.as_str();
+    let is_tt_list = filenames.len() == 1 && filenames[0].to_str().unwrap().ends_with(".csv");
+
+    let filenames = if is_tt_list {
+        let subdir_template = Some(subdir_template);
+        get_files_from_csv(
+            &filenames[0],
+            tt,
+            class_name_opt,
+            subdir,
+            file_ext,
+            &subdir_template,
+        )?
     } else {
         resolve_filenames2(filenames, file_ext, subdir)?
     };
@@ -118,6 +146,7 @@ pub fn get_files_from_csv(
     class_name_opt: &Option<String>,
     subdir: &str,
     file_ext: &str,
+    subdir_template_opt: &Option<String>,
 ) -> Result<Vec<PathBuf>, Box<dyn Error>> {
     let file = File::open(filename)?;
     let br = BufReader::new(file);
@@ -141,10 +170,17 @@ pub fn get_files_from_csv(
             continue;
         }
 
-        let filename = format!(
-            "data/{}/{}/{}{}",
-            subdir, row.class, row.selection, file_ext
-        );
+        let filename = match subdir_template_opt {
+            Some(subdir_template) => subdir_template
+                .replace("{class}", &row.class)
+                .replace("{selection}", &row.selection),
+
+            None => format!(
+                "data/{}/{}/{}{}",
+                subdir, row.class, row.selection, file_ext
+            ),
+        };
+
         list.push(PathBuf::from(filename));
     }
     if list.is_empty() {
