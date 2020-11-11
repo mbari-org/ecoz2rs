@@ -1,5 +1,7 @@
 2020-11
 
+- 0.5.5: increased maximum prediction order (200)
+ 
 - 0.5.4: 
     - `lpc`: add options for "tt-list" handling as in other commands.
       The general idea is train/test splitting should be done on signals.

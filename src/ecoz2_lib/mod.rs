@@ -263,7 +263,7 @@ pub fn vq_learn(
     // thread needed to increment stack size, currently required
     // for the C implementation
     let child = thread::Builder::new()
-        .stack_size(32 * 1024 * 1024)
+        .stack_size(128 * 1024 * 1024)
         .spawn(move || {
             let class_name = CString::new(codebook_class_name).unwrap();
             let vpc_predictors: Vec<*const c_char> =
