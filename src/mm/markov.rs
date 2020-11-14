@@ -129,6 +129,7 @@ pub fn classify(
     mm_filenames: Vec<PathBuf>,
     seq_filenames: Vec<PathBuf>,
     show_ranked: bool,
+    codebook_size: usize,
 ) -> Result<(), Box<dyn Error>> {
     println!("Loading MM models");
     let models: Vec<MM> = mm_filenames
@@ -159,7 +160,8 @@ pub fn classify(
     println!();
 
     let class_names: Vec<&String> = models.iter().map(|m| &m.class_name).collect();
-    c12n.report_results(class_names, "mm-classification.json".to_string());
+    let out_base_name = format!("mm_{}", codebook_size);
+    c12n.report_results(class_names, out_base_name);
 
     Ok(())
 }

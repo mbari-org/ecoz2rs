@@ -145,7 +145,7 @@ pub fn main_nbayes_classify(opts: NBayesClassifyOpts) -> Result<(), Box<dyn Erro
     );
     println!("show_ranked = {}", show_ranked);
 
-    nbayes::classify(nb_filenames, seq_filenames, show_ranked)
+    nbayes::classify(nb_filenames, seq_filenames, show_ranked, codebook_size)
 }
 
 pub fn main_nbayes_show(opts: NBayesShowOpts) -> Result<(), Box<dyn Error>> {

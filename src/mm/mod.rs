@@ -146,7 +146,7 @@ pub fn main_mm_classify(opts: MMClassifyOpts) -> Result<(), Box<dyn Error>> {
     );
     println!("show_ranked = {}", show_ranked);
 
-    markov::classify(mm_filenames, seq_filenames, show_ranked)
+    markov::classify(mm_filenames, seq_filenames, show_ranked, codebook_size)
 }
 
 pub fn main_mm_show(opts: MMShowOpts) -> Result<(), Box<dyn Error>> {

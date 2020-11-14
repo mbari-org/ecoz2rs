@@ -105,7 +105,7 @@ impl C12nResults {
         }
     }
 
-    pub fn report_results(&mut self, class_names: Vec<&String>, summary_name: String) {
+    pub fn report_results(&mut self, class_names: Vec<&String>, out_base_name: String) {
         let num_models = self.model_class_names.len();
 
         //    println!("result = {:?}\n", self.result);
@@ -209,7 +209,9 @@ impl C12nResults {
         //println!("    error_rate  {:6.2}%", 100_f32 - summary.avg_accuracy);
         println!();
 
-        utl::save_json(&summary, &summary_name).unwrap();
+        let out_summary = format!("{}_classification.json", &out_base_name);
+        utl::save_json(&summary, &out_summary).unwrap();
+        println!("{} saved", out_summary);
 
         let y_true = &self.y_true;
         let y_pred = &self.y_pred;
@@ -217,10 +219,9 @@ impl C12nResults {
             y_true: y_true.to_vec(),
             y_pred: y_pred.to_vec(),
         };
-        // TODO appropriate file name
-        let true_pred_filename = "y_true_pred_TODO.json";
-        utl::save_json(&true_pred, &true_pred_filename).unwrap();
-        println!("{} saved", true_pred_filename);
+        let out_true_pred = format!("{}_y_true_pred.json", &out_base_name);
+        utl::save_json(&true_pred, &out_true_pred).unwrap();
+        println!("{} saved", out_true_pred);
     }
 }
 
