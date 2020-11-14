@@ -1,5 +1,10 @@
 2020-11
 
+- 0.5.5: per C impl, `prob_t` type is now `double` by default,
+  so, just building/installing with:
+ 
+        CC=gcc-10 cargo install --path .
+
 - 0.5.5: increased maximum prediction order (200)
  
 - 0.5.4: 
