@@ -8,6 +8,8 @@ implementation of the ECOZ2 programs in Rust.
 - for python binding
     - https://github.com/PyO3/pyo3
     - https://github.com/PyO3/maturin
+    - https://www.reddit.com/r/rust/comments/fxe99l/cffi_vs_cpython_vs_pyo3_what_should_i_use/fmvgonr/
+    - http://jakegoulding.com/rust-ffi-omnibus/
 
 - `long double` was used since the origins of the C implementation to represent
    probabilities in HMM models.
