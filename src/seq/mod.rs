@@ -61,11 +61,11 @@ pub struct SeqShowOpts {
 
     /// TRAIN or TEST when `--pickle` is given
     #[structopt(long)]
-    tt: String,
+    tt: Option<String>,
 
     /// Codebook size when `--pickle` is given
     #[structopt(short = "M", long, name = "#")]
-    codebook_size: usize,
+    codebook_size: Option<usize>,
 
     /// Sequences, gathered according to various parameters.
     #[structopt(required = true, min_values = 1, parse(from_os_str))]
@@ -86,31 +86,35 @@ pub fn seq_show(opts: &SeqShowOpts) -> Result<(), Box<dyn Error>> {
     use crate::sequence::load;
 
     if let Some(pickle_filename) = &opts.pickle {
-        let codebook_size = &opts.codebook_size;
-        let seq_filenames = utl::resolve_files2(
-            &opts.seq_filenames,
-            &opts.tt,
-            &opts.class_name,
-            format!("sequences/M{}", codebook_size),
-            ".seq",
-        )?;
+        if let (Some(codebook_size), Some(tt)) = (&opts.codebook_size, &opts.tt) {
+            let seq_filenames = utl::resolve_files2(
+                &opts.seq_filenames,
+                &tt,
+                &opts.class_name,
+                format!("sequences/M{}", codebook_size),
+                ".seq",
+            )?;
 
-        let list_of_sequences = &seq_filenames
-            .iter()
-            .map(|seq_filename| {
-                let str = seq_filename.to_str().unwrap();
-                load(str).unwrap()
-            })
-            .map(|sequence| sequence.symbols)
-            .collect::<Vec<_>>();
+            let list_of_sequences = &seq_filenames
+                .iter()
+                .map(|seq_filename| {
+                    let str = seq_filename.to_str().unwrap();
+                    load(str).unwrap()
+                })
+                .map(|sequence| sequence.symbols)
+                .collect::<Vec<_>>();
 
-        utl::to_pickle(&list_of_sequences, pickle_filename)?;
-        println!(
-            "{} sequence(s) saved to {:?}",
-            list_of_sequences.len(),
-            pickle_filename
-        );
-        return Ok(()).into();
+            utl::to_pickle(&list_of_sequences, pickle_filename)?;
+            println!(
+                "{} sequence(s) saved to {:?}",
+                list_of_sequences.len(),
+                pickle_filename
+            );
+            return Ok(()).into();
+        } else {
+            // TODO more elegant handing
+            panic!("--codebook-size and --tt required when --pickle given")
+        }
     }
 
     // NOTE here the gathered sequences are just as explicitly given
