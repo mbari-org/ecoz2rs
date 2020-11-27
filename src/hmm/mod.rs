@@ -45,10 +45,6 @@ pub struct HmmLearnOpts {
     #[structopt(short = "M", long, required = true)]
     codebook_size: usize,
 
-    /// Class name for the trained model
-    #[structopt(long, name = "class")]
-    class_name: Option<String>,
-
     /// Type of model to generate:
     ///    0: random values for pi, A, and B
     ///    1: uniform distributions
@@ -84,6 +80,11 @@ pub struct HmmLearnOpts {
     /// Otherwise, if directories are included, then all `.seq` under them will be used.
     #[structopt(long, parse(from_os_str), name = "files")]
     sequences: Vec<PathBuf>,
+
+    /// If training sequences are given via a `.csv` file,
+    /// only select the ones with this class name.
+    #[structopt(long, name = "class")]
+    class_name: Option<String>,
 }
 
 #[derive(StructOpt, Debug)]
@@ -144,7 +145,6 @@ pub fn main_hmm_learn(opts: HmmLearnOpts) -> Result<(), Box<dyn Error>> {
     let HmmLearnOpts {
         num_states,
         codebook_size,
-        class_name,
         type_,
         max_iterations,
         epsilon,
@@ -152,6 +152,7 @@ pub fn main_hmm_learn(opts: HmmLearnOpts) -> Result<(), Box<dyn Error>> {
         seed,
         ser,
         sequences,
+        class_name,
     } = opts;
 
     let seq_filenames = utl::resolve_files(

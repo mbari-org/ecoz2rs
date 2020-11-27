@@ -1,5 +1,9 @@
 2020-11
 
+- 0.5.6: `hmm learn`: fix description of `--class-name` parameter.
+  This is actually for selection when `.csv` given.
+  (the name of the training model is taken from the first training sequence.)
+
 - 0.5.5: per C impl, `prob_t` type is now `double` by default,
   so, just building/installing with:
  
