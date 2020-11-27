@@ -76,7 +76,8 @@ pub struct HmmLearnOpts {
     ser: bool,
 
     /// Training sequences.
-    /// If a single `.csv` file is given, then the "TRAIN" files indicated there will be used.
+    /// If a single `.csv` file is given, then the "TRAIN" files indicated there will be used,
+    /// and only the ones corresponding to a class name if `--class-name` is given.
     /// Otherwise, if directories are included, then all `.seq` under them will be used.
     #[structopt(long, parse(from_os_str), name = "files")]
     sequences: Vec<PathBuf>,
