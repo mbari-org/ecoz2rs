@@ -108,6 +108,11 @@ pub struct HmmClassifyOpts {
     #[structopt(long, required = true)]
     tt: String,
 
+    /// If sequences or predictors are given via a `.csv` file,
+    /// only select the ones with this class name.
+    #[structopt(long, name = "class")]
+    class_name: Option<String>,
+
     /// Sequences to classify.
     /// If directories are included, then all `.seq` under them will be used.
     #[structopt(
@@ -214,6 +219,7 @@ pub fn main_hmm_classify(opts: HmmClassifyOpts) -> Result<(), Box<dyn Error>> {
         classification_filename,
         models,
         tt,
+        class_name,
         sequences,
         codebook_size,
         predictors,
@@ -228,7 +234,7 @@ pub fn main_hmm_classify(opts: HmmClassifyOpts) -> Result<(), Box<dyn Error>> {
         let seq_filenames = utl::resolve_files(
             sequences,
             tt.as_str(),
-            None,
+            class_name,
             format!("sequences/M{}", codebook_size),
             ".seq",
         )?;
@@ -254,7 +260,7 @@ pub fn main_hmm_classify(opts: HmmClassifyOpts) -> Result<(), Box<dyn Error>> {
         let prd_filenames = utl::resolve_files(
             predictors,
             tt.as_str(),
-            None,
+            class_name,
             "predictors".to_string(),
             ".prd",
         )?;

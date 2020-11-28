@@ -74,11 +74,19 @@ pub struct VqQuantizeOpts {
     #[structopt(long = "codebook", parse(from_os_str))]
     codebook: PathBuf,
 
-    /// LPC vector sequences to be quantized.
-    #[structopt(parse(from_os_str))]
+    /// Predictor files to be quantized.
+    #[structopt(long, required = true, parse(from_os_str), name = "files")]
     predictors: Vec<PathBuf>,
 
-    /// Show file names are they are processed.
+    #[structopt(long, default_value = "data/predictors")]
+    predictors_dir_template: String,
+
+    /// Optional selection of TRAIN or TEST instances
+    /// when `.csv` is given to `--predictors`.
+    #[structopt(long)]
+    tt: Option<String>,
+
+    /// Show file names as they are processed.
     #[structopt(short, long)]
     show_filenames: bool,
 }
@@ -179,10 +187,21 @@ pub fn main_vq_quantize(opts: VqQuantizeOpts) -> Result<(), Box<dyn Error>> {
     let VqQuantizeOpts {
         codebook,
         predictors,
+        predictors_dir_template,
+        tt,
         show_filenames,
     } = opts;
 
-    let prd_filenames = utl::resolve_filenames(predictors, ".prd", "predictors")?;
+    let tt = tt.unwrap_or("".to_string());
+
+    let prd_filenames = utl::resolve_files3(
+        &predictors,
+        tt.as_str(),
+        &None,
+        "".to_string(),
+        predictors_dir_template,
+        ".prd",
+    )?;
 
     println!("number of predictor files: {}", prd_filenames.len());
 
