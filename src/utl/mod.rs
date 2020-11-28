@@ -150,7 +150,10 @@ pub fn get_files_from_csv(
 ) -> Result<Vec<PathBuf>, Box<dyn Error>> {
     let file = File::open(filename)?;
     let br = BufReader::new(file);
-    let mut rdr = csv::ReaderBuilder::new().delimiter(b',').from_reader(br);
+    let mut rdr = csv::ReaderBuilder::new()
+        .comment(Some(b'#'))
+        .delimiter(b',')
+        .from_reader(br);
 
     let rows: Vec<TTRow> = rdr
         .deserialize()

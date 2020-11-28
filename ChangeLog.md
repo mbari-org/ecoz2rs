@@ -1,5 +1,6 @@
 2020-11
 
+- set `#` as comment character when reading in a csv file
 - `seq show`: `--codebook-size` and `--tt` required only when `--pickle` given
 - 0.5.6: `hmm learn`: fix description of `--class-name` parameter.
   This is actually for selection when `.csv` given.

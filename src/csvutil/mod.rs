@@ -50,7 +50,10 @@ pub fn main_csv_show(opts: CsvShowOpts) {
 pub fn load_instance_info(filename: &str) -> Result<Vec<InstanceInfo>, Box<dyn Error>> {
     let file = File::open(filename)?;
     let br = BufReader::new(file);
-    let mut rdr = csv::ReaderBuilder::new().delimiter(b'\t').from_reader(br);
+    let mut rdr = csv::ReaderBuilder::new()
+        .comment(Some(b'#'))
+        .delimiter(b'\t')
+        .from_reader(br);
 
     let instances: Vec<InstanceInfo> = rdr
         .deserialize()
