@@ -156,6 +156,17 @@ extern "C" {
         classification_filename: *const c_char,
     );
 
+    fn ecoz2_hmm_classify_predictors(
+        model_filenames: *const *const c_char,
+        num_models: c_uint,
+        cb_filenames: *const *const c_char,
+        num_codebooks: c_int,
+        prd_filenames: *const *const c_char,
+        num_predictors: c_int,
+        show_ranked: c_int,
+        classification_filename: *const c_char,
+    );
+
     fn ecoz2_hmm_show(hmm_filename: *const c_char, format: *const c_char);
 
 // TODO to be removed
@@ -417,7 +428,7 @@ pub fn hmm_learn(
     }
 }
 
-pub fn hmm_classify(
+pub fn hmm_classify_sequences(
     model_filenames: Vec<PathBuf>,
     sequence_filenames: Vec<PathBuf>,
     show_ranked: bool,
@@ -438,6 +449,38 @@ pub fn hmm_classify(
             vpc_models.len() as c_uint,
             vpc_sequences.as_ptr(),
             vpc_sequences.len() as c_uint,
+            show_ranked as c_int,
+            classification_filename,
+        );
+    }
+}
+
+pub fn hmm_classify_predictors(
+    model_filenames: Vec<PathBuf>,
+    cb_filenames: Vec<PathBuf>,
+    prd_filenames: Vec<PathBuf>,
+    show_ranked: bool,
+    classification_filename: Option<PathBuf>,
+) {
+    let vpc_models: Vec<*const c_char> = to_vec_of_ptr_const_c_char(model_filenames);
+
+    let vpc_codebooks: Vec<*const c_char> = to_vec_of_ptr_const_c_char(cb_filenames);
+
+    let vpc_predictors: Vec<*const c_char> = to_vec_of_ptr_const_c_char(prd_filenames);
+
+    let classification_filename: *const c_char = match classification_filename {
+        Some(filename) => to_ptr_const_c_char(filename),
+        None => std::ptr::null(),
+    };
+
+    unsafe {
+        ecoz2_hmm_classify_predictors(
+            vpc_models.as_ptr(),
+            vpc_models.len() as c_uint,
+            vpc_codebooks.as_ptr(),
+            vpc_codebooks.len() as c_int,
+            vpc_predictors.as_ptr(),
+            vpc_predictors.len() as c_int,
             show_ranked as c_int,
             classification_filename,
         );

@@ -7,7 +7,8 @@ use std::path::PathBuf;
 use colored::*;
 use structopt::StructOpt;
 
-use crate::ecoz2_lib::hmm_classify;
+use crate::ecoz2_lib::hmm_classify_predictors;
+use crate::ecoz2_lib::hmm_classify_sequences;
 use crate::ecoz2_lib::hmm_learn;
 use crate::ecoz2_lib::hmm_show;
 use crate::ecoz2_lib::set_random_seed;
@@ -107,14 +108,32 @@ pub struct HmmClassifyOpts {
     #[structopt(long, required = true)]
     tt: String,
 
-    /// Number of symbols (codebook size)
+    /// Sequences to classify.
+    /// If directories are included, then all `.seq` under them will be used.
+    #[structopt(
+        short,
+        long,
+        required_unless("predictors"),
+        min_values = 1,
+        parse(from_os_str)
+    )]
+    sequences: Vec<PathBuf>,
+
+    /// Number of symbols (codebook size) when `--sequences` with
+    /// a `.csv` file is given. Helps determine the path to the sequences.
     #[structopt(short = "M", long, required = true)]
     codebook_size: usize,
 
-    /// Sequences to classify.
-    /// If directories are included, then all `.seq` under them will be used.
-    #[structopt(short, long, required = true, min_values = 1, parse(from_os_str))]
-    sequences: Vec<PathBuf>,
+    /// Predictor files to classify.
+    /// If a single `.csv` file is given, then only the ones indicated with `--tt` will be used.
+    /// Otherwise, if directories are included, then all `.prd` under them will be used.
+    #[structopt(long, min_values = 1, parse(from_os_str))]
+    predictors: Vec<PathBuf>,
+
+    /// Codebook models when `--predictors` is given.
+    /// If directories are included, then all `.cb` under them will be used.
+    #[structopt(long, required_unless("sequences"), min_values = 1, parse(from_os_str))]
+    codebooks: Vec<PathBuf>,
 }
 
 #[derive(StructOpt, Debug)]
@@ -195,35 +214,58 @@ pub fn main_hmm_classify(opts: HmmClassifyOpts) -> Result<(), Box<dyn Error>> {
         classification_filename,
         models,
         tt,
-        codebook_size,
         sequences,
+        codebook_size,
+        predictors,
+        codebooks,
     } = opts;
+
+    assert!((predictors.len() == 0) != (sequences.len() == 0));
 
     let hmm_filenames = utl::resolve_filenames(models, ".hmm", "models")?;
 
-    let seq_filenames = utl::resolve_files(
-        sequences,
-        tt.as_str(),
-        None,
-        format!("sequences/M{}", codebook_size),
-        ".seq",
-    )?;
+    if sequences.len() > 0 {
+        let seq_filenames = utl::resolve_files(
+            sequences,
+            tt.as_str(),
+            None,
+            format!("sequences/M{}", codebook_size),
+            ".seq",
+        )?;
 
-    println!("ECOZ2 C version: {}", version()?);
+        println!("ECOZ2 C version: {}", version()?);
 
-    println!(
-        "number of HMM models: {}  number of sequences: {}",
-        hmm_filenames.len(),
-        seq_filenames.len()
-    );
-    println!("show_ranked = {}", show_ranked);
+        println!(
+            "number of HMM models: {}  number of sequences: {}",
+            hmm_filenames.len(),
+            seq_filenames.len()
+        );
+        println!("show_ranked = {}", show_ranked);
 
-    hmm_classify(
-        hmm_filenames,
-        seq_filenames,
-        show_ranked,
-        classification_filename,
-    );
+        hmm_classify_sequences(
+            hmm_filenames,
+            seq_filenames,
+            show_ranked,
+            classification_filename,
+        );
+    } else {
+        let cb_filenames = utl::resolve_filenames(codebooks, ".cbook", "codebooks")?;
+
+        let prd_filenames = utl::resolve_files(
+            predictors,
+            tt.as_str(),
+            None,
+            "predictors".to_string(),
+            ".prd",
+        )?;
+        hmm_classify_predictors(
+            hmm_filenames,
+            cb_filenames,
+            prd_filenames,
+            show_ranked,
+            classification_filename,
+        );
+    }
 
     Ok(())
 }
