@@ -39,11 +39,11 @@ enum EcozHmmCommand {
 #[derive(StructOpt, Debug)]
 pub struct HmmLearnOpts {
     /// Number of states
-    #[structopt(short = "N", long, default_value = "5")]
+    #[structopt(short = "N", long, name = "N", default_value = "5")]
     num_states: usize,
 
     /// Number of symbols (codebook size)
-    #[structopt(short = "M", long, required = true)]
+    #[structopt(short = "M", long, name = "M", required = true)]
     codebook_size: usize,
 
     /// Type of model to generate:
@@ -55,7 +55,7 @@ pub struct HmmLearnOpts {
     type_: usize,
 
     /// Maximum number of iterations. Default (-1) means no limit.
-    #[structopt(short = "I", long, default_value = "-1")]
+    #[structopt(short = "I", long, name = "I", default_value = "-1")]
     max_iterations: i32,
 
     /// epsilon restriction on B.
@@ -134,6 +134,9 @@ pub struct HmmClassifyOpts {
     /// Otherwise, if directories are included, then all `.prd` under them will be used.
     #[structopt(long, min_values = 1, parse(from_os_str))]
     predictors: Vec<PathBuf>,
+
+    #[structopt(long, default_value = "data/predictors")]
+    predictors_dir_template: String,
 
     /// Codebook models when `--predictors` is given.
     /// If directories are included, then all `.cb` under them will be used.
@@ -223,6 +226,7 @@ pub fn main_hmm_classify(opts: HmmClassifyOpts) -> Result<(), Box<dyn Error>> {
         sequences,
         codebook_size,
         predictors,
+        predictors_dir_template,
         codebooks,
     } = opts;
 
@@ -257,13 +261,15 @@ pub fn main_hmm_classify(opts: HmmClassifyOpts) -> Result<(), Box<dyn Error>> {
     } else {
         let cb_filenames = utl::resolve_filenames(codebooks, ".cbook", "codebooks")?;
 
-        let prd_filenames = utl::resolve_files(
-            predictors,
+        let prd_filenames = utl::resolve_files3(
+            &predictors,
             tt.as_str(),
-            class_name,
-            "predictors".to_string(),
+            &class_name,
+            "".to_string(),
+            predictors_dir_template,
             ".prd",
         )?;
+
         hmm_classify_predictors(
             hmm_filenames,
             cb_filenames,

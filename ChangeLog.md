@@ -1,5 +1,6 @@
 2020-11
 
+- add `--predictors-dir-template` to `hmm classify`
 - 0.6.1 add hmm_classify_predictors
 
 - set `#` as comment character when reading in a csv file
