@@ -1,5 +1,6 @@
 2020-11
 
+- add `--class-name` to `vq quantize`
 - add `--predictors-dir-template` to `hmm classify`
 - 0.6.1 add hmm_classify_predictors
 

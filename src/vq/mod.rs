@@ -86,6 +86,10 @@ pub struct VqQuantizeOpts {
     #[structopt(long)]
     tt: Option<String>,
 
+    /// Only this class when `.csv` is given to `--predictors`.
+    #[structopt(long, name = "class")]
+    class_name: Option<String>,
+
     /// Show file names as they are processed.
     #[structopt(short, long)]
     show_filenames: bool,
@@ -189,6 +193,7 @@ pub fn main_vq_quantize(opts: VqQuantizeOpts) -> Result<(), Box<dyn Error>> {
         predictors,
         predictors_dir_template,
         tt,
+        class_name,
         show_filenames,
     } = opts;
 
@@ -197,7 +202,7 @@ pub fn main_vq_quantize(opts: VqQuantizeOpts) -> Result<(), Box<dyn Error>> {
     let prd_filenames = utl::resolve_files3(
         &predictors,
         tt.as_str(),
-        &None,
+        &class_name,
         "".to_string(),
         predictors_dir_template,
         ".prd",
