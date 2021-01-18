@@ -17,13 +17,11 @@ For this you will also need a GNU gcc compiler on your machine.
 On Linux you can run:
 
     $ export CC=gcc
-    $ export PROB_T=double    # this will be the default in a future version
     $ cargo install ecoz2
 
 and on a MacOS, something like:
 
     $ export CC=gcc-10
-    $ export PROB_T=double
     $ cargo install ecoz2
 
 This may take some time to complete (example of output
@@ -32,9 +30,7 @@ This may take some time to complete (example of output
 Running:
 
     $ ecoz2
-    ecoz2 0.5.2
-    ECOZ2 System
-    
+    ...
     USAGE:
         ecoz2 <SUBCOMMAND>
     
@@ -61,8 +57,8 @@ the typical use of the system will involve the following main subcommands
 in this general order:
 
 - `ecoz2 lpc`:         takes `*.wav` and generates predictor files `*.prd`
-- `ecoz2 vq learn`     takes `*.prd` and generates codebooks `*.cb`
-- `ecoz2 vq quantize`  takes `*.cb` and `*.prd` and generates observation sequences `*.seq`
+- `ecoz2 vq learn`     takes `*.prd` and generates codebook files `*.cbook`
+- `ecoz2 vq quantize`  takes `*.cbook` and `*.prd` and generates observation sequences `*.seq`
 - `ecoz2 hmm learn`    takes `*.seq` and generates an HMM model `*.hmm`
 - `ecoz2 hmm classify` takes `*.hmm` and `*.seq`, performs classification
   of the sequences and reports the results
@@ -72,11 +68,8 @@ in this general order:
 
 [ecoz2](https://github.com/ecoz2/ecoz2) is included as a submodule,
 with selected functionality exposed via
-https://doc.rust-lang.org/cargo/reference/build-scripts.html.
+<https://doc.rust-lang.org/cargo/reference/build-scripts.html>.
 
     $ export CC=gcc-10
-    $ export PROB_T=double
-     
     $ cargo build [--release]
-    
     $ cargo install --path .
