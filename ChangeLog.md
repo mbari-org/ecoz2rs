@@ -1,3 +1,19 @@
+2021-01
+
+- re-enabled build on my mojave mac as `CC=gcc-10 cargo build` failing with C compile problems
+  (I recently removed xcode due to low space)
+    - per https://developpaper.com/the-latest-version-of-xcode-that-macos-mojave-can-install/
+      installed xcode 11.3.1 from https://developer.apple.com/download/more/?=xcode
+    - also installed Command Line Tools for xcode 11.3.1
+      (as `xcode-select --install` was unable to find the software)
+    - now `CC=gcc-10 cargo build` finally completes!
+    
+    - Other things tried while coming up with the above:
+        - `brew gist-logs gcc`
+        - `brew doctor`
+        - `rm -rf /Library/Developer/CommandLineTools`
+        - `xcode-select --install`
+
 2020-11
 
 - add `--class-name` to `vq quantize`
