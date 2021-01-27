@@ -21,6 +21,7 @@ implementation of the ECOZ2 programs in Rust.
     - https://users.rust-lang.org/t/are-there-any-floating-types-with-precision-beyond-that-of-f64/50601/2
     - https://github.com/jkarns275/f128/ (but "in maintenance mode")
     
+- https://jvns.ca/blog/2017/12/21/bindgen-is-awesome/
 
 #### fast-math
 
