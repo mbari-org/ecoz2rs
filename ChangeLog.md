@@ -1,3 +1,7 @@
+2021-02
+
+- update notes re `lpc` and `prd show` Rust implementations
+
 2021-01
 
 - re-enabled build on my mojave mac as `CC=gcc-10 cargo build` failing with C compile problems

@@ -64,20 +64,47 @@ as I moved things around a bit and focused on other stuff later on.
 - [src/prd/lib_rs.rs](src/prd/lib_rs.rs)
   displays predictor file generated with `lpc` above:
 
-        $ cargo run lpc -P 36 -W 45 -O 15 -f ../ecoz2-whale-cb/HBSe_20161221T010133/HBSe_20161221T010133.wav
-        Signal loaded: ../ecoz2-whale-cb/HBSe_20161221T010133/HBSe_20161221T010133.wav
-        num_samples: 18368474  sample_rate: 32000  bits_per_sample: 16  sample_format = Int
-        lpa_on_signal: p=36 numSamples=18368474 sampleRate=32000 winSize=1440 offset=480 t=38265
-          15000 frames processed
-          30000 frames processed
-          38265 frames processed
-        predictor.prd saved.  Class: '_':  38265 vector sequences
+        $ export CC=gcc-10
         
-        $ cargo run -- prd-show -f predictor.prd
-            Finished dev [optimized + debuginfo] target(s) in 0.03s
-             Running `target/debug/ecoz2 prd-show -f predictor.prd`
-        Predictor loaded: predictor.prd
-         class_name = '_' prediction_order: 36 sequences: 38265
+    **NOTE** Let's first do regular runs (no rust impl):
+    
+        $ cargo run lpc -P 36 -W 45 -O 15 --signals ../ecoz2-whale-cb/HBSe_20161221T010133/HBSe_20161221T010133.wav
+        lpc_signals: number of classes: 1
+        class 'HBSe_20161221T010133': 1
+        
+        $ cargo run prd show --from 0 --to 10 data/predictors/HBSe_20161221T010133/HBSe_20161221T010133.prd
+        # data/predictors/HBSe_20161221T010133/HBSe_20161221T010133.prd:
+        # className='HBSe_20161221T010133', T=38265, P=36
+        r0,r1,r2,r3,r4,r5,r6,r7,r8,r9,r10
+        2.35985,0.32431,-0.69968,0.00268,-0.32025,0.03768,0.00825,-0.05656,-0.00750,-0.17555,0.03140
+        2.39831,0.24925,-0.73353,0.11278,-0.35405,0.00366,0.07970,-0.13980,-0.00649,-0.03235,0.04081
+        ...
+        2.65369,0.71388,-0.66782,-0.36442,-0.59910,-0.04919,0.34036,0.26143,-0.00044,-0.13380,-0.01206
+        2.89329,0.94659,-0.47174,-0.37060,-0.76588,-0.15328,0.22067,0.18169,0.02488,-0.25885,-0.23922
+        
+    **Now with Rust impl** (`--zrs` option):
+    
+        $ cargo run lpc --zrs -P 36 -W 45 -O 15 --signals ../ecoz2-whale-cb/HBSe_20161221T010133/HBSe_20161221T010133.wav
+        Loading: ../ecoz2-whale-cb/HBSe_20161221T010133/HBSe_20161221T010133.wav
+        num_samples: 18368474  sample_rate: 32000  bits_per_sample: 16  sample_format = Int
+        lpa_on_signal: p=36 numSamples=18368474 sampleRate=32000 winSize=1440 offset=480 num_frames=38265
+        saving lpca inputs, frame=21
+          38265 total frames processed
+          SER lpa_on_signal complete: 38265 vectors
+        predictor.prd saved.  Class: '_':  38265 vectors
+        
+        $ cargo run prd show --zrs --from 0 --to 10 predictor.prd
+        # predictor.prd
+        # class_name='_', T=38265 P=36
+        r0,r1,r2,r3,r4,r5,r6,r7,r8,r9,r10
+        2.35985,0.32431,-0.69968,0.00268,-0.32025,0.03768,0.00825,-0.05656,-0.00750,-0.17555,0.03140
+        2.39831,0.24925,-0.73353,0.11278,-0.35405,0.00366,0.07970,-0.13980,-0.00649,-0.03235,0.04081
+        ...
+        2.65369,0.71388,-0.66782,-0.36442,-0.59910,-0.04919,0.34036,0.26143,-0.00044,-0.13380,-0.01206
+        2.89329,0.94659,-0.47174,-0.37060,-0.76588,-0.15328,0.22067,0.18169,0.02488,-0.25885,-0.23922
+
+    **Note**: same output.
+
 
 - `sgn-show` implemented in rust:
 
