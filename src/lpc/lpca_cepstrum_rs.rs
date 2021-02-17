@@ -4,10 +4,19 @@
 /// Get cepstral coefficients corresponding to the given prediction vector.
 /// Ref: Papamichalis (1987). Practical approaches to speech coding.
 ///
+/// ## Arguments:
+///
+/// * `p`     - prediction order
+/// * `gain`  - gain of the system (i.e., sqrt(prediction_error))
+/// * `a`     - prediction coefficients
+/// * `q`     - number of cepstral coefficients to generate
+/// * `cepstrum` - of cepstral coefficients are stored here
+///
 #[inline]
-pub fn lpca_get_cepstrum(p: usize, r0: f64, a: &[f64], q: usize, cepstrum: &mut [f64]) {
+pub fn lpca_get_cepstrum(p: usize, gain: f64, a: &[f64], q: usize, cepstrum: &mut [f64]) {
+    assert!(gain >= 0f64);
     assert!(p < q);
-    cepstrum[0] = r0.ln();
+    cepstrum[0] = gain.ln();
     for m in 1..=p {
         let mut sum = -a[m];
         for k in 1..m {

@@ -213,8 +213,13 @@ impl Predictor {
         for vec in vectors {
             let mut comma = "";
             for v in &vec[from..=to_] {
-                print!("{}{:.5}", comma, v);
-                comma = ",";
+                print!("{}", comma);
+                if (*v).abs() < 0.00001_f64 {
+                    print!("{:.4e}", v);
+                } else {
+                    print!("{:.5}", v);
+                }
+                comma = ", ";
             }
             println!();
         }
@@ -240,8 +245,17 @@ impl Predictor {
         for auto_cor in &self.vectors {
             let mut predictor = vec![0f64; p + 1];
             let mut cepstrum = vec![0f64; q];
-            lpca_r(p, &auto_cor, &mut reflection, &mut predictor);
-            lpca_get_cepstrum(p, auto_cor[0], &predictor, q, &mut cepstrum);
+            let (res_lpca, err_pred) = lpca_r(p, &auto_cor, &mut reflection, &mut predictor);
+            if res_lpca != 0 {
+                eprintln!(
+                    "WARNING: lpca_r: res_lpca = {}, err_pred = {}",
+                    res_lpca, err_pred
+                );
+            }
+            // recall that the prediction error is the gain^2:
+            assert!(err_pred >= 0f64);
+            let gain = err_pred.sqrt();
+            lpca_get_cepstrum(p, gain, &predictor, q, &mut cepstrum);
             cepstra.push(cepstrum);
         }
         cepstra

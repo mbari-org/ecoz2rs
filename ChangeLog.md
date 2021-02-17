@@ -1,5 +1,7 @@
 2021-02
 
+- gain of the system is sqrt(prediction_error)
+
 - add `--pickle` option for `prd show` to put the extracted data into 
   a file in pickle format.  (only for the rust impl)
   
