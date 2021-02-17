@@ -9,6 +9,7 @@ use std::path::PathBuf;
 use structopt::StructOpt;
 
 use crate::ecoz2_lib::prd_show_file;
+use crate::lpc::lpca_r_rs::lpca_r;
 
 use self::EcozPrdCommand::Show;
 
@@ -98,22 +99,27 @@ impl Predictor {
         let to_ = if to == 0 || to > p { p } else { to };
 
         if show_reflections {
-            eprintln!("WARN: show_reflections UNIMPLEMENTED")
+            let reflections = self.get_reflections();
+            self.do_show(&reflections, "k", from, to_);
+        } else {
+            self.do_show(&self.vectors, "r", from, to_);
         }
+    }
 
+    fn do_show(&self, vectors: &Vec<Vec<f64>>, name: &str, from: usize, to_: usize) {
         println!(
             "# class_name='{}', T={} P={}",
             self.class_name,
-            self.vectors.len(),
+            vectors.len(),
             self.prediction_order,
         );
         let mut comma = "";
         for i in from..=to_ {
-            print!("{}r{}", comma, i);
+            print!("{}{}{}", comma, name, i);
             comma = ",";
         }
         println!();
-        for vec in &self.vectors {
+        for vec in vectors {
             let mut comma = "";
             for v in &vec[from..=to_] {
                 print!("{}{:.5}", comma, v);
@@ -121,6 +127,18 @@ impl Predictor {
             }
             println!();
         }
+    }
+
+    fn get_reflections(&mut self) -> Vec<Vec<f64>> {
+        let p = self.prediction_order;
+        let mut reflections = Vec::new();
+        let mut pred = vec![0f64; p + 1];
+        for auto_cor in &self.vectors {
+            let mut reflection = vec![0f64; p + 1];
+            let (_res_lpca, _err_pred) = lpca_r(p, &auto_cor, &mut reflection, &mut pred);
+            reflections.push(reflection);
+        }
+        reflections
     }
 }
 

@@ -10,6 +10,7 @@ use crate::utl;
 
 mod libpar;
 mod lpc_rs;
+pub mod lpca_r_rs;
 mod lpca_rs;
 
 #[derive(StructOpt, Debug)]

@@ -1,5 +1,14 @@
 2021-02
 
+- implement `--reflection` for Rust implementation of `prd show`.
+
+    Comparison OK:
+    
+          cargo run prd show --zrs --reflection --from 0 --to 10 predictor.prd |head
+          cargo run prd show       --reflection --from 0 --to 10 data/predictors/HBSe_20161221T010133/HBSe_20161221T010133.prd |head
+      
+    This is also preparation to generate cepstral vector.
+  
 - update notes re `lpc` and `prd show` Rust implementations
 
 2021-01
