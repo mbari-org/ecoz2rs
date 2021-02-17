@@ -1,5 +1,15 @@
 2021-02
 
+- add `--pickle` option for `prd show` to put the extracted data into 
+  a file in pickle format.  (only for the rust impl)
+  
+        $ cargo run prd show --zrs --cepstrum 40 --from 0 --to 40 --pickle cepstra.pickle predictor.prd
+        # predictor.prd
+        38265 vectors(s) saved to "cepstra.pickle"
+  
+        $ ipython3 -c 'import pickle; cepstra = pickle.load(open("cepstra.pickle", "rb")); len(cepstra)'
+        Out[1]: 38265
+  
 - initial `--cepstrum` option for `prd show`
 
         $ cargo run prd show --zrs --cepstrum 40 --from 0 --to 40 predictor.prd

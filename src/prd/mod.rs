@@ -57,6 +57,10 @@ pub struct PrdShowOpts {
     /// Use Rust implementation
     #[structopt(long)]
     zrs: bool,
+
+    /// Export the extracted data into the given file (in pickle format).
+    #[structopt(long, name = "filename", parse(from_os_str))]
+    pickle: Option<PathBuf>,
 }
 
 pub fn main(opts: PrdMainOpts) {
@@ -78,6 +82,7 @@ pub fn prd_show(opts: PrdShowOpts) -> Result<(), Box<dyn Error>> {
         to,
         file,
         zrs,
+        pickle,
     } = opts;
 
     if zrs {
@@ -88,6 +93,7 @@ pub fn prd_show(opts: PrdShowOpts) -> Result<(), Box<dyn Error>> {
             show_cepstrum,
             from,
             to,
+            pickle,
         );
     } else {
         prd_show_file(file, show_reflections, from, to);
@@ -105,11 +111,19 @@ fn prd_show_rs(
     show_cepstrum: Option<usize>,
     from: usize,
     to: usize,
+    pickle: Option<PathBuf>,
 ) {
     let filename = prd_filename.to_str().unwrap();
     let mut prd = load(filename).unwrap();
     println!("# {}", filename);
-    prd.show(show_predictors, show_reflections, show_cepstrum, from, to);
+    prd.show(
+        show_predictors,
+        show_reflections,
+        show_cepstrum,
+        from,
+        to,
+        pickle,
+    );
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
@@ -127,6 +141,7 @@ impl Predictor {
         show_cepstrum: Option<usize>,
         from: usize,
         to: usize,
+        pickle: Option<PathBuf>,
     ) {
         let p = self.prediction_order;
 
@@ -134,7 +149,7 @@ impl Predictor {
             if self.prediction_order < q {
                 let to_ = if to == 0 || to >= q { q - 1 } else { to };
                 let cepstrum = self.get_cepstrum(q);
-                self.do_show(&cepstrum, "c", from, to_);
+                self.do_show(&cepstrum, "c", from, to_, pickle);
             } else {
                 eprint!(
                     "cepstrum value must be > prediction order={}",
@@ -145,17 +160,44 @@ impl Predictor {
             let to_ = if to == 0 || to > p { p } else { to };
             if show_predictors {
                 let predictors = self.get_predictors();
-                self.do_show(&predictors, "a", from, to_);
+                self.do_show(&predictors, "a", from, to_, pickle);
             } else if show_reflections {
                 let reflections = self.get_reflections();
-                self.do_show(&reflections, "k", from, to_);
+                self.do_show(&reflections, "k", from, to_, pickle);
             } else {
-                self.do_show(&self.vectors, "r", from, to_);
+                self.do_show(&self.vectors, "r", from, to_, pickle);
             }
         }
     }
 
-    fn do_show(&self, vectors: &Vec<Vec<f64>>, name: &str, from: usize, to_: usize) {
+    fn do_show(
+        &self,
+        vectors: &Vec<Vec<f64>>,
+        name: &str,
+        from: usize,
+        to_: usize,
+        pickle: Option<PathBuf>,
+    ) {
+        if let Some(pickle_filename) = &pickle {
+            use crate::utl;
+
+            let list = vectors
+                .iter()
+                .map(|vector| {
+                    // there must be some shorter way to extract a section of a vector:
+                    let mut extracted: Vec<f64> = Vec::new();
+                    for v in &vector[from..=to_] {
+                        extracted.push(*v);
+                    }
+                    extracted
+                })
+                .collect::<Vec<_>>();
+
+            utl::to_pickle(&list, pickle_filename).unwrap();
+            println!("{} vectors(s) saved to {:?}", list.len(), pickle_filename);
+            return;
+        }
+
         println!(
             "# class_name='{}', T={} P={}",
             self.class_name,
