@@ -28,9 +28,13 @@ enum EcozPrdCommand {
 
 #[derive(StructOpt, Debug)]
 pub struct PrdShowOpts {
+    /// Show predictor coefficients
+    #[structopt(long = "predictors")]
+    show_predictors: bool,
+
     /// Show reflection coefficients
-    #[structopt(short = "k", long = "reflection")]
-    show_reflection: bool,
+    #[structopt(short = "k", long = "reflections")]
+    show_reflections: bool,
 
     /// Start for coefficient range selection
     #[structopt(short = "f", long, default_value = "1")]
@@ -61,7 +65,8 @@ pub fn main(opts: PrdMainOpts) {
 
 pub fn prd_show(opts: PrdShowOpts) -> Result<(), Box<dyn Error>> {
     let PrdShowOpts {
-        show_reflection,
+        show_predictors,
+        show_reflections,
         from,
         to,
         file,
@@ -69,9 +74,9 @@ pub fn prd_show(opts: PrdShowOpts) -> Result<(), Box<dyn Error>> {
     } = opts;
 
     if zrs {
-        prd_show_rs(file, show_reflection, from, to);
+        prd_show_rs(file, show_predictors, show_reflections, from, to);
     } else {
-        prd_show_file(file, show_reflection, from, to);
+        prd_show_file(file, show_reflections, from, to);
     }
 
     Ok(())
@@ -79,11 +84,17 @@ pub fn prd_show(opts: PrdShowOpts) -> Result<(), Box<dyn Error>> {
 
 // NOTE: for Rust implementation (preliminary)
 
-fn prd_show_rs(prd_filename: PathBuf, show_reflections: bool, from: usize, to: usize) {
+fn prd_show_rs(
+    prd_filename: PathBuf,
+    show_predictors: bool,
+    show_reflections: bool,
+    from: usize,
+    to: usize,
+) {
     let filename = prd_filename.to_str().unwrap();
     let mut prd = load(filename).unwrap();
     println!("# {}", filename);
-    prd.show(show_reflections, from, to);
+    prd.show(show_predictors, show_reflections, from, to);
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
@@ -94,11 +105,14 @@ pub struct Predictor {
 }
 
 impl Predictor {
-    pub fn show(&mut self, show_reflections: bool, from: usize, to: usize) {
+    pub fn show(&mut self, show_predictors: bool, show_reflections: bool, from: usize, to: usize) {
         let p = self.prediction_order;
         let to_ = if to == 0 || to > p { p } else { to };
 
-        if show_reflections {
+        if show_predictors {
+            let predictors = self.get_predictors();
+            self.do_show(&predictors, "a", from, to_);
+        } else if show_reflections {
             let reflections = self.get_reflections();
             self.do_show(&reflections, "k", from, to_);
         } else {
@@ -127,6 +141,18 @@ impl Predictor {
             }
             println!();
         }
+    }
+
+    fn get_predictors(&mut self) -> Vec<Vec<f64>> {
+        let p = self.prediction_order;
+        let mut predictors = Vec::new();
+        let mut reflection = vec![0f64; p + 1];
+        for auto_cor in &self.vectors {
+            let mut predictor = vec![0f64; p + 1];
+            let (_res_lpca, _err_pred) = lpca_r(p, &auto_cor, &mut reflection, &mut predictor);
+            predictors.push(predictor);
+        }
+        predictors
     }
 
     fn get_reflections(&mut self) -> Vec<Vec<f64>> {

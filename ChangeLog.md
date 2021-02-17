@@ -1,11 +1,17 @@
 2021-02
 
-- implement `--reflection` for Rust implementation of `prd show`.
+- add `--predictors` option in Rust implementation of `prd show` to
+  show the predictor coefficient vectors instead of the default
+  auto-correlations (if `--reflections` is not given)
+  
+          cargo run prd show --zrs --predictors --from 0 --to 10 predictor.prd |head
+
+- implement `--reflections` for Rust implementation of `prd show`.
 
     Comparison OK:
     
-          cargo run prd show --zrs --reflection --from 0 --to 10 predictor.prd |head
-          cargo run prd show       --reflection --from 0 --to 10 data/predictors/HBSe_20161221T010133/HBSe_20161221T010133.prd |head
+          cargo run prd show --zrs --reflections --from 0 --to 10 predictor.prd |head
+          cargo run prd show       --reflections --from 0 --to 10 data/predictors/HBSe_20161221T010133/HBSe_20161221T010133.prd |head
       
     This is also preparation to generate cepstral vector.
   
