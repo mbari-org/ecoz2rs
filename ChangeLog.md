@@ -1,5 +1,14 @@
 2021-02
 
+- initial `--cepstrum` option for `prd show`
+
+        $ cargo run prd show --zrs --cepstrum 40 --from 0 --to 40 predictor.prd
+        # predictor.prd
+        # class_name='_', T=38265 P=36
+        c0,c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,c11,c12,c13,c14,c15,c16,c17,c18,c19,c20,c21,c22,c23,c24,c25,c26,c27,c28,c29,c30,c31,c32,c33,c34,c35,c36,c37,c38,c39
+        0.85860,0.85134,-0.32285,-0.04447,-0.00153,-0.04979,0.02819,-0.01774,0.00016,-0.00713,-0.01010,0.00890,-0.00433,-0.00081,-0.00387,0.00528,0.00390,-0.00818,-0.00068,-0.00024,0.00138,0.00326,-0.00123,0.00152,0.0039
+        ...
+
 - add `--predictors` option in Rust implementation of `prd show` to
   show the predictor coefficient vectors instead of the default
   auto-correlations (if `--reflections` is not given)

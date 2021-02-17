@@ -4,7 +4,6 @@
 /// Rust version of `lpca_r`.
 /// LPC analysis as done by `lpca` but with given autocorrelation as input.
 ///
-#[allow(dead_code)]
 #[inline]
 pub fn lpca_r(p: usize, r: &[f64], rc: &mut [f64], a: &mut [f64]) -> (i32, f64) {
     let mut pe: f64 = 0.;
