@@ -2,33 +2,35 @@
 
 ///
 /// Get cepstral coefficients corresponding to the given prediction vector.
-/// Ref: Papamichalis (1987). Practical approaches to speech coding.
+/// Ref: Papamichalis (1987), p. 129.
 ///
 /// ## Arguments:
 ///
-/// * `p`     - prediction order
-/// * `gain`  - gain of the system (i.e., sqrt(prediction_error))
-/// * `a`     - prediction coefficients
-/// * `q`     - number of cepstral coefficients to generate
-/// * `cepstrum` - of cepstral coefficients are stored here
+/// * `gain`     - Gain of the system (i.e., `sqrt(prediction_error)`).
+/// * `p`        - Prediction order.
+/// * `a`        - Prediction coefficients `a[0 ..= p]`.
+///                (Note that `a[0]` is always 1, with
+///                `a[1]` .. `a[p]` being the actual coefficients.)
+/// * `q`        - Number of cepstral coefficients to generate; `q > p`.
+/// * `cepstrum` - cepstral coefficients are stored here (`cepstrum[0 .. q]`).
 ///
 #[inline]
-pub fn lpca_get_cepstrum(p: usize, gain: f64, a: &[f64], q: usize, cepstrum: &mut [f64]) {
-    assert!(gain >= 0f64);
+pub fn lpca_get_cepstrum(gain: f64, p: usize, a: &[f64], q: usize, cepstrum: &mut [f64]) {
     assert!(p < q);
     cepstrum[0] = gain.ln();
-    for m in 1..=p {
-        let mut sum = -a[m];
-        for k in 1..m {
-            sum += -((m - k) as f64) * a[k] * cepstrum[m - k];
+    cepstrum[1] = -a[1];
+    for i in 2..=p {
+        let mut sum = a[i];
+        for k in 1..i {
+            sum += ((i - k) as f64) * cepstrum[i - k] * a[k];
         }
-        cepstrum[m] = sum / (m as f64);
+        cepstrum[i] = -sum / (i as f64);
     }
-    for m in p + 1..q {
+    for i in p + 1..q {
         let mut sum = 0f64;
         for k in 1..=p {
-            sum += -((m - k) as f64) * a[k] * cepstrum[m - k];
+            sum += ((i - k) as f64) * cepstrum[i - k] * a[k];
         }
-        cepstrum[m] = sum / (m as f64);
+        cepstrum[i] = -sum / (i as f64);
     }
 }

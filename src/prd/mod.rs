@@ -152,8 +152,8 @@ impl Predictor {
                 self.do_show(&cepstrum, "c", from, to_, pickle);
             } else {
                 eprint!(
-                    "cepstrum value must be > prediction order={}",
-                    self.prediction_order
+                    "cepstrum value={} must be > prediction order={}",
+                    q, self.prediction_order
                 );
             }
         } else {
@@ -255,7 +255,7 @@ impl Predictor {
             // recall that the prediction error is the gain^2:
             assert!(err_pred >= 0f64);
             let gain = err_pred.sqrt();
-            lpca_get_cepstrum(p, gain, &predictor, q, &mut cepstrum);
+            lpca_get_cepstrum(gain, p, &predictor, q, &mut cepstrum);
             cepstra.push(cepstrum);
         }
         cepstra
