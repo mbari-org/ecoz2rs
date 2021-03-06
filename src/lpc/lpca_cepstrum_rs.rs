@@ -16,7 +16,7 @@
 ///
 #[inline]
 pub fn lpca_get_cepstrum(gain: f64, p: usize, a: &[f64], q: usize, cepstrum: &mut [f64]) {
-    assert!(p < q);
+    debug_assert!(p < q);
     cepstrum[0] = gain.ln();
     cepstrum[1] = -a[1];
     for i in 2..=p {

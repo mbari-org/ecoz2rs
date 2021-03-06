@@ -239,7 +239,7 @@ impl Predictor {
 
     fn get_cepstrum(&mut self, q: usize) -> Vec<Vec<f64>> {
         let p = self.prediction_order;
-        assert!(p < q);
+        debug_assert!(p < q);
         let mut cepstra = Vec::new();
         let mut reflection = vec![0f64; p + 1];
         for auto_cor in &self.vectors {
@@ -253,7 +253,7 @@ impl Predictor {
                 );
             }
             // recall that the prediction error is the gain^2:
-            assert!(err_pred >= 0f64);
+            debug_assert!(err_pred >= 0f64);
             let gain = err_pred.sqrt();
             lpca_get_cepstrum(gain, p, &predictor, q, &mut cepstrum);
             cepstra.push(cepstrum);

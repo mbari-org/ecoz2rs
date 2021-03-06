@@ -61,13 +61,13 @@ pub struct LpcOpts {
     #[structopt(short = "X", default_value = "5")]
     mintrpt: f32,
 
-    /// Use Rust implementation
-    #[structopt(long)]
-    zrs: bool,
-
     /// Use Rust "parallel" implementation
     #[structopt(long)]
     zrsp: bool,
+
+    /// Use Rust implementation
+    #[structopt(long)]
+    zrs: bool,
 
     #[structopt(long)]
     verbose: bool,
@@ -93,8 +93,8 @@ pub fn main_lpc(opts: LpcOpts) -> Result<(), Box<dyn Error>> {
         tt,
         class,
         mintrpt,
-        zrs,
         zrsp,
+        zrs,
         verbose,
     } = opts;
 
@@ -112,16 +112,15 @@ pub fn main_lpc(opts: LpcOpts) -> Result<(), Box<dyn Error>> {
     // println!("sgn_filenames = {:?}", sgn_filenames);
     // return Ok(()).into();
 
-    if zrs {
-        assert!(!zrsp);
-        main_lpc_rs(
+    if zrsp {
+        main_lpc_par_rs(
             sgn_filenames,
             prediction_order,
             window_length_ms,
             offset_length_ms,
         );
-    } else if zrsp {
-        main_lpc_par_rs(
+    } else if zrs {
+        main_lpc_rs(
             sgn_filenames,
             prediction_order,
             window_length_ms,
