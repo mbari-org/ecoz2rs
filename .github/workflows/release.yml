@@ -7,7 +7,7 @@ on:
 
 jobs:
   build_linux:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04  # https://github.com/actions/virtual-environments/issues/1816
 
     steps:
     - name: Checkout
