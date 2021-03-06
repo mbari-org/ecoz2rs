@@ -36,7 +36,7 @@ impl C12nResults {
     pub fn add_case<F>(
         &mut self,
         class_id: usize,
-        seq_classname: &String,
+        seq_classname: &str,
         probs: Vec<f64>,
         show_ranked: bool,
         f: F,

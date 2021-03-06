@@ -153,7 +153,7 @@ pub fn main_mm_show(opts: MMShowOpts) -> Result<(), Box<dyn Error>> {
     let MMShowOpts { model } = opts;
 
     let mut model = markov::load(model.to_str().unwrap())?;
-    &model.show();
+    model.show();
 
     Ok(())
 }

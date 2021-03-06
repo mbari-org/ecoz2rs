@@ -110,7 +110,7 @@ pub fn seq_show(opts: &SeqShowOpts) -> Result<(), Box<dyn Error>> {
                 list_of_sequences.len(),
                 pickle_filename
             );
-            return Ok(()).into();
+            return Ok(());
         } else {
             // TODO more elegant handing
             panic!("--codebook-size and --tt required when --pickle given")

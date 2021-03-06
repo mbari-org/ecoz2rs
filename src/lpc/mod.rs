@@ -98,7 +98,7 @@ pub fn main_lpc(opts: LpcOpts) -> Result<(), Box<dyn Error>> {
         verbose,
     } = opts;
 
-    let tt = tt.unwrap_or("".to_string());
+    let tt = tt.unwrap_or_else(|| "".to_string());
 
     let sgn_filenames = utl::resolve_files3(
         &signals,

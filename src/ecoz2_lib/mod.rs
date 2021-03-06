@@ -192,6 +192,7 @@ pub fn set_random_seed(seed: i64) -> u64 {
     unsafe { ecoz2_set_random_seed(seed as c_long) as u64 }
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn lpc_signals(
     prediction_order: usize,
     window_length_ms: usize,
@@ -392,6 +393,7 @@ extern "C" fn c_hmm_learn_callback(variable: *mut c_char, value: c_double) {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn hmm_learn(
     n: usize,
     model_type: usize,

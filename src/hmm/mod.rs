@@ -230,11 +230,11 @@ pub fn main_hmm_classify(opts: HmmClassifyOpts) -> Result<(), Box<dyn Error>> {
         codebooks,
     } = opts;
 
-    assert!((predictors.len() == 0) != (sequences.len() == 0));
+    assert_ne!(predictors.is_empty(), sequences.is_empty());
 
     let hmm_filenames = utl::resolve_filenames(models, ".hmm", "models")?;
 
-    if sequences.len() > 0 {
+    if !sequences.is_empty() {
         let seq_filenames = utl::resolve_files(
             sequences,
             tt.as_str(),

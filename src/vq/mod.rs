@@ -197,7 +197,7 @@ pub fn main_vq_quantize(opts: VqQuantizeOpts) -> Result<(), Box<dyn Error>> {
         show_filenames,
     } = opts;
 
-    let tt = tt.unwrap_or("".to_string());
+    let tt = tt.unwrap_or_else(|| "".to_string());
 
     let prd_filenames = utl::resolve_files3(
         &predictors,

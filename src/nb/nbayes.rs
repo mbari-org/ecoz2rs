@@ -25,7 +25,7 @@ impl NBayes {
             self.class_name, codebook_size, self.total_symbols,
         );
 
-        println!("{:4}, {:4}, {}", "m", "frequency", "prob");
+        println!("{:4}, {:4}, prob", "m", "frequency");
 
         for (s, f) in self.frequencies.iter().enumerate() {
             let prob = self.prob_symbol(s);

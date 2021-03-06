@@ -172,7 +172,7 @@ impl Predictor {
 
     fn do_show(
         &self,
-        vectors: &Vec<Vec<f64>>,
+        vectors: &[Vec<f64>],
         name: &str,
         from: usize,
         to_: usize,

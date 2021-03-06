@@ -152,7 +152,7 @@ pub fn main_nbayes_show(opts: NBayesShowOpts) -> Result<(), Box<dyn Error>> {
     let NBayesShowOpts { model } = opts;
 
     let mut model = nbayes::load(model.to_str().unwrap())?;
-    &model.show();
+    model.show();
 
     Ok(())
 }

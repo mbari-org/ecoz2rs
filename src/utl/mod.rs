@@ -32,7 +32,7 @@ fn read_fixed_size_string(
     fixed_len: usize,
 ) -> Result<String, Box<dyn Error>> {
     let mut s = vec![0_u8; fixed_len];
-    br.read(&mut s)?;
+    br.read_exact(&mut s)?;
     let eol_pos = s.iter().position(|v| *v == 0_u8).unwrap_or(fixed_len - 1);
     // note: excluding the \0 byte itself:
     s.resize(eol_pos, 0);
@@ -85,7 +85,7 @@ pub fn resolve_files(
 // TODO some "unification" as variations of some methods were added rather hastily
 
 pub fn resolve_files2(
-    filenames: &Vec<PathBuf>,
+    filenames: &[PathBuf],
     tt: &str,
     class_name_opt: &Option<String>,
     subdir: String,
@@ -104,7 +104,7 @@ pub fn resolve_files2(
 }
 
 pub fn resolve_files3(
-    filenames: &Vec<PathBuf>,
+    filenames: &[PathBuf],
     tt: &str,
     class_name_opt: &Option<String>,
     subdir: String,
@@ -193,7 +193,7 @@ pub fn get_files_from_csv(
 }
 
 // TODO unify the following with resolve_filenames2
-// so use only one with more flexible parameter: `filenames: &Vec<PathBuf>`
+// so use only one with more flexible parameter: `filenames: &[PathBuf]`
 
 /// Returns the list of files resulting from "resolving" the given list.
 /// This will contain the same regular files in the list (but having the
@@ -214,7 +214,7 @@ pub fn resolve_filenames(
         }
     }
     if !list.is_empty() {
-        list.sort_by(|a, b| a.cmp(b));
+        list.sort();
     } else if !subjects_msg_if_empty.is_empty() {
         return Err(format!("No {} given", subjects_msg_if_empty).into());
     }
@@ -222,7 +222,7 @@ pub fn resolve_filenames(
 }
 
 pub fn resolve_filenames2(
-    filenames: &Vec<PathBuf>,
+    filenames: &[PathBuf],
     file_ext: &str,
     subjects_msg_if_empty: &str,
 ) -> Result<Vec<PathBuf>, Box<dyn Error>> {
@@ -237,7 +237,7 @@ pub fn resolve_filenames2(
         }
     }
     if !list.is_empty() {
-        list.sort_by(|a, b| a.cmp(b));
+        list.sort();
     } else if !subjects_msg_if_empty.is_empty() {
         return Err(format!("No {} given", subjects_msg_if_empty).into());
     }

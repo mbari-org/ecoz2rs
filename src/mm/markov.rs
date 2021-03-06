@@ -56,7 +56,7 @@ pub fn load(filename: &str) -> Result<MM, Box<dyn Error>> {
     Ok(mm)
 }
 
-pub fn learn(codebook_size: usize, seq_filenames: &Vec<PathBuf>) -> Result<MM, Box<dyn Error>> {
+pub fn learn(codebook_size: usize, seq_filenames: &[PathBuf]) -> Result<MM, Box<dyn Error>> {
     // get class name from first sequence
     let seq = sequence::load(seq_filenames[0].to_str().unwrap())?;
     let class_name = seq.class_name;
