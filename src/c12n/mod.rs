@@ -66,8 +66,7 @@ impl C12nResults {
             let header_line = f();
             println!("{}", header_line);
 
-            let mut index = 0;
-            for r in (0..num_models).rev() {
+            for (index, r) in (0..num_models).rev().enumerate() {
                 let model_id = probs[r].0;
                 let model_class_name = &self.model_class_names[r];
 
@@ -82,7 +81,6 @@ impl C12nResults {
                 if class_id == model_id {
                     break;
                 }
-                index += 1;
             }
             println!();
         }
@@ -116,9 +114,9 @@ impl C12nResults {
         }
 
         let mut margin = 0;
-        for i in 0..num_models {
+        for (i, class_name) in class_names.iter().enumerate().take(num_models) {
             if self.result[i][0] > 0 {
-                let len = class_names[i].len();
+                let len = class_name.len();
                 if margin < len {
                     margin = len;
                 }
@@ -140,12 +138,12 @@ impl C12nResults {
         }
         println!("    tests   errors");
 
-        for i in 0..num_models {
+        for (i, class_name) in class_names.iter().enumerate().take(num_models) {
             if self.result[i][0] == 0 {
                 continue;
             }
             println!();
-            print!("{:margin$} ", class_names[i], margin = margin);
+            print!("{:margin$} ", class_name, margin = margin);
             print!("{:>3}  ", i);
 
             let mut num_errs = 0; // in row
@@ -171,7 +169,7 @@ impl C12nResults {
             avg_accuracy: 0_f32,
         };
 
-        for class_id in 0..=num_models {
+        for (class_id, class_name) in class_names.iter().enumerate().take(num_models + 1) {
             if self.result[class_id][0] == 0 {
                 continue;
             }
@@ -185,7 +183,7 @@ impl C12nResults {
                 num_classes += 1;
                 summary.avg_accuracy += acc;
 
-                print!("{:margin$} ", class_names[class_id], margin = margin);
+                print!("{:margin$} ", class_name, margin = margin);
                 print!("  {:3}    ", class_id);
             } else {
                 println!();
