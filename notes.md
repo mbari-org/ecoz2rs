@@ -5,6 +5,10 @@ implementation of the ECOZ2 programs in Rust.
 
 ### To keep in mind
 
+- https://rust-lang.github.io/rust-bindgen/
+
+- https://nnethercote.github.io/perf-book/
+
 - for python binding
     - https://github.com/PyO3/pyo3
     - https://github.com/PyO3/maturin
@@ -20,8 +24,6 @@ implementation of the ECOZ2 programs in Rust.
     - "long double becomes u128" - https://github.com/rust-lang/rust-bindgen/issues/1549
     - https://users.rust-lang.org/t/are-there-any-floating-types-with-precision-beyond-that-of-f64/50601/2
     - https://github.com/jkarns275/f128/ (but "in maintenance mode")
-    
-- https://jvns.ca/blog/2017/12/21/bindgen-is-awesome/
 
 #### fast-math
 
