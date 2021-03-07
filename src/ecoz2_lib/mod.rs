@@ -284,9 +284,9 @@ pub fn vq_learn(
             let comet_client = CometClient::new(exp_key);
 
             if let Some(p) = prediction_order_opt {
-                comet_client.log_parameter(&"P".to_string(), &format!("{}", p));
+                comet_client.log_parameter("P", &p);
             }
-            comet_client.log_parameter(&"epsilon".to_string(), &format!("{}", epsilon));
+            comet_client.log_parameter("epsilon", &epsilon);
 
             let ref_id = register_cc(comet_client);
 

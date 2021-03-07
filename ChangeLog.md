@@ -1,5 +1,8 @@
 2021-02
 
+- comet
+    - more generic parameter and metric logging to comet
+
 - gain of the system is sqrt(prediction_error)
 
 - add `--pickle` option for `prd show` to put the extracted data into 

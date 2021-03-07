@@ -1,5 +1,6 @@
 use reqwest::blocking::Client;
 use std::collections::HashMap;
+use std::string::ToString;
 
 pub struct CometClient {
     api_key: Option<String>,
@@ -36,31 +37,27 @@ impl CometClient {
         if let (Some(exp_key), Some(client)) = (&self.experiment_key, &self.client) {
             self.log_metric(exp_key, "M", &format!("{}", m), client);
 
-            self.log_metric(
-                exp_key,
-                "avg_distortion",
-                &format!("{}", avg_distortion),
-                client,
-            );
+            self.log_metric(exp_key, "avg_distortion", &avg_distortion, client);
 
-            self.log_metric(exp_key, "sigma", &format!("{}", sigma), client);
+            self.log_metric(exp_key, "sigma", &sigma, client);
 
-            self.log_metric(exp_key, "inertia", &format!("{}", inertia), client);
+            self.log_metric(exp_key, "inertia", &inertia, client);
         }
     }
 
-    pub fn log_parameter(&self, name: &str, value: &str) {
+    pub fn log_parameter<T: ToString>(&self, name: &str, value: &T) {
         if let (Some(exp_key), Some(client)) = (&self.experiment_key, &self.client) {
             self._log_parameter(exp_key, name, value, client);
         }
     }
 
-    fn _log_parameter(&self, exp_key: &str, name: &str, value: &str, client: &Client) {
+    fn _log_parameter<T: ToString>(&self, exp_key: &str, name: &str, value: &T, client: &Client) {
         let authorization = self.api_key.as_ref().unwrap();
         let mut map = HashMap::new();
         map.insert("experimentKey", exp_key);
         map.insert("parameterName", name);
-        map.insert("parameterValue", value);
+        let value_string = value.to_string();
+        map.insert("parameterValue", &value_string);
 
         let res = client
             .post("https://www.comet.ml/api/rest/v2/write/experiment/parameter")
@@ -72,12 +69,13 @@ impl CometClient {
         println!("POST metric response: status={}", res.status())
     }
 
-    fn log_metric(&self, exp_key: &str, name: &str, value: &str, client: &Client) {
+    fn log_metric<T: ToString>(&self, exp_key: &str, name: &str, value: &T, client: &Client) {
         let authorization = self.api_key.as_ref().unwrap();
         let mut map = HashMap::new();
         map.insert("experimentKey", exp_key);
         map.insert("metricName", name);
-        map.insert("metricValue", value);
+        let value_string = value.to_string();
+        map.insert("metricValue", &value_string);
 
         let res = client
             .post("https://www.comet.ml/api/rest/v2/write/experiment/metric")
