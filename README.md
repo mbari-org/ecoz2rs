@@ -21,6 +21,7 @@ On Linux you can run:
 
 and on a MacOS, something like:
 
+    $ brew install gcc
     $ export CC=gcc-10
     $ cargo install ecoz2
 
