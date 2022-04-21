@@ -1,3 +1,20 @@
+2022-04
+
+- preliminary jld2 file reading
+    
+       $ cargo run jld2-show --file data/MARS_20161013_013325.wav_clicks.jld2
+       Read dataset: <HDF5 dataset>
+       pl = <HDF5 property list: unknown class>
+       reader = Reader { obj: <HDF5 container>, conv: Soft }
+       ndim          = 0
+       dtype         = <HDF5 datatype>
+       layout        = Compact
+       is_chunked    = false
+       is_resizable  = false
+       is_scalar     = true
+       is_valid      = true
+       no conversion paths found 
+
 2021-02
 
 - comet

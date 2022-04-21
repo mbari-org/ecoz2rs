@@ -21,6 +21,7 @@ mod comet_client;
 mod csvutil;
 mod ecoz2_lib;
 mod hmm;
+mod jld2;
 mod lpc;
 mod mm;
 mod nb;
@@ -69,6 +70,9 @@ enum Ecoz {
 
     #[structopt(about = "Utilities")]
     Util(util::UtilMainOpts),
+
+    #[structopt(about = "Basic display of jld2 file")]
+    Jld2Show(jld2::Jld2ShowOpts),
 }
 
 fn main() {
@@ -115,6 +119,10 @@ fn main() {
 
         Ecoz::Util(opts) => {
             util::main(opts);
+        }
+
+        Ecoz::Jld2Show(opts) => {
+            jld2::main_jld2_show(opts);
         }
     }
 }
