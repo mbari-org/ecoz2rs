@@ -1,3 +1,7 @@
+2022-04
+
+- `sgn show`: only use the spec
+
 2021-02
 
 - comet

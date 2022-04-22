@@ -11,6 +11,7 @@ use structopt::StructOpt;
 
 use crate::csvutil::{load_instance_info, InstanceInfo};
 
+use self::hound::WavSpec;
 use self::itertools::Itertools;
 use self::EcozSgnCommand::{Extract, Show};
 
@@ -80,14 +81,20 @@ pub fn main(opts: SgnMainOpts) {
     }
 }
 
+fn print_sgn_info(num_samples: usize, spec: &WavSpec) {
+    println!(
+        "num_samples: {}, sample_rate: {}, bits_per_sample: {}, channels: {}, sample_format = {:?}",
+        num_samples, spec.sample_rate, spec.bits_per_sample, spec.channels, spec.sample_format,
+    );
+}
 pub fn sgn_show(opts: SgnShowOpts) -> Result<(), Box<dyn Error>> {
     let SgnShowOpts { file } = opts;
 
     let filename: &str = file.to_str().unwrap();
 
-    let s = load(&filename);
-    println!("Signal loaded: {}", filename);
-    s.show();
+    let reader = hound::WavReader::open(&filename).unwrap();
+    let spec = reader.spec();
+    print_sgn_info(reader.len() as usize, &spec);
     Ok(())
 }
 
@@ -287,10 +294,7 @@ impl Sgn {
     }
 
     pub fn show(&self) {
-        println!(
-            "num_samples: {}  sample_rate: {}  bits_per_sample: {}  sample_format = {:?}",
-            self.num_samples, self.sample_rate, self.spec.bits_per_sample, self.spec.sample_format
-        );
+        print_sgn_info(self.num_samples, &self.spec);
     }
 }
 
