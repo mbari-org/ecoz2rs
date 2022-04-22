@@ -56,6 +56,8 @@ pub fn lpc_rs(
 
 struct LPAnalyzerSer {
     pub prediction_order: usize,
+
+    #[allow(dead_code)] // TODO review
     pub win_size: usize,
 
     hamming: Vec<f64>,

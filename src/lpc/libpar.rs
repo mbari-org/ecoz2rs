@@ -58,6 +58,8 @@ pub fn lpc_par(
 
 struct LPAnalyzerPar {
     pub prediction_order: usize,
+
+    #[allow(dead_code)] // TODO review
     pub win_size: usize,
 
     reflex: Vec<f64>,
