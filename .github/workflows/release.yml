@@ -12,9 +12,8 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v2
-
-    - name: Checkout submodules
-      uses: textbook/git-checkout-submodule-action@2.1.1
+      with:
+        submodules: recursive
 
     # as git action to get submodules not available on macos:
     - name: Upload source for the macos build
