@@ -1,5 +1,6 @@
 2022-04
 
+- clippy fixes
 - `sgn show`: only use the spec
 
 2021-02

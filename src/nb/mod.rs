@@ -114,7 +114,7 @@ pub fn main_nbayes_learn(opts: NBayesLearnOpts) -> Result<(), Box<dyn Error>> {
     std::fs::create_dir_all(nb_dir)?;
     let filename = format!("{}/{}.nb", nb_dir.to_str().unwrap(), model.class_name);
     println!("NB model trained");
-    utl::save_ser(&model, &filename.as_str())?;
+    utl::save_ser(&model, filename.as_str())?;
     println!("NB model saved: {}\n\n", filename);
     Ok(())
 }

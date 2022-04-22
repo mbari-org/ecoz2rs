@@ -64,7 +64,7 @@ fn split(opts: UtilSplitOpts) -> Result<(), Box<dyn Error>> {
         train_fraction,
     } = opts;
 
-    if train_fraction < 0f32 || train_fraction > 1f32 {
+    if !(0f32..=1f32).contains(&train_fraction) {
         return Err("Invalid train_fraction".into());
     }
 

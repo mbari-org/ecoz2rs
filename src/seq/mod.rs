@@ -89,7 +89,7 @@ pub fn seq_show(opts: &SeqShowOpts) -> Result<(), Box<dyn Error>> {
         if let (Some(codebook_size), Some(tt)) = (&opts.codebook_size, &opts.tt) {
             let seq_filenames = utl::resolve_files2(
                 &opts.seq_filenames,
-                &tt,
+                tt,
                 &opts.class_name,
                 format!("sequences/M{}", codebook_size),
                 ".seq",

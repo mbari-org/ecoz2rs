@@ -34,7 +34,7 @@ pub fn main_csv_show(opts: CsvShowOpts) {
 
     let filename: &str = file.to_str().unwrap();
 
-    match load_instance_info(&filename) {
+    match load_instance_info(filename) {
         Ok(instances) => {
             for instance in instances {
                 println!("{:?}", instance);

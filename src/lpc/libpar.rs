@@ -24,12 +24,12 @@ pub fn lpc_par(
 ) {
     let filename: &str = file.to_str().unwrap();
     let out_filename: &str = match output {
-        Some(ref fname) => &fname.to_str().unwrap(),
+        Some(ref fname) => fname.to_str().unwrap(),
         None => "predictor_par.prd",
     };
 
     println!("Loading: {}", filename);
-    let s = sgn::load(&filename);
+    let s = sgn::load(filename);
     s.show();
     //sgn::save(&s, "output.wav");
 
@@ -47,7 +47,7 @@ pub fn lpc_par(
         vectors,
     };
 
-    utl::save_ser(&predictor, &out_filename).unwrap();
+    utl::save_ser(&predictor, out_filename).unwrap();
     println!(
         "{} saved.  Class: '{}':  {} vectors",
         out_filename,
@@ -89,9 +89,9 @@ impl LPAnalyzerPar {
         &mut self,
         samples: &[f64],
         hamming: &[f64],
-        mut vector: &mut [f64],
+        vector: &mut [f64],
     ) -> Result<(), Box<dyn Error>> {
-        self.fill_frame(&samples);
+        self.fill_frame(samples);
         self.remove_mean();
         self.preemphasis();
         self.apply_hamming(hamming);
@@ -99,7 +99,7 @@ impl LPAnalyzerPar {
         let (res_lpca, err_pred) = lpca(
             &self.frame,
             self.prediction_order,
-            &mut vector,
+            vector,
             &mut self.reflex,
             &mut self.pred,
         );
@@ -222,8 +222,7 @@ pub fn lpa_on_signal(
                 let samples = &signal[signal_from..signal_to];
 
                 let mut vector = vec![0f64; p + 1];
-                lpa.process_frame(&samples, &c_hamming, &mut vector)
-                    .unwrap();
+                lpa.process_frame(samples, &c_hamming, &mut vector).unwrap();
                 c_tx.send((f, vector)).unwrap();
             }
         });

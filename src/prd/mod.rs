@@ -231,7 +231,7 @@ impl Predictor {
         let mut reflection = vec![0f64; p + 1];
         for auto_cor in &self.vectors {
             let mut predictor = vec![0f64; p + 1];
-            let (_res_lpca, _err_pred) = lpca_r(p, &auto_cor, &mut reflection, &mut predictor);
+            let (_res_lpca, _err_pred) = lpca_r(p, auto_cor, &mut reflection, &mut predictor);
             predictors.push(predictor);
         }
         predictors
@@ -245,7 +245,7 @@ impl Predictor {
         for auto_cor in &self.vectors {
             let mut predictor = vec![0f64; p + 1];
             let mut cepstrum = vec![0f64; q];
-            let (res_lpca, err_pred) = lpca_r(p, &auto_cor, &mut reflection, &mut predictor);
+            let (res_lpca, err_pred) = lpca_r(p, auto_cor, &mut reflection, &mut predictor);
             if res_lpca != 0 {
                 eprintln!(
                     "WARNING: lpca_r: res_lpca = {}, err_pred = {}",
@@ -267,7 +267,7 @@ impl Predictor {
         let mut pred = vec![0f64; p + 1];
         for auto_cor in &self.vectors {
             let mut reflection = vec![0f64; p + 1];
-            let (_res_lpca, _err_pred) = lpca_r(p, &auto_cor, &mut reflection, &mut pred);
+            let (_res_lpca, _err_pred) = lpca_r(p, auto_cor, &mut reflection, &mut pred);
             reflections.push(reflection);
         }
         reflections

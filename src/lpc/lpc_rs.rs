@@ -22,12 +22,12 @@ pub fn lpc_rs(
     let filename: &str = file.to_str().unwrap();
 
     let out_filename: &str = match output {
-        Some(ref fname) => &fname.to_str().unwrap(),
+        Some(ref fname) => fname.to_str().unwrap(),
         None => "predictor.prd",
     };
 
     println!("Loading: {}", filename);
-    let s = sgn::load(&filename);
+    let s = sgn::load(filename);
     s.show();
     //sgn::save(&s, "output.wav");
 
@@ -45,7 +45,7 @@ pub fn lpc_rs(
         vectors,
     };
 
-    utl::save_ser(&predictor, &out_filename).unwrap();
+    utl::save_ser(&predictor, out_filename).unwrap();
     println!(
         "{} saved.  Class: '{}':  {} vectors",
         out_filename,
@@ -101,8 +101,8 @@ impl LPAnalyzerSer {
     }
 
     #[inline]
-    fn process_frame(&mut self, samples: &[f64], mut vector: &mut [f64]) {
-        self.fill_frame(&samples);
+    fn process_frame(&mut self, samples: &[f64], vector: &mut [f64]) {
+        self.fill_frame(samples);
         self.remove_mean();
         self.preemphasis();
         self.apply_hamming();
@@ -116,7 +116,7 @@ impl LPAnalyzerSer {
         let (res_lpca, err_pred) = lpca(
             &self.frame,
             self.prediction_order,
-            &mut vector,
+            vector,
             &mut self.reflex,
             &mut self.pred,
         );
@@ -229,11 +229,11 @@ fn lpa_on_signal(
 
     let mut signal_from = 0usize;
 
-    for mut vector in vectors.iter_mut() {
+    for vector in vectors.iter_mut() {
         let signal_to = signal_from + win_size;
         let samples = &signal[signal_from..signal_to];
 
-        lpa.process_frame(&samples, &mut vector);
+        lpa.process_frame(samples, vector);
 
         frames_processed += 1;
         if frames_processed % 50000 == 0 {

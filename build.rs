@@ -74,7 +74,7 @@ fn main() {
 
     if let Ok(val) = std::env::var("PROB_T") {
         let define = format!("-DPROB_T={}", val);
-        build = build.flag(&define.as_str()).to_owned();
+        build = build.flag(define.as_str()).to_owned();
     }
 
     build.files(files).compile("ecoz2_lib");

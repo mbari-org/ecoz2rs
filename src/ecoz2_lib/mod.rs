@@ -44,11 +44,7 @@ pub fn unregister_cc(ref_id: c_int) {
 }
 
 pub fn find_cc(ref_id: &c_int) -> Option<Arc<CometClient>> {
-    COMET_CLIENTS
-        .read()
-        .unwrap()
-        .get(ref_id)
-        .map(|v| Arc::clone(v))
+    COMET_CLIENTS.read().unwrap().get(ref_id).map(Arc::clone)
 }
 
 #[repr(C)]
@@ -169,15 +165,15 @@ extern "C" {
 
     fn ecoz2_hmm_show(hmm_filename: *const c_char, format: *const c_char);
 
-// TODO to be removed
-//    fn ecoz2_seq_show_files(
-//        with_prob: c_int,
-//        gen_q_opt: c_int,
-//        show_sequence: c_int,
-//        hmm_filename: *const c_char,
-//        sequence_filenames: *const *const c_char,
-//        num_sequences: c_int,
-//    );
+    // TODO to be removed
+    //    fn ecoz2_seq_show_files(
+    //        with_prob: c_int,
+    //        gen_q_opt: c_int,
+    //        show_sequence: c_int,
+    //        hmm_filename: *const c_char,
+    //        sequence_filenames: *const *const c_char,
+    //        num_sequences: c_int,
+    //    );
 }
 
 pub fn version() -> Result<&'static str, Utf8Error> {
@@ -542,16 +538,12 @@ pub fn seq_show_files(
 */
 
 fn to_vec_of_ptr_const_c_char(paths: Vec<PathBuf>) -> Vec<*const c_char> {
-    let vec_of_cstring: Vec<CString> = paths
+    paths
         .into_iter()
         .map(|path| {
             let str = path.to_str().unwrap();
             CString::new(str).unwrap()
         })
-        .collect();
-
-    vec_of_cstring
-        .into_iter()
         .map(|c_string| {
             let ptr = c_string.as_ptr();
             std::mem::forget(c_string);

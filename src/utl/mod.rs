@@ -141,7 +141,7 @@ struct TTRow {
 
 /// Returns the `tt` (TRAIN or TEST) category filenames from the given csv.
 pub fn get_files_from_csv(
-    filename: &PathBuf,
+    filename: &Path,
     tt: &str,
     class_name_opt: &Option<String>,
     subdir: &str,
@@ -274,7 +274,7 @@ pub fn save_json<T: serde::Serialize>(model: &T, filename: &str) -> Result<(), B
     Ok(())
 }
 
-pub fn to_pickle<T: serde::Serialize>(obj: &T, filename: &PathBuf) -> Result<(), Box<dyn Error>> {
+pub fn to_pickle<T: serde::Serialize>(obj: &T, filename: &Path) -> Result<(), Box<dyn Error>> {
     let serialized = serde_pickle::to_vec(&obj, true).unwrap();
     let f = File::create(filename)?;
     let mut bw = BufWriter::new(f);

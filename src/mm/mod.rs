@@ -115,7 +115,7 @@ pub fn main_mm_learn(opts: MMLearnOpts) -> Result<(), Box<dyn Error>> {
     std::fs::create_dir_all(mm_dir)?;
     let filename = format!("{}/{}.mm", mm_dir.to_str().unwrap(), model.class_name);
     println!("MM model trained");
-    utl::save_ser(&model, &filename.as_str())?;
+    utl::save_ser(&model, filename.as_str())?;
     println!("MM model saved: {}\n\n", filename);
     Ok(())
 }

@@ -127,7 +127,7 @@ impl SgnExtractor {
         let wav_filename: &str = wav.to_str().unwrap();
 
         println!("Loading {}", wav_filename);
-        let sgn = load(&wav_filename);
+        let sgn = load(wav_filename);
         sgn.show();
 
         let duration = sgn.num_samples / sgn.sample_rate;

@@ -50,7 +50,7 @@ impl C12nResults {
 
         // sort given probabilities:
         let mut probs: Vec<(usize, &f64)> = probs.iter().enumerate().collect();
-        probs.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap());
+        probs.sort_by(|a, b| a.1.partial_cmp(b.1).unwrap());
 
         let predicted_id = probs[num_models - 1].0;
         let correct = class_id == predicted_id;
