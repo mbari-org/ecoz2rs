@@ -15,45 +15,51 @@ jobs:
       with:
         submodules: recursive
 
-    # as git action to get submodules not available on macos:
-    - name: Upload source for the macos build
-      uses: actions/upload-artifact@v2
-      with:
-        name: ecoz2rs-src
-        path: ./
-
     - name: Build linux
       run: |
         CC=gcc cargo build --verbose --release
         cd target/release/
         zip "${{github.workspace}}/ecoz2rs-linux.zip" ecoz2
+
     - uses: actions/upload-artifact@v2
       with:
         name: ecoz2rs-linux.zip
         path: "${{github.workspace}}/ecoz2rs-linux.zip"
 
-  build_macos_and_release:
-    needs: build_linux
+  build_macos:
     runs-on: macos-latest
 
     steps:
-    - name: Get sources
-      uses: actions/download-artifact@v2
-      with:
-        name: ecoz2rs-src
-    - name: List directory
-      run: ls -lrt
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
 
-    - name: Build macos
-      run: |
-        CC=gcc-9 cargo build --verbose --release
-        cd target/release/
-        zip "${{github.workspace}}/ecoz2rs-macos.zip" ecoz2
+      - name: Build macos
+        run: |
+          CC=gcc-9 cargo build --verbose --release
+          cd target/release/
+          zip "${{github.workspace}}/ecoz2rs-macos.zip" ecoz2
 
+      - uses: actions/upload-artifact@v2
+        with:
+          name: ecoz2rs-macos.zip
+          path: "${{github.workspace}}/ecoz2rs-macos.zip"
+
+  release:
+    needs: [build_linux, build_macos]
+    runs-on: macos-latest
+
+    steps:
     - name: Get linux release
       uses: actions/download-artifact@v2
       with:
         name: ecoz2rs-linux.zip
+
+    - name: Get macos release
+      uses: actions/download-artifact@v2
+      with:
+        name: ecoz2rs-macos.zip
 
     - name: Complete release
       uses: sondreb/action-release@master
