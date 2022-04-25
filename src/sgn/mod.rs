@@ -83,10 +83,16 @@ pub fn main(opts: SgnMainOpts) {
 
 fn print_sgn_info(num_samples: usize, spec: &WavSpec) {
     println!(
-        "num_samples: {}, sample_rate: {}, bits_per_sample: {}, channels: {}, sample_format = {:?}",
+        "\n\
+num_samples      : {}\n\
+sample_rate      : {}\n\
+bits_per_sample  : {}\n\
+channels         : {}\n\
+sample_format    : {:?}\n",
         num_samples, spec.sample_rate, spec.bits_per_sample, spec.channels, spec.sample_format,
     );
 }
+
 pub fn sgn_show(opts: SgnShowOpts) -> Result<(), Box<dyn Error>> {
     let SgnShowOpts { file } = opts;
 
