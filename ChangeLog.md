@@ -1,3 +1,8 @@
+2022-06
+
+- ran `cargo update`, upon getting some dependabot notifs.
+  All continues to work ok: `cargo test`, `cargo run -- --help`, `cargo bench` 
+
 2022-04
 
 - clippy fixes
