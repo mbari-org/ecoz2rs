@@ -1,3 +1,7 @@
+2022-09
+
+- remove unneeded, large html files (bench generated)
+
 2022-06
 
 - ran `cargo update`, upon getting some dependabot notifs.
@@ -15,8 +19,8 @@
     - use a lighter http client as reqwest is bringing in some heavy dependencies
       (even with only the json and blocking features) and taking the most significant
       build time (per `cargo +nightly build -Ztimings`), which went from
-      [3m 46.8s](misc/cargo-timing-20210306T233143Z.html) down to 
-      [1m 54.1s](misc/cargo-timing-20210307T005808Z.html).
+      3m 46.8s down to 
+      1m 54.1s
       NOTE: change not tested yet -- comet hasn't been used for along while.
 
 - gain of the system is sqrt(prediction_error)
