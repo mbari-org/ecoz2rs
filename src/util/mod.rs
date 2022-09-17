@@ -76,7 +76,7 @@ fn split(opts: UtilSplitOpts) -> Result<(), Box<dyn Error>> {
     // Eg.: from "data/predictors/B/00123.prd" -> 1="B", 2="00123"
     let class_and_selections: Vec<(String, String)> = filenames
         .iter()
-        .map(|f| {
+        .filter_map(|f| {
             let s = f.to_str().unwrap().to_string();
             split_re.captures(&s).map(|caps| {
                 let class: String = caps.get(1).unwrap().as_str().to_string();
@@ -84,7 +84,6 @@ fn split(opts: UtilSplitOpts) -> Result<(), Box<dyn Error>> {
                 (class, selection)
             })
         })
-        .flatten()
         .collect();
 
     let num_train = (train_fraction * class_and_selections.len() as f32) as usize;

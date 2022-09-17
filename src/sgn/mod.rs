@@ -145,14 +145,13 @@ impl SgnExtractor {
         let sel_range_re: Regex = Regex::new(r"(?x)(?P<start>\d+)-(?P<end>-?\d+)").unwrap();
         let selection_ranges: Vec<std::ops::Range<i32>> = selection_ranges
             .iter()
-            .map(|s| {
+            .filter_map(|s| {
                 sel_range_re.captures(s).map(|caps| {
                     let start: i32 = caps["start"].parse().unwrap();
                     let end: i32 = caps["end"].parse().unwrap();
                     start..end
                 })
             })
-            .flatten()
             .collect();
         println!("parsed selection_ranges = {:?}", selection_ranges);
 
@@ -160,7 +159,7 @@ impl SgnExtractor {
             Regex::new(r"(?x)(?P<start>(\d|\.)+)-(?P<end>(\d|\.)+)").unwrap();
         let time_ranges: Vec<(f32, f32)> = time_ranges
             .iter()
-            .map(|s| {
+            .filter_map(|s| {
                 time_range_re.captures(s).map(|caps| {
                     let start: f32 = caps["start"].parse().unwrap();
                     let end: f32 = caps["end"].parse().unwrap();
@@ -170,7 +169,6 @@ impl SgnExtractor {
                     (start, end)
                 })
             })
-            .flatten()
             .collect();
         println!("parsed time_ranges = {:?}", time_ranges);
 
