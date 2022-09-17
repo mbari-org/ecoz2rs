@@ -1,5 +1,5 @@
+extern crate clap;
 extern crate serde;
-extern crate structopt;
 
 use std::error::Error;
 use std::fs::File;
@@ -7,7 +7,7 @@ use std::io::BufReader;
 use std::path::PathBuf;
 use std::process;
 
-#[derive(structopt::StructOpt, Debug)]
+#[derive(clap::StructOpt, Debug)]
 pub struct CsvShowOpts {
     /// File to read
     #[structopt(short, long, parse(from_os_str))]

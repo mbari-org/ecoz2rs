@@ -1,9 +1,9 @@
-extern crate structopt;
+extern crate clap;
 
 use std::error::Error;
 use std::path::PathBuf;
 
-use structopt::StructOpt;
+use clap::StructOpt;
 
 use crate::ecoz2_lib::vq_classify;
 use crate::ecoz2_lib::vq_learn;
@@ -38,15 +38,15 @@ enum EcozVqCommand {
 #[derive(StructOpt, Debug)]
 pub struct VqLearnOpts {
     /// Start training from this base codebook.
-    #[structopt(short = "B", long, name = "codebook")]
+    #[structopt(short = 'B', long, name = "codebook")]
     base_codebook: Option<String>,
 
     /// Prediction order (required if -B not given).
-    #[structopt(short = "P", long, name = "P")]
+    #[structopt(short = 'P', long, name = "P")]
     prediction_order: Option<usize>,
 
     /// Epsilon parameter for convergence.
-    #[structopt(short = "e", long = "epsilon", default_value = "0.05", name = "ε")]
+    #[structopt(short = 'e', long = "epsilon", default_value = "0.05", name = "ε")]
     epsilon: f64,
 
     /// Class name to associate to generated codebook (ignored if -B given)
@@ -98,7 +98,7 @@ pub struct VqQuantizeOpts {
 #[derive(StructOpt, Debug)]
 pub struct VqClassifyOpts {
     /// Show ranked models for incorrect classifications
-    #[structopt(short = "r", long)]
+    #[structopt(short = 'r', long)]
     show_ranked: bool,
 
     /// Codebook models.

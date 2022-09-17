@@ -1,11 +1,11 @@
+extern crate clap;
 extern crate libc;
-extern crate structopt;
 
 use std::error::Error;
 use std::path::PathBuf;
 
+use clap::StructOpt;
 use colored::*;
-use structopt::StructOpt;
 
 use crate::ecoz2_lib::hmm_classify_predictors;
 use crate::ecoz2_lib::hmm_classify_sequences;
@@ -39,11 +39,11 @@ enum EcozHmmCommand {
 #[derive(StructOpt, Debug)]
 pub struct HmmLearnOpts {
     /// Number of states
-    #[structopt(short = "N", long, name = "N", default_value = "5")]
+    #[structopt(short = 'N', long, name = "N", default_value = "5")]
     num_states: usize,
 
     /// Number of symbols (codebook size)
-    #[structopt(short = "M", long, name = "M", required = true)]
+    #[structopt(short = 'M', long, name = "M", required = true)]
     codebook_size: usize,
 
     /// Type of model to generate:
@@ -51,25 +51,25 @@ pub struct HmmLearnOpts {
     ///    1: uniform distributions
     ///    2: cascade-2; random B
     ///    3: cascade-3; random B
-    #[structopt(short = "t", default_value = "3")]
+    #[structopt(short = 't', default_value = "3")]
     type_: usize,
 
     /// Maximum number of iterations. Default (-1) means no limit.
-    #[structopt(short = "I", long, name = "I", default_value = "-1")]
+    #[structopt(short = 'I', long, name = "I", default_value = "-1")]
     max_iterations: i32,
 
     /// epsilon restriction on B.
     /// 0 means do not apply this restriction
-    #[structopt(short = "e", default_value = "1e-05")]
+    #[structopt(short = 'e', default_value = "1e-05")]
     epsilon: f64,
 
     /// val_auto.
-    #[structopt(short = "a", default_value = "0.3")]
+    #[structopt(short = 'a', default_value = "0.3")]
     val_auto: f64,
 
     /// Seed for random numbers. Negative means random seed.
     /// Otherwise, the given seed is used, which will allow for reproducibility.
-    #[structopt(short = "s", long, default_value = "-1")]
+    #[structopt(short = 's', long, default_value = "-1")]
     seed: i64,
 
     /// Use serialized implementation
@@ -92,7 +92,7 @@ pub struct HmmLearnOpts {
 #[derive(StructOpt, Debug)]
 pub struct HmmClassifyOpts {
     /// Show ranked models for incorrect classifications
-    #[structopt(short = "r", long)]
+    #[structopt(short = 'r', long)]
     show_ranked: bool,
 
     /// File to report classification results for each sequence.
@@ -126,7 +126,7 @@ pub struct HmmClassifyOpts {
 
     /// Number of symbols (codebook size) when `--sequences` with
     /// a `.csv` file is given. Helps determine the path to the sequences.
-    #[structopt(short = "M", long, required = true)]
+    #[structopt(short = 'M', long, required = true)]
     codebook_size: usize,
 
     /// Predictor files to classify.

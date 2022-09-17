@@ -1,6 +1,7 @@
 #[macro_use]
 extern crate assert_approx_eq;
 extern crate byteorder;
+extern crate clap;
 extern crate colored;
 extern crate itertools;
 extern crate ndarray;
@@ -8,13 +9,12 @@ extern crate num_cpus;
 extern crate openmp_sys;
 extern crate serde;
 extern crate serde_json;
-extern crate structopt;
 
 #[macro_use]
 extern crate lazy_static;
 
-use structopt::clap::{self, crate_version};
-use structopt::StructOpt;
+use clap::Parser;
+use clap::StructOpt;
 
 mod c12n;
 mod comet_client;
@@ -34,8 +34,7 @@ mod vq;
 
 #[derive(StructOpt, Debug)]
 #[structopt(global_setting(clap::AppSettings::ColoredHelp))]
-#[structopt(name = "ecoz2", about = "ECOZ2 System")]
-#[structopt(version = crate_version!())]
+#[clap(version, about = "ECOZ2 System", long_about = None)]
 enum Ecoz {
     #[structopt(about = "Show version of C code")]
     Cversion,
@@ -72,7 +71,7 @@ enum Ecoz {
 }
 
 fn main() {
-    match Ecoz::from_args() {
+    match Ecoz::parse() {
         Ecoz::Cversion => {
             println!("ecoz2/C {}", ecoz2_lib::version().unwrap());
         }

@@ -2,8 +2,8 @@ use std::error::Error;
 use std::path::Path;
 use std::path::PathBuf;
 
+use clap::StructOpt;
 use colored::*;
-use structopt::StructOpt;
 
 use crate::utl;
 
@@ -33,7 +33,7 @@ enum EcozMMCommand {
 #[derive(StructOpt, Debug)]
 pub struct MMLearnOpts {
     /// Number of symbols (codebook size)
-    #[structopt(short = "M", long, name = "M", required = true)]
+    #[structopt(short = 'M', long, name = "M", required = true)]
     codebook_size: usize,
 
     /// Class name for the trained model
@@ -50,11 +50,11 @@ pub struct MMLearnOpts {
 #[derive(StructOpt, Debug)]
 pub struct MMClassifyOpts {
     /// Number of symbols (codebook size)
-    #[structopt(short = "M", long, required = true)]
+    #[structopt(short = 'M', long, required = true)]
     codebook_size: usize,
 
     /// Show ranked models for incorrect classifications
-    #[structopt(short = "r", long)]
+    #[structopt(short = 'r', long)]
     show_ranked: bool,
 
     /// TRAIN or TEST

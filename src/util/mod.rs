@@ -1,12 +1,12 @@
-extern crate structopt;
+extern crate clap;
 
 use std::error::Error;
 use std::path::PathBuf;
 
+use clap::StructOpt;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 use regex::Regex;
-use structopt::StructOpt;
 
 use crate::utl;
 

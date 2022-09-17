@@ -1,5 +1,6 @@
 2022-09
 
+- fix #1 to address critical dependabot notification
 - remove unneeded, large html files (bench generated)
 
 2022-06

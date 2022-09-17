@@ -1,9 +1,9 @@
-extern crate structopt;
+extern crate clap;
 
 use std::error::Error;
 use std::path::PathBuf;
 
-use structopt::StructOpt;
+use clap::StructOpt;
 
 //use ecoz2_lib::seq_show_files;
 //use utl;
@@ -28,15 +28,15 @@ enum EcozSeqCommand {
 pub struct SeqShowOpts {
     // The TODO's because of pending impl on rust side.
     /// (TODO) Show associated probabilities
-    #[structopt(short = "P")]
+    #[structopt(short = 'P')]
     pub with_prob: bool,
 
     /// (TODO) Show most likely state sequence
-    #[structopt(short = "Q")]
+    #[structopt(short = 'Q')]
     pub gen_q_opt: bool,
 
     /// Do not show sequence
-    #[structopt(short = "c")]
+    #[structopt(short = 'c')]
     pub no_sequence: bool,
 
     /// (TODO) HMM model
@@ -44,7 +44,7 @@ pub struct SeqShowOpts {
     pub hmm: Option<PathBuf>,
 
     /// Only show length of the sequence
-    #[structopt(short = "L")]
+    #[structopt(short = 'L')]
     pub only_length: bool,
 
     /// Show full sequence (by default, abbreviated unless very short)
@@ -64,7 +64,7 @@ pub struct SeqShowOpts {
     tt: Option<String>,
 
     /// Codebook size when `--pickle` is given
-    #[structopt(short = "M", long, name = "#")]
+    #[structopt(short = 'M', long, name = "#")]
     codebook_size: Option<usize>,
 
     /// Sequences, gathered according to various parameters.

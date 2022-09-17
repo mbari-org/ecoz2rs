@@ -1,12 +1,12 @@
+extern crate clap;
 extern crate serde;
-extern crate structopt;
 
 use std::error::Error;
 use std::fs::File;
 use std::io::BufReader;
 use std::path::PathBuf;
 
-use structopt::StructOpt;
+use clap::StructOpt;
 
 use crate::ecoz2_lib::prd_show_file;
 use crate::lpc::lpca_cepstrum_rs::lpca_get_cepstrum;
@@ -34,7 +34,7 @@ pub struct PrdShowOpts {
     show_predictors: bool,
 
     /// Show reflection coefficients
-    #[structopt(short = "k", long = "reflections")]
+    #[structopt(short = 'k', long = "reflections")]
     show_reflections: bool,
 
     /// Show cepstrum coefficients.
@@ -43,11 +43,11 @@ pub struct PrdShowOpts {
     show_cepstrum: Option<usize>,
 
     /// Start for coefficient range selection
-    #[structopt(short = "f", long, default_value = "1")]
+    #[structopt(short = 'f', long, default_value = "1")]
     from: usize,
 
     /// End for coefficient range selection
-    #[structopt(short = "t", long, default_value = "0")]
+    #[structopt(short = 't', long, default_value = "0")]
     to: usize,
 
     /// File to read

@@ -2,7 +2,7 @@ use std::error::Error;
 use std::path::Path;
 use std::path::PathBuf;
 
-use structopt::StructOpt;
+use clap::StructOpt;
 
 use crate::utl;
 
@@ -32,7 +32,7 @@ enum EcozNBayesCommand {
 #[derive(StructOpt, Debug)]
 pub struct NBayesLearnOpts {
     /// Number of symbols (codebook size)
-    #[structopt(short = "M", long, name = "M", required = true)]
+    #[structopt(short = 'M', long, name = "M", required = true)]
     codebook_size: usize,
 
     /// Class name for the trained model
@@ -49,11 +49,11 @@ pub struct NBayesLearnOpts {
 #[derive(StructOpt, Debug)]
 pub struct NBayesClassifyOpts {
     /// Number of symbols (codebook size)
-    #[structopt(short = "M", long, required = true)]
+    #[structopt(short = 'M', long, required = true)]
     codebook_size: usize,
 
     /// Show ranked models for incorrect classifications
-    #[structopt(short = "r", long)]
+    #[structopt(short = 'r', long)]
     show_ranked: bool,
 
     /// TRAIN or TEST

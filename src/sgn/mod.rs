@@ -1,13 +1,13 @@
+extern crate clap;
 extern crate hound;
 extern crate itertools;
-extern crate structopt;
 
 use std::error::Error;
 use std::fs;
 use std::path::PathBuf;
 
+use clap::StructOpt;
 use regex::Regex;
-use structopt::StructOpt;
 
 use crate::csvutil::{load_instance_info, InstanceInfo};
 
@@ -61,7 +61,7 @@ pub struct SgnExtractOpts {
     time_ranges: Vec<String>,
 
     /// Only extract a class if it has at least this number of instances
-    #[structopt(short = "m", long, default_value = "0")]
+    #[structopt(short = 'm', long, default_value = "0")]
     minpc: usize,
 
     /// Base directory for output wave files

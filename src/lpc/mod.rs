@@ -1,9 +1,9 @@
-extern crate structopt;
+extern crate clap;
 
 use std::error::Error;
 use std::path::PathBuf;
 
-use structopt::StructOpt;
+use clap::StructOpt;
 
 use crate::ecoz2_lib::lpc_signals;
 use crate::utl;
@@ -17,25 +17,25 @@ mod lpca_rs;
 #[derive(StructOpt, Debug)]
 pub struct LpcOpts {
     /// Prediction order
-    #[structopt(short = "P", long, default_value = "36")]
+    #[structopt(short = 'P', long, default_value = "36")]
     prediction_order: usize,
 
     /// Analysis window length in milliseconds
-    #[structopt(short = "W", long, default_value = "45")]
+    #[structopt(short = 'W', long, default_value = "45")]
     window_length_ms: usize,
 
     /// Window offset length in milliseconds
-    #[structopt(short = "O", long, default_value = "15")]
+    #[structopt(short = 'O', long, default_value = "15")]
     offset_length_ms: usize,
 
     /// Only process a class if it has at least this number of signals
-    #[structopt(short = "m", long, default_value = "0")]
+    #[structopt(short = 'm', long, default_value = "0")]
     minpc: usize,
 
     /// Put the generated predictors into two different training
     /// and test subsets (with the given approx ratio).
     /// DEPRECATED.
-    #[structopt(short = "s", long, default_value = "0")]
+    #[structopt(short = 's', long, default_value = "0")]
     split: f32,
 
     /// Signal files to process. If directories are included, then
@@ -58,7 +58,7 @@ pub struct LpcOpts {
     class: Option<String>,
 
     /// Min time in secs to report processing time per signal
-    #[structopt(short = "X", default_value = "5")]
+    #[structopt(short = 'X', default_value = "5")]
     mintrpt: f32,
 
     /// Use Rust "parallel" implementation
