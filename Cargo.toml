@@ -66,7 +66,7 @@ openmp-sys = "1.0.0"
 opt-level = 3
 
 [dev-dependencies]
-criterion = "0.3"
+criterion = "0.4.0"
 
 [[bench]]
 name = "my_benchmark"

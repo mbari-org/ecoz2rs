@@ -1,3 +1,12 @@
+2022-11
+
+- update criterion to 0.4.0 and use cargo-criterion:
+  ```
+  cargo install cargo-criterion
+  cargo criterion
+  open target/criterion/reports/index.html
+  ```
+
 2022-09
 
 - fix #1 to address critical dependabot notification
