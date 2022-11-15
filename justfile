@@ -18,7 +18,7 @@ run *args='':
 
 # Format source code
 format:
-	cargo fmt -- --check
+	cargo fmt
 
 # Run clippy
 clippy:
