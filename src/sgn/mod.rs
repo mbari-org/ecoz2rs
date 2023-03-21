@@ -98,7 +98,7 @@ pub fn sgn_show(opts: SgnShowOpts) -> Result<(), Box<dyn Error>> {
 
     let filename: &str = file.to_str().unwrap();
 
-    let reader = hound::WavReader::open(&filename).unwrap();
+    let reader = hound::WavReader::open(filename).unwrap();
     let spec = reader.spec();
     print_sgn_info(reader.len() as usize, &spec);
     Ok(())
@@ -271,7 +271,7 @@ impl SgnExtractor {
     }
 
     fn position(&mut self, time_secs: f32) -> usize {
-        (time_secs / self.sample_period as f32) as usize
+        (time_secs / self.sample_period) as usize
     }
 }
 
@@ -303,7 +303,7 @@ impl Sgn {
 }
 
 pub fn load(filename: &str) -> Sgn {
-    let mut reader = hound::WavReader::open(&filename).unwrap();
+    let mut reader = hound::WavReader::open(filename).unwrap();
     let i32s: Vec<i32> = reader.samples().map(|s| s.unwrap()).collect();
     let num_samples = i32s.len();
 

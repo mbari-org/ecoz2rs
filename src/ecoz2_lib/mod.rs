@@ -185,7 +185,7 @@ pub fn version() -> Result<&'static str, Utf8Error> {
 }
 
 pub fn set_random_seed(seed: i64) -> u64 {
-    unsafe { ecoz2_set_random_seed(seed as c_long) as u64 }
+    unsafe { ecoz2_set_random_seed(seed as c_long) }
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -239,14 +239,7 @@ extern "C" fn c_vq_learn_callback(
     sigma: c_double,
     inertia: c_double,
 ) {
-    unsafe {
-        (*target).step(
-            m as i32,
-            avg_distortion as f64,
-            sigma as f64,
-            inertia as f64,
-        )
-    }
+    unsafe { (*target).step(m, avg_distortion, sigma, inertia) }
 }
 
 pub fn vq_learn(
@@ -336,7 +329,7 @@ pub fn vq_quantize(nom_raas: PathBuf, predictor_filenames: Vec<PathBuf>, show_fi
             raas_name,
             vpc_predictors.as_ptr(),
             vpc_predictors.len() as c_int,
-            (if show_filenames { 1 } else { 0 }) as c_int,
+            i32::from(show_filenames),
         )
     }
 }
@@ -383,8 +376,7 @@ extern "C" fn c_hmm_learn_callback(variable: *mut c_char, value: c_double) {
             let c_string = CStr::from_ptr(variable);
             //println!("   c_hmm_learn_callback: var={:?} val={}", c_string, value);
             let var = c_string.to_str().unwrap();
-            let val = value as f64;
-            cb(var, val)
+            cb(var, value)
         }
     }
 }
@@ -418,7 +410,7 @@ pub fn hmm_learn(
             hmm_epsilon as c_double,
             val_auto as c_double,
             max_iterations as c_int,
-            if use_par { 1 } else { 0 } as c_int,
+            i32::from(use_par),
             c_hmm_learn_callback,
         );
 

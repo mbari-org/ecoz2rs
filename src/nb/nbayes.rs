@@ -47,9 +47,9 @@ impl NBayes {
 
     /// log probability of generating the symbol sequence
     pub fn log_prob_sequence(&self, seq: &sequence::Sequence) -> f64 {
-        seq.symbols.iter().fold(0_f64, |acc, s| {
-            acc + self.log_prob_symbol(*s as usize) as f64
-        })
+        seq.symbols
+            .iter()
+            .fold(0_f64, |acc, s| acc + self.log_prob_symbol(*s as usize))
     }
 }
 

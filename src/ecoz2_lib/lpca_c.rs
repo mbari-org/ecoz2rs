@@ -31,6 +31,6 @@ pub fn lpca(x: &[f64], p: usize, r: &mut [f64], rc: &mut [f64], a: &mut [f64]) -
             &mut pe,
         );
 
-        (res as i32, pe)
+        (res, pe)
     }
 }
