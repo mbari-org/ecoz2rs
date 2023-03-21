@@ -1,3 +1,14 @@
+2023-03
+
+- fixed issue while trying to build on my Mac: `fatal error: "_stdio.h" No such file or directory`,
+  caused by brew/apple idiosyncrasies. Anyway, all OK again after:
+  ```shell
+  brew upgrade
+  xcode-select --install
+  sudo xcode-select -switch /Library/Developer/CommandLineTools
+  ```
+  This really helped: <https://stackoverflow.com/a/74715717/830737> 
+
 2022-11
 
 - update criterion to 0.4.0 and use cargo-criterion:
