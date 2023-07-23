@@ -8,13 +8,29 @@ all: default clippy
 list:
 	@just --list --unsorted
 
+# Run check
+check:
+	cargo check
+
+# Run benchmarks (then open target/criterion/report/index.html)
+bench:
+	cargo bench
+
 # Run tests
 test:
 	cargo test
 
+# Run tests with --nocapture
+test-nocapture *args='':
+    cargo test -- --nocapture {{args}}
+
 # Run espclient (e.g.:  just run --help)
 run *args='':
 	cargo run -- {{ args }}
+
+# Clean
+clean:
+  cargo clean
 
 # Format source code
 format:
@@ -28,8 +44,12 @@ clippy:
 release:
 	cargo build --release
 
+# Build release with RUSTFLAGS="-C target-cpu=native"
+release-native:
+	RUSTFLAGS="-C target-cpu=native" cargo build --release
+
 # Install locally
-install: release
+install: release-native
 	cargo install --path .
 
 # (cargo install --locked cargo-outdated)

@@ -94,12 +94,10 @@ pub fn prd_show(opts: PrdShowOpts) -> Result<(), Box<dyn Error>> {
             from,
             to,
             pickle,
-        );
+        )
     } else {
-        prd_show_file(file, show_reflections, from, to);
+        prd_show_file(file, show_reflections, from, to)
     }
-
-    Ok(())
 }
 
 // NOTE: for Rust implementation (preliminary)
@@ -112,9 +110,9 @@ fn prd_show_rs(
     from: usize,
     to: usize,
     pickle: Option<PathBuf>,
-) {
+) -> Result<(), Box<dyn Error>> {
     let filename = prd_filename.to_str().unwrap();
-    let mut prd = load(filename).unwrap();
+    let mut prd = load(filename)?;
     println!("# {}", filename);
     prd.show(
         show_predictors,
@@ -124,6 +122,7 @@ fn prd_show_rs(
         to,
         pickle,
     );
+    Ok(())
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Debug)]

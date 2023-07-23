@@ -2,6 +2,7 @@ extern crate libc;
 
 pub mod lpca_c;
 
+use std::error::Error;
 use std::ffi::CStr;
 use std::ffi::CString;
 use std::os::raw::{c_float, c_long, c_ulong};
@@ -216,8 +217,13 @@ pub fn lpc_signals(
     }
 }
 
-pub fn prd_show_file(prd_filename: PathBuf, show_reflections: bool, from: usize, to: usize) {
-    let prd_filename_c_string = CString::new(prd_filename.to_str().unwrap()).unwrap();
+pub fn prd_show_file(
+    prd_filename: PathBuf,
+    show_reflections: bool,
+    from: usize,
+    to: usize,
+) -> Result<(), Box<dyn Error>> {
+    let prd_filename_c_string = CString::new(prd_filename.to_str().unwrap())?;
 
     unsafe {
         let filename = prd_filename_c_string.as_ptr() as *const i8;
@@ -229,6 +235,7 @@ pub fn prd_show_file(prd_filename: PathBuf, show_reflections: bool, from: usize,
             to as c_int,
         )
     }
+    Ok(())
 }
 
 #[no_mangle]

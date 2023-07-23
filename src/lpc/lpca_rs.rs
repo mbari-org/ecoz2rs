@@ -28,6 +28,7 @@ pub fn lpca(x: &[f64], p: usize, r: &mut [f64], rc: &mut [f64], a: &mut [f64]) -
 pub fn lpca1(x: &[f64], p: usize, r: &mut [f64], rc: &mut [f64], a: &mut [f64]) -> (i32, f64) {
     let n = x.len();
 
+    // this is the expensive part:
     for i in 0..=p {
         let mut sum = 0.0f64;
         for k in 0..n - i {
@@ -49,11 +50,15 @@ pub fn lpca1(x: &[f64], p: usize, r: &mut [f64], rc: &mut [f64], a: &mut [f64]) 
         for i in 1..=k {
             sum -= a[k - i] * r[i];
         }
-        let akk = sum / pe;
-        rc[k] = akk;
 
+        let akk = sum / pe;
+
+        rc[k] = akk;
         a[k] = akk;
-        for i in 1..=k >> 1 {
+
+        let k2 = k >> 1;
+
+        for i in 1..=k2 {
             let ai = a[i];
             let aj = a[k - i];
             a[i] = ai + akk * aj;
@@ -69,14 +74,13 @@ pub fn lpca1(x: &[f64], p: usize, r: &mut [f64], rc: &mut [f64], a: &mut [f64]) 
     (0, pe)
 }
 
-// like lpca1 but with some use of iterators,
-// which does seem to improve performance (per cargo bench)
-// but making the code not always as readable.
+/// Like lpca1 but with use of iterators; similar performance.
 #[allow(dead_code)]
 #[inline]
 pub fn lpca2(x: &[f64], p: usize, r: &mut [f64], rc: &mut [f64], a: &mut [f64]) -> (i32, f64) {
     let n = x.len();
 
+    // this is the expensive part:
     for (i, r_i) in r.iter_mut().enumerate() {
         *r_i = x[0..n - i]
             .iter()
@@ -94,10 +98,6 @@ pub fn lpca2(x: &[f64], p: usize, r: &mut [f64], rc: &mut [f64], a: &mut [f64]) 
     pe = r0;
     a[0] = 1.0f64;
     for k in 1..=p {
-        // let mut sum = 0.0f64;
-        // for i in 1..=k {
-        //   sum -= a[k - i] * r[i];
-        // }
         let sum = -a[0..k]
             .iter()
             .rev()
@@ -109,11 +109,22 @@ pub fn lpca2(x: &[f64], p: usize, r: &mut [f64], rc: &mut [f64], a: &mut [f64]) 
 
         rc[k] = akk;
         a[k] = akk;
-        for i in 1..=k >> 1 {
-            let ai = a[i];
-            let aj = a[k - i];
-            a[i] = ai + akk * aj;
-            a[k - i] = aj + akk * ai;
+
+        let k2 = k >> 1;
+
+        // note: when k is even, we handle the "middle" element after this:
+        let (a_left, a_right) = a[1..k].split_at_mut(k2);
+        a_left
+            .iter_mut()
+            .zip(a_right.iter_mut().rev())
+            .for_each(|(ai, aj)| {
+                let tmp = *ai;
+                *ai += akk * *aj;
+                *aj += akk * tmp;
+            });
+        if k & 1 == 0 {
+            // handle pending "overlapping" element in the middle:
+            a[k2] += akk * a[k2];
         }
 
         pe *= 1.0f64 - akk * akk;
@@ -141,94 +152,33 @@ mod tests {
             prediction_order
         );
 
-        let mut vector = vec![0f64; prediction_order + 1];
-        let mut reflex = vec![0f64; prediction_order + 1];
+        let mut vector1 = vec![0f64; prediction_order + 1];
+        let mut reflex1 = vec![0f64; prediction_order + 1];
         let mut pred1 = vec![0f64; prediction_order + 1];
-
         lpca1(
             &input.x[..],
             prediction_order,
-            &mut vector,
-            &mut reflex,
+            &mut vector1,
+            &mut reflex1,
             &mut pred1,
         );
 
+        let mut vector2 = vec![0f64; prediction_order + 1];
+        let mut reflex2 = vec![0f64; prediction_order + 1];
         let mut pred2 = vec![0f64; prediction_order + 1];
         lpca2(
             &input.x[..],
             prediction_order,
-            &mut vector,
-            &mut reflex,
+            &mut vector2,
+            &mut reflex2,
             &mut pred2,
         );
 
+        assert_eq!(vector1, vector2);
+        assert_eq!(reflex1, reflex2);
         assert_eq!(pred1, pred2);
     }
 }
-
-/// one other equivalent version with some unsafe mechanisms, just for
-/// possible reference, but still no actual gain in performance.
-///
-//#[inline]
-//fn lpca_unsafe(x: &[f64], p: usize, r: &mut [f64], rc: &mut [f64], a: &mut [f64]) -> (i32, f64) {
-//    let n = x.len();
-//
-//    let mut pe: f64 = 0.;
-//
-//    unsafe {
-//        for i in 0..=p {
-//            let mut sum = 0.0f64;
-//            for k in 0..n - i {
-//                //sum += x[k] * x[k + i];
-//                let xk = *x.get_unchecked(k);
-//                let xki = *x.get_unchecked(k + i);
-//                sum += xk * xki;
-//            }
-//            *r.get_unchecked_mut(i) = sum;
-//            //r[i] = sum;
-//        }
-//        let r0 = *r.get_unchecked(0);
-//        //let r0 = r[0];
-//        if 0.0f64 == r0 {
-//            return (1, pe);
-//        }
-//
-//        pe = r0;
-//        *a.get_unchecked_mut(0) = 1.0f64;
-//        //a[0] = 1.0f64;
-//        for k in 1..=p {
-//            let mut sum = 0.0f64;
-//            for i in 1..=k {
-//                //sum -= a[k - i] * r[i];
-//                let aki = *a.get_unchecked(k - i);
-//                let ri = *r.get_unchecked(i);
-//                sum -= aki * ri;
-//            }
-//            let akk = sum / pe;
-//            *rc.get_unchecked_mut(k) = akk;
-//            //rc[k] = akk;
-//
-//            a[k] = akk;
-//            for i in 1..=k >> 1 {
-//                //let ai = a[i];
-//                //let aj = a[k - i];
-//                //a[i] = ai + akk * aj;
-//                //a[k - i] = aj + akk * ai;
-//                let ai = *a.get_unchecked(i);
-//                let aj = *a.get_unchecked(k - i);
-//                *a.get_unchecked_mut(i) = ai + akk * aj;
-//                *a.get_unchecked_mut(k - i) = aj + akk * ai;
-//            }
-//
-//            pe *= 1.0f64 - akk * akk;
-//            if pe <= 0.0f64 {
-//                return (2, pe);
-//            }
-//        }
-//    }
-//
-//    (0, pe)
-//}
 
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
 pub struct LpcaInput {

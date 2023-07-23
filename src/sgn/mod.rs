@@ -98,7 +98,7 @@ pub fn sgn_show(opts: SgnShowOpts) -> Result<(), Box<dyn Error>> {
 
     let filename: &str = file.to_str().unwrap();
 
-    let reader = hound::WavReader::open(filename).unwrap();
+    let reader = hound::WavReader::open(filename)?;
     let spec = reader.spec();
     print_sgn_info(reader.len() as usize, &spec);
     Ok(())
@@ -132,7 +132,7 @@ impl SgnExtractor {
 
         let wav_filename: &str = wav.to_str().unwrap();
 
-        println!("Loading {}", wav_filename);
+        println!("SgnExtractor: Loading {}", wav_filename);
         let sgn = load(wav_filename);
         sgn.show();
 
@@ -304,14 +304,11 @@ impl Sgn {
 
 pub fn load(filename: &str) -> Sgn {
     let mut reader = hound::WavReader::open(filename).unwrap();
-    let i32s: Vec<i32> = reader.samples().map(|s| s.unwrap()).collect();
-    let num_samples = i32s.len();
+    let samples: Vec<i32> = reader.samples().map(|s| s.unwrap()).collect();
+    let num_samples = samples.len();
 
     // convert samples to f64:
-    let mut samples = vec![0f64; num_samples];
-    for (dst, src) in samples.iter_mut().zip(i32s.as_slice()) {
-        *dst = f64::from(*src);
-    }
+    let samples = samples.iter().map(|s| *s as f64).collect();
 
     let spec = reader.spec();
     let sample_rate = spec.sample_rate as usize;
