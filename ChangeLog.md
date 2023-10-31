@@ -1,3 +1,12 @@
+2023-10
+
+- `cargo update` plus couple of lib updates. 
+  All seems OK: 
+  ```
+  j all
+  j bench
+  ```
+  
 2023-03
 
 - fixed issue while trying to build on my Mac: `fatal error: "_stdio.h" No such file or directory`,

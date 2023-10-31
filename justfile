@@ -28,6 +28,18 @@ test-nocapture *args='':
 run *args='':
 	cargo run -- {{ args }}
 
+# List git tags
+tags:
+  git tag -l | sort -V | tail
+
+# Create and push git tag
+tag-and-push:
+  #!/usr/bin/env bash
+  version=$(cat Cargo.toml | grep version | head -1 | cut -d\" -f2)
+  echo "tagging and pushing v${version}"
+  git tag v${version}
+  git push origin v${version}
+
 # Clean
 clean:
   cargo clean
