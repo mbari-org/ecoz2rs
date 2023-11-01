@@ -37,7 +37,7 @@ jobs:
 
       - name: Build macos
         run: |
-          CC=gcc-9 cargo build --verbose --release
+          CC=gcc-13 cargo build --verbose --release
           cd target/release/
           zip "${{github.workspace}}/ecoz2rs-macos.zip" ecoz2
 
