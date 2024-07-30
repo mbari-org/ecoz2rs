@@ -47,7 +47,7 @@ format:
 
 # Run clippy
 clippy:
-	cargo clippy --no-deps
+	cargo clippy --no-deps -- -D warnings
 
 # Build release
 build:
