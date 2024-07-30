@@ -226,7 +226,7 @@ pub fn prd_show_file(
     let prd_filename_c_string = CString::new(prd_filename.to_str().unwrap())?;
 
     unsafe {
-        let filename = prd_filename_c_string.as_ptr() as *const i8;
+        let filename = prd_filename_c_string.as_ptr();
 
         ecoz2_prd_show_file(
             filename,
@@ -305,7 +305,7 @@ pub fn vq_learn(
                         ecoz2_vq_learn(
                             prediction_order as c_int,
                             epsilon as c_double,
-                            class_name.as_ptr() as *const i8,
+                            class_name.as_ptr(),
                             vpc_predictors.as_ptr(),
                             vpc_predictors.len() as c_int,
                             &mut *obs_ref,
@@ -330,7 +330,7 @@ pub fn vq_quantize(nom_raas: PathBuf, predictor_filenames: Vec<PathBuf>, show_fi
     let vpc_predictors: Vec<*const c_char> = to_vec_of_ptr_const_c_char(predictor_filenames);
 
     unsafe {
-        let raas_name = codebook_c_string.as_ptr() as *const i8;
+        let raas_name = codebook_c_string.as_ptr();
 
         ecoz2_vq_quantize(
             raas_name,
@@ -362,13 +362,7 @@ pub fn vq_show(codebook_filename: PathBuf, from: i32, to: i32) {
 
     let codebook_c_string = CString::new(codebook_filename.to_str().unwrap()).unwrap();
 
-    unsafe {
-        ecoz2_vq_show(
-            codebook_c_string.as_ptr() as *const i8,
-            from as c_int,
-            to as c_int,
-        )
-    }
+    unsafe { ecoz2_vq_show(codebook_c_string.as_ptr(), from as c_int, to as c_int) }
 }
 
 // HMM_LEARN_CALLBACK: to control that only one ongoing ecoz2_hmm_learn call is running.
@@ -495,10 +489,7 @@ pub fn hmm_show(hmm_filename: PathBuf, format: String) {
     let format_c_string = CString::new(format).unwrap();
 
     unsafe {
-        ecoz2_hmm_show(
-            hmm_c_string.as_ptr() as *const i8,
-            format_c_string.as_ptr() as *const i8,
-        );
+        ecoz2_hmm_show(hmm_c_string.as_ptr(), format_c_string.as_ptr());
     }
 }
 

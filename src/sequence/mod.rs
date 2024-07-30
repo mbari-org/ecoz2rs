@@ -52,7 +52,7 @@ pub fn load(filename: &str) -> Result<Sequence, Box<dyn Error>> {
 
     let ident = utl::read_file_ident(&mut br)?;
     if !ident.starts_with("<sequence>") {
-        return Err(format!("{}: Not a sequence", filename)).unwrap();
+        return Err(format!("{}: Not a sequence", filename).into());
     }
 
     let class_name: String = utl::read_class_name(&mut br)?;

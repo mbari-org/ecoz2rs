@@ -159,7 +159,7 @@ pub fn main_vq_learn(opts: VqLearnOpts) -> Result<(), Box<dyn Error>> {
     } = opts;
 
     if let (Some(_), Some(_)) = (&base_codebook, prediction_order) {
-        return Err("Only one of base codebook or prediction order expected").unwrap();
+        return Err("Only one of base codebook or prediction order expected".into());
     }
 
     let codebook_class_name = match &class_name {

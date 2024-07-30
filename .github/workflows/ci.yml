@@ -13,5 +13,5 @@ jobs:
           submodules: recursive
       - run: cargo build --verbose
       - run: cargo test
-#      - run: cargo clippy -- -D warnings
+      - run: cargo clippy -- -D warnings
       - run: cargo fmt --all -- --check

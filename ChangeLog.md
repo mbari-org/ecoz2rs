@@ -1,3 +1,7 @@
+2024-07
+
+- maintenance (dependabot fix; clippy fixes; simplified ci workflow)
+
 2023-10
 
 - `cargo update` plus couple of lib updates. 
