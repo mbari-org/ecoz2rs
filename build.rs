@@ -68,7 +68,7 @@ fn main() {
 
     build.includes(headers);
 
-    build.flag(&std::env::var("DEP_OPENMP_FLAG").unwrap());
+    build.flag(std::env::var("DEP_OPENMP_FLAG").unwrap());
 
     if let Ok(val) = std::env::var("PROB_T") {
         build.flag(format!("-DPROB_T={}", val).as_str());
