@@ -59,16 +59,14 @@ fn main() {
     let mut build = cc::Build::new();
 
     for f in flags {
-        build = build.flag(f).to_owned();
+        build.flag(f);
     }
 
     for f in flags_if_supported {
-        build = build.flag(f).to_owned();
+        build.flag(f);
     }
 
-    for f in headers {
-        build = build.include(f).to_owned();
-    }
+    build.includes(headers);
 
     build.flag(&std::env::var("DEP_OPENMP_FLAG").unwrap());
 

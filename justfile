@@ -50,7 +50,7 @@ clippy:
 	cargo clippy --no-deps
 
 # Build release
-release:
+build:
 	cargo build --release
 
 # Build release with RUSTFLAGS="-C target-cpu=native"
