@@ -5,6 +5,8 @@ name: CI
 jobs:
   ci:
     runs-on: ubuntu-latest
+    env:
+      CC: gcc
     steps:
       - uses: actions/checkout@v4
       - run: cargo build --verbose
