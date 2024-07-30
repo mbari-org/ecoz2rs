@@ -9,6 +9,8 @@ jobs:
       CC: gcc
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - run: cargo build --verbose
       - run: cargo test
 #      - run: cargo clippy -- -D warnings
