@@ -1,3 +1,7 @@
+2024-09
+
+- update actions;  and `cargo update`
+
 2024-07
 
 - maintenance (dependabot fix; clippy fixes; simplified ci workflow)

@@ -52,12 +52,12 @@ jobs:
 
     steps:
     - name: Get linux release
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v4
       with:
         name: ecoz2rs-linux.zip
 
     - name: Get macos release
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v4
       with:
         name: ecoz2rs-macos.zip
 
