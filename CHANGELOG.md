@@ -1,3 +1,7 @@
+2025-01
+
+- update dependencies
+
 2024-09
 
 - update actions;  and `cargo update`
