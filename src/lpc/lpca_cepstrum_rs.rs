@@ -1,4 +1,5 @@
 #![allow(clippy::many_single_char_names)]
+#![allow(clippy::doc_overindented_list_items)]
 
 ///
 /// Get cepstral coefficients corresponding to the given prediction vector.
