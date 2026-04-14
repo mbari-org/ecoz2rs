@@ -56,18 +56,16 @@ jobs:
       with:
         name: ecoz2rs-linux.zip
 
-    - name: Get macos release
+    - name: Get macOS release
       uses: actions/download-artifact@v8
       with:
         name: ecoz2rs-macos.zip
 
-    - name: Complete release
-      uses: sondreb/action-release@master
+    - name: Upload to GitHub Release
+      uses: softprops/action-gh-release@v2
       with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        draft: true
-        prerelease: true
-        body: 'This is a pre-release'
-        name: "Draft Release ${{ github.ref }}"
-        tag: ${{ github.ref }}
-        files: "ecoz2rs-linux.zip;ecoz2rs-macos.zip"
+        files: |
+          ecoz2rs-linux.zip
+          ecoz2rs-macos.zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
