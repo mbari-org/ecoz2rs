@@ -4,3 +4,4 @@ predictor*txt
 data/
 /target
 **/*.rs.bk
+*local.json

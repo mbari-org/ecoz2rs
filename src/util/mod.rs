@@ -4,8 +4,8 @@ use std::error::Error;
 use std::path::PathBuf;
 
 use clap::StructOpt;
+use rand::rng;
 use rand::seq::SliceRandom;
-use rand::thread_rng;
 use regex::Regex;
 
 use crate::utl;
@@ -98,7 +98,7 @@ fn split(opts: UtilSplitOpts) -> Result<(), Box<dyn Error>> {
         trains
     };
     // shuffle the markers:
-    tt_markers.shuffle(&mut thread_rng());
+    tt_markers.shuffle(&mut rng());
 
     // generate output:
     for (tt, (class, selection)) in tt_markers.iter().zip(class_and_selections) {
