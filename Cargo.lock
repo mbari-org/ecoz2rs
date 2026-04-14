@@ -344,7 +344,7 @@ dependencies = [
 
 [[package]]
 name = "ecoz2"
-version = "0.7.3"
+version = "0.7.4"
 dependencies = [
  "assert_approx_eq",
  "attohttpc",
