@@ -15,13 +15,13 @@ jobs:
       with:
         submodules: recursive
 
-    - name: Build linux
+    - name: Build Linux
       run: |
         CC=gcc cargo build --verbose --release
         cd target/release/
         zip "${{github.workspace}}/ecoz2rs-linux.zip" ecoz2
 
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v7
       with:
         name: ecoz2rs-linux.zip
         path: "${{github.workspace}}/ecoz2rs-linux.zip"
@@ -41,7 +41,7 @@ jobs:
           cd target/release/
           zip "${{github.workspace}}/ecoz2rs-macos.zip" ecoz2
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v7
         with:
           name: ecoz2rs-macos.zip
           path: "${{github.workspace}}/ecoz2rs-macos.zip"
@@ -51,13 +51,13 @@ jobs:
     runs-on: macos-latest
 
     steps:
-    - name: Get linux release
-      uses: actions/download-artifact@v4
+    - name: Get Linux release
+      uses: actions/download-artifact@v8
       with:
         name: ecoz2rs-linux.zip
 
     - name: Get macos release
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         name: ecoz2rs-macos.zip
 
