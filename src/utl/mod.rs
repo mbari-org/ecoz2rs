@@ -275,7 +275,7 @@ pub fn save_json<T: serde::Serialize>(model: &T, filename: &str) -> Result<(), B
 }
 
 pub fn to_pickle<T: serde::Serialize>(obj: &T, filename: &Path) -> Result<(), Box<dyn Error>> {
-    let serialized = serde_pickle::to_vec(&obj, true).unwrap();
+    let serialized = serde_pickle::to_vec(&obj, serde_pickle::SerOptions::new())?;
     let f = File::create(filename)?;
     let mut bw = BufWriter::new(f);
     bw.write_all(&serialized[..])?;

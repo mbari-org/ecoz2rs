@@ -1,6 +1,7 @@
 extern crate criterion;
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion};
+use std::hint::black_box;
 
 #[path = "../src/ecoz2_lib/lpca_c.rs"]
 mod lpca_c;
