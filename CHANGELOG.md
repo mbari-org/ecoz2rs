@@ -1,5 +1,6 @@
 2026-08
 
+- Update workflows.
 - After a good while not building on my macOS, just needed to:
   ```
   brew install gcc

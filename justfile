@@ -25,6 +25,10 @@ test-nocapture *args='':
 run *args='':
 	cargo run -- {{ args }}
 
+# wrkflw validate
+wrkflw_validate:
+    wrkflw validate
+
 # List git tags
 tags:
   git tag -l | sort -V | tail
