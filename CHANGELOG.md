@@ -1,3 +1,18 @@
+2026-08
+
+- After a good while not building on my macOS, just needed to:
+  ```
+  brew install gcc
+  export CC=gcc-16
+  j all
+  ```
+  Also
+  ```
+  j bench
+  open target/criterion/report/index.html
+  ```
+  etc.
+
 2025-01
 
 - update dependencies
