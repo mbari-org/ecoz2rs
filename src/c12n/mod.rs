@@ -207,7 +207,7 @@ impl C12nResults {
         //println!("    error_rate  {:6.2}%", 100_f32 - summary.avg_accuracy);
         println!();
 
-        let out_summary = format!("{}_classification.json", &out_base_name);
+        let out_summary = format!("{}_classification.json", out_base_name);
         utl::save_json(&summary, &out_summary).unwrap();
         println!("{} saved", out_summary);
 
@@ -217,7 +217,7 @@ impl C12nResults {
             y_true: y_true.to_vec(),
             y_pred: y_pred.to_vec(),
         };
-        let out_true_pred = format!("{}_y_true_pred.json", &out_base_name);
+        let out_true_pred = format!("{}_y_true_pred.json", out_base_name);
         utl::save_json(&true_pred, &out_true_pred).unwrap();
         println!("{} saved", out_true_pred);
     }

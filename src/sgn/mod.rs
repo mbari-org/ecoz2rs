@@ -239,7 +239,7 @@ impl SgnExtractor {
         let out_dir: PathBuf = [&self.out_dir, &i.type_].iter().collect();
         fs::create_dir_all(&out_dir)?;
 
-        let out_name = format!("{}/{:05}.wav", &out_dir.to_str().unwrap(), i.selection,);
+        let out_name = format!("{}/{:05}.wav", out_dir.to_str().unwrap(), i.selection,);
 
         //println!("\t\t extract_instance {} => {}", i.selection, out_name);
 

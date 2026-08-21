@@ -49,8 +49,8 @@ pub fn lpc_rs(
     println!(
         "{} saved.  Class: '{}':  {} vectors",
         out_filename,
-        &predictor.class_name,
-        &predictor.vectors.len()
+        predictor.class_name,
+        predictor.vectors.len()
     );
 }
 

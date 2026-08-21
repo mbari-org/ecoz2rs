@@ -1,5 +1,6 @@
 2026-08
 
+- Add rust-toolchain.toml; update ci.yml
 - Update workflows.
 - After a good while not building on my macOS, just needed to:
   ```

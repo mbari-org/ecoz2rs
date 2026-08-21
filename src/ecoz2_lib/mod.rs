@@ -264,7 +264,7 @@ pub fn vq_learn(
         base_codebook_opt,
         prediction_order_opt,
         epsilon,
-        &codebook_class_name,
+        codebook_class_name,
         predictor_filenames.len()
     );
 
