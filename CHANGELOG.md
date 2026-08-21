@@ -1,5 +1,32 @@
 2026-08
 
+- With the release of Rust [1.98.0](https://blog.rust-lang.org/2026/08/20/Rust-1.98.0/),
+  which stabilizes algebraic floating-points methods, I asked Claude to write `lpca3`, 
+  similar to `lpca2` but with use of such methods in the expensive autocorrelation section. 
+  Benchmarking gives the following per-iteration times:
+  ```
+  lpca1 (rs)     36.98 µs
+  lpca2 (rs)     35.31 µs
+  lpca3 (rs)      7.30 µs   ← 5x vs lpca1, 3.4x vs C
+  lpca_c (c)     24.82 µs
+  ```
+  So, the Rust version is now ~5x faster than the strict-IEEE Rust and, more to the point,
+  ~3.4x faster than the C, which has used `-ffast-math` since the origins of ECOZ.
+  So the reason `lpc` calls into C for `lpca` no longer holds!
+  (see the "perf note" in `libpar.rs` / `lpc_rs.rs`)
+
+  Looking at the generated aarch64 assembly, both compilers vectorize; the difference is how
+  far they go. GCC accumulates into a single 2-wide NEON register (`fmla v30.2d`), so each FMA
+  waits on the previous one; the loop is latency-bound. LLVM, given the same algebraic freedom,
+  unrolls into *four* independent accumulators (`fmla.2d v0..v3`) and reduces them at the end,
+  making it throughput-bound instead. Strict IEEE gets neither: no FMA at all, just separate
+  `fmul`/`fadd`, scalar.
+
+  Numerically `lpca3` agrees with `lpca1` to ~2.5e-14 relative on the autocorrelation and ~6.5e-12
+  on the predictor coefficients (there's a test asserting this). Note these methods are
+  non-deterministic by design: the compiler may choose different optimizations, so results are
+  not guaranteed bit-reproducible across builds or platforms.
+
 - Add rust-toolchain.toml; update ci.yml
 - Update workflows.
 - After a good while not building on my macOS, just needed to:

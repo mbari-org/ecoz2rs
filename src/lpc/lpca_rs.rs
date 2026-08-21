@@ -136,9 +136,135 @@ pub fn lpca2(x: &[f64], p: usize, r: &mut [f64], rc: &mut [f64], a: &mut [f64]) 
     (0, pe)
 }
 
+/// Like lpca1, but the dominant autocorrelation loop uses the algebraic
+/// floating-point methods stabilized in Rust 1.98.
+///
+/// The algebraic ops permit contraction and reassociation, letting LLVM fuse each
+/// multiply-add into an FMA, split the accumulator into independent partial sums,
+/// and vectorize -- i.e. the optimizations the C build gets from `-ffast-math`.
+/// Results are therefore not bit-identical to lpca1; observed agreement is ~1e-14
+/// relative on r and ~1e-11 on the predictor coefficients.
+///
+/// Slicing + zip is bounds-checked once per outer iteration rather than per
+/// element, so the generated code carries no `panic_bounds_check`.
+///
+/// The Levinson-Durbin recursion below is left in strict IEEE arithmetic: it is
+/// O(p^2) (~650 flops here vs ~53k in the autocorrelation), so it contributes
+/// little, and keeping it strict preserves the exact `pe <= 0.0` termination path.
+///
+/// NOTE: requires rustc >= 1.98.
+#[allow(dead_code)]
+#[inline]
+pub fn lpca3(x: &[f64], p: usize, r: &mut [f64], rc: &mut [f64], a: &mut [f64]) -> (i32, f64) {
+    let n = x.len();
+
+    // this is the expensive part:
+    for (i, r_i) in r.iter_mut().enumerate() {
+        *r_i = x[0..n - i]
+            .iter()
+            .zip(&x[i..n])
+            .fold(0.0f64, |acc, (&c, &s)| {
+                acc.algebraic_add(c.algebraic_mul(s))
+            });
+    }
+
+    let mut pe: f64 = 0.;
+    let r0 = r[0];
+    if 0.0f64 == r0 {
+        return (1, pe);
+    }
+
+    pe = r0;
+    a[0] = 1.0f64;
+    for k in 1..=p {
+        let mut sum = 0.0f64;
+        for i in 1..=k {
+            sum -= a[k - i] * r[i];
+        }
+
+        let akk = sum / pe;
+
+        rc[k] = akk;
+        a[k] = akk;
+
+        let k2 = k >> 1;
+
+        for i in 1..=k2 {
+            let ai = a[i];
+            let aj = a[k - i];
+            a[i] = ai + akk * aj;
+            a[k - i] = aj + akk * ai;
+        }
+
+        pe *= 1.0f64 - akk * akk;
+        if pe <= 0.0f64 {
+            return (2, pe);
+        }
+    }
+
+    (0, pe)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// lpca3 uses algebraic float ops, so it is NOT bit-identical to lpca1.
+    /// Assert it agrees to a tight relative tolerance, and report the worst case.
+    #[test]
+    fn test_lpca3_matches_lpca1() {
+        let input = lpca_load_input("signal_frame.inputs").unwrap();
+        let p = 36;
+
+        let mut v1 = vec![0f64; p + 1];
+        let mut rc1 = vec![0f64; p + 1];
+        let mut a1 = vec![0f64; p + 1];
+        let (st1, pe1) = lpca1(&input.x[..], p, &mut v1, &mut rc1, &mut a1);
+
+        let mut v3 = vec![0f64; p + 1];
+        let mut rc3 = vec![0f64; p + 1];
+        let mut a3 = vec![0f64; p + 1];
+        let (st3, pe3) = lpca3(&input.x[..], p, &mut v3, &mut rc3, &mut a3);
+
+        assert_eq!(st1, st3, "status codes differ");
+
+        let rel = |x: f64, y: f64| {
+            let d = (x - y).abs();
+            if x.abs() > 1e-300 {
+                d / x.abs()
+            } else {
+                d
+            }
+        };
+
+        let worst = |n: &str, u: &[f64], w: &[f64]| -> f64 {
+            let m = u
+                .iter()
+                .zip(w)
+                .map(|(&x, &y)| rel(x, y))
+                .fold(0.0f64, f64::max);
+            println!("  max rel diff {n}: {m:e}");
+            m
+        };
+
+        println!(
+            "status={st1} pe1={pe1:e} pe3={pe3:e} rel_pe={:e}",
+            rel(pe1, pe3)
+        );
+        let mr = worst("r  (autocorrelation)", &v1, &v3);
+        let mrc = worst("rc (reflection)", &rc1, &rc3);
+        let ma = worst("a  (predictor)", &a1, &a3);
+
+        // sanity: the outputs must be non-trivial, not all zeros
+        assert!(v1.iter().any(|&x| x != 0.0), "lpca1 produced all-zero r");
+        assert!(v3.iter().any(|&x| x != 0.0), "lpca3 produced all-zero r");
+
+        let tol = 1e-9;
+        assert!(
+            mr < tol && mrc < tol && ma < tol && rel(pe1, pe3) < tol,
+            "lpca3 deviates beyond tolerance {tol:e}"
+        );
+    }
 
     #[test]
     fn test_lpca() {

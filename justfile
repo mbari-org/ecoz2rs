@@ -9,9 +9,41 @@ all: test format clippy
 check:
 	cargo check
 
-# Run benchmarks (then open target/criterion/report/index.html)
+## Benchmarking procedure
+##
+##   just bench                     # quick numbers; "change" = vs last run, unreliable
+##   just bench-save <name>         # fix a reference point (once, on a commit worth anchoring)
+##   just bench-cmp <name>          # compare against it, repeatably; never moves the reference
+##   just bench-cmp-lenient <name>  # same, when the baseline predates a new bench
+##   just bench-baselines           # list what's saved  (note: `just clean` wipes them)
+##
+## Read the change percentage, not criterion's verdict: at long measurement
+## times it labels ~1% drift "regressed". Under ~3% is noise on this machine.
+##
+## Most reliable: variants in one group (lpca1/2/3, lpca_c) share machine
+## conditions, so their ratios hold even when absolute numbers drift.
+
+# Quick benchmark run: absolute numbers + HTML report
 bench:
 	cargo bench
+
+# Save current results as a named baseline (long measurement time = low-noise reference)
+bench-save name='main':
+	cargo bench --bench my_benchmark -- --save-baseline {{name}} --measurement-time 15
+
+# Compare current code against a named baseline (does NOT overwrite it)
+bench-cmp name='main':
+	cargo bench --bench my_benchmark -- --baseline {{name}} --measurement-time 15
+
+# Like bench-cmp but tolerates benchmarks missing from the baseline
+bench-cmp-lenient name='main':
+	cargo bench --bench my_benchmark -- --baseline-lenient {{name}} --measurement-time 15
+
+# List saved baselines
+bench-baselines:
+	@find target/criterion -maxdepth 3 -mindepth 3 -type d \
+	  ! -name new ! -name base ! -name change ! -name report \
+	  | sed 's|target/criterion/||' | sort
 
 # Run tests
 test:

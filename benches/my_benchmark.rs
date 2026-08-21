@@ -58,6 +58,18 @@ fn criterion_benchmark(c: &mut Criterion) {
         })
     });
 
+    group.bench_function("lpca3_rs", |b| {
+        b.iter(|| {
+            lpca_rs::lpca3(
+                &frame,
+                prediction_order,
+                &mut vector,
+                &mut reflex,
+                &mut pred,
+            )
+        })
+    });
+
     group.bench_function("lpca_c", |b| {
         b.iter(|| {
             lpca_c::lpca(
