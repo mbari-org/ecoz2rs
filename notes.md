@@ -1,4 +1,206 @@
-## Implementation in Rust
+# ECOZ2 in Rust — porting notes
+
+## 2026-09: porting the C implementation to Rust
+
+Branch: `2026-09_port_to_rust`.
+
+Until now this crate has been a front-end to the C
+[ecoz2](https://github.com/ecoz2/ecoz2), with a few operations reimplemented in
+Rust. The plan is to finish the job and retire the C submodule.
+
+### Why now
+
+The reason for keeping the C was performance, specifically `-ffast-math`, which
+Rust had no equivalent for (see the older "fast-math" notes below). Rust 1.98
+stabilized the algebraic floating-point methods, and `lpca3` now runs the
+dominant autocorrelation loop ~3.4x faster than the C on aarch64
+(7.30 µs vs 24.82 µs; see CHANGELOG 2026-08).
+
+That removes the one technical reason for keeping the C. This is a performance
+argument only: the C's use of `-ffast-math` has never been a correctness
+problem here, and the code is structurally safe under it — see "Validation
+basis" below, where that safety turns out to be what makes the old build usable
+as an oracle at all.
+
+What Rust adds is per-expression control rather than a whole-program flag,
+which is how `lpca3` is written: algebraic ops in the O(n·p) autocorrelation,
+strict IEEE in the O(p²) Levinson-Durbin recursion. Useful discipline going
+forward, but not a defect being fixed; the criterion is under "Decisions
+taken".
+
+### Scope
+
+Only 40 C files are actually compiled (see `build.rs`); `ecoz2/src/x/*` and
+`sgn/endpoint.c` are not.
+
+| area | C LOC | state on the Rust side |
+|---|---:|---|
+| `ecoz2/ecoz2.c` (FFI shim, RNG seed) | 303 | deleted, not ported |
+| `utl/` (list, memutil, fileutil, utl) | 454 | ~90% deleted (`Vec`, `Box`, `walkdir`); `src/utl` already covers the rest |
+| `sgn/sgn.c` + `dr_wav.h` (3727) | 104 | **done** — `hound` in `src/sgn` |
+| `lpc/` (lpca, lpa_on_signal, lpc_signals, prd, ref2raas, prd_show) | 663 | largely done: `lpca3`, `lpca_r_rs`, `lpca_cepstrum_rs`, `lpc_rs`, `libpar` |
+| `vq/` (+ `vq_learn.i`) | 1694 | not started |
+| `hmm/` (+ `hmm_refinement.c`) | 2347 | not started |
+| **total compiled** | **5565** | |
+
+So roughly 1500 lines evaporate or are already written, and ~4000 lines are the
+real port — about 1700 VQ and 2300 HMM, a good fraction of which is `printf`
+reporting that maps onto the existing `src/c12n`.
+
+### Beyond the port itself
+
+The FFI layer and the C support code simply go away; no need to enumerate that.
+Two consequences are worth planning for, though, because they are decisions
+rather than deletions:
+
+- **The fixed caps become choices.** `MAX_SEQS 4096`, `MAX_MODELS 256`,
+  `MAX_CODEBOOK_SIZE 4096`, `MAX_PREDICTION_ORDER 200`, and the ~6.5 MB of
+  static arrays in `vq_learn.i` sized for the maxima regardless of need. In
+  Rust these are dynamic; decide per case whether to keep a limit and where.
+- **OpenMP becomes `rayon`.** Only four sites: `lpa_on_signal:119`,
+  `vq_learn_par`, `hmm_classify:441/457`, and the `hmm_learn:81` reduction.
+
+Dropping `openmp-sys`, the gcc requirement, the submodule and `build.rs` is
+what removes the C toolchain from building and installing this crate, and what
+makes the PyO3 binding sketched in the older notes stop being a two-language
+build problem.
+
+### Validation basis (phase 0 — done)
+
+The harness lives in the sibling repo, `ecoz2-whale/exerc07-port-validation`.
+It reproduces exerc06 as a differential test: `run.sh --impl c|rs` into separate
+trees, `compare.sh` between them or against the stored 2020 artifacts.
+
+`exerc06/data/` is gitignored but ~978 MB survives locally — all codebooks, all
+quantized sequences, 1540 HMM combinations with their `.rpt` seeds, and 1540
+classification CSVs. Only signals and predictors are gone, which is exactly what
+`run.sh` regenerates. So the port has a six-year-old oracle built by a different
+compiler on a different architecture, for free.
+
+Re-running the whole C pipeline against it (full tier, 4539 instances, 2m19s):
+
+| stage | scale | agreement with 2020 |
+|---|---:|---|
+| sequences | 36,312 files / 2,978,976 symbols | **100.000000%** — zero differences |
+| hmm models | 8 | 1.1e-15 relative, with the per-class `.rpt` seeds |
+| codebooks | 108 | 5.9e-9 relative, worst at large M |
+| c12n TEST | 910 | **100%** full `r1…r8` agreement |
+
+That the C reproduces this tightly is not luck, and it is worth naming as an
+asset rather than a curiosity: the code is structurally safe under
+`-ffast-math`. It never tests for or produces NaN/Inf, its min-search sentinels
+are `DBL_MAX` rather than `INFINITY`, `hmm_log_prob` controls underflow by
+scaling rather than by relying on IEEE special values, and `hmm_epsilon` floors
+every `B` entry so `logl` never sees zero. Relaxed arithmetic therefore has
+little to act on beyond rounding, which is why a 2020 build and a 2026 build on
+a different ISA still agree to 1e-15. The port depends on exactly that
+stability — an oracle that drifted with the compiler would not be usable as
+one — so the same discipline should carry over to the Rust code rather than
+being treated as an artifact of the old implementation.
+
+Two things this settles:
+
+- **Tolerances are measured, not guessed.** 1e-8 is the honest floor for
+  codebooks; anything tighter fails C-vs-C. And the codebooks differing at
+  5.9e-9 moved **no symbol at all**, which is why `vq quantize` carries the
+  pass/fail weight: its output is discrete, so drift either flips a symbol at a
+  cell boundary or it does not. When `lpca3` reaches this pipeline, the symbol
+  count and the resulting accuracy delta are the answer to "does the port change
+  the science".
+- **Seed everything, per class.** `hmm learn` initializes from `rand()`. The
+  2020 run trained classes in parallel with no `-s`, so each recorded its own
+  seed. One global seed reproduces only the class whose seed you picked and
+  leaves the other seven at O(1e2) relative — while their `.rpt` files still
+  show matching sequence and refinement counts, so the output looks fine.
+  Unseeded, the same hyperparameters differ by 14/910 top-1 labels and 0.65 pp
+  accuracy. The TRAIN/TEST split matters the same way: `util split` shuffles.
+
+HMM models must never be compared parameter-wise: two trainings at different
+seeds differ by max rel 2.6e3 while classifying within 1.5% of each other.
+Judge that stage by its classification output.
+
+### Phases
+
+| phase | work | status |
+|---|---|---|
+| 0 | golden corpus + differential harness; `utl::cfmt` readers; `util cmp` | **done** |
+| 1 | LPC all-Rust: `libpar`/`lpc_rs` onto `lpca3`, port `lpc_signals`, **write the C-compatible `.prd`** | next |
+| 2 | VQ: LBG/Juang, quantize, classify, report; `rayon` for `vq_learn_par` | |
+| 3 | HMM: Baum-Welch, scaled forward-backward, Viterbi, `estimateB`, B-epsilon | |
+| 4 | delete FFI, `build.rs`, submodule, `openmp-sys`; revisit packaging | |
+
+Order follows the data flow, so a hybrid pipeline always runs and each phase
+diffs against the C. Phase 3 is the delicate one: the scaling and log-domain
+arithmetic is where `-ffast-math` has been silently doing us favours.
+
+Phase 1 **must** write the traditional `.prd` format. Today `lpc --zrs` writes
+`serde_cbor` via `utl::save_ser`, so the Rust LPC path cannot feed the C VQ
+path — closing that fork is a prerequisite for incremental migration, not a
+nicety.
+
+After phase 4, keep the C behind an off-by-default `c-oracle` Cargo feature:
+`build.rs` stays for differential tests, but nobody building or installing the
+tool needs gcc.
+
+### Decisions taken
+
+- **Where algebraic float ops are allowed.** Relax arithmetic in reductions over
+  independent data that dominate the runtime; keep recurrences, convergence
+  tests, and anything feeding a discrete decision on strict IEEE. This is what
+  `lpca3` does — the autocorrelation is ~105k flops and reassociates freely,
+  while the Levinson-Durbin recursion is ~2.5% of the work, has no
+  reassociation freedom anyway (it is a dependency chain), and ends in the
+  `pe <= 0.0` breakdown guard whose output is a discrete status code. The point
+  is predictability, not accuracy: contracting `1.0 - akk*akk` into an FMA is
+  actually *more* accurate, but the algebraic methods are non-deterministic by
+  design and may contract differently across rustc versions and targets, so a
+  guard could trip on a different frame between builds.
+
+  Applying the rule to what is left: in VQ, the `distortion()` inner loop is the
+  hot reduction and relaxes, but the `if (dd < ddmin)` argmin must not — it *is*
+  the emitted symbol, i.e. the very quantity the harness measures the port with
+  — and neither must the `(DDprv - DD)/DD < eps` convergence test. In HMM,
+  relax essentially nothing: N is 3-10 so the forward-backward inner sums have
+  no headroom, the stage is memory-bound over B rather than flop-bound, and the
+  scaling factors are the whole basis of the Shen-2008 formulation's stability.
+  Spend the effort there on `rayon` across sequences instead.
+- **Determinism.** Port RNG use to `rand`'s `ChaCha`/`StdRng`. `rand()`/`srand()`
+  are libc-specific, so seeded runs are *already* not reproducible across
+  platforms; this is a fix, not a risk.
+- **File formats: later, deliberately.** Keep reading the traditional formats
+  at least for time being.
+  Once there is a single writer, add an opt-in modern one — `.prd` and
+  `.cbook` are plain 2-D f64 matrices, i.e. exactly `.npy`/`.npz`, whose header
+  carries dtype and shape. Doing this after the port means changing one
+  implementation instead of two. Note the current formats have no version field,
+  no endianness marker, and no record of the `prob_t` width the writer used, so
+  a mismatched build misreads silently.
+- **`target-cpu` when benchmarking.** `build.rs` passes `-march=native` to the
+  C while a plain `cargo build --release` leaves Rust at the baseline, so use
+  `just release-native`, or set `-C target-cpu` explicitly, for every comparison.
+  (What the *released* binaries should be built with is a separate
+  question; leave it until the port works locally.)
+
+### Backlog (small, found while building the harness)
+
+- `vq learn --max-codebook-size`: the ladder always doubles to
+  `MAX_CODEBOOK_SIZE`. Today you kill it and resume with `-B`, which is lossless
+  — each size is saved on convergence and resuming from M=256 reproduces
+  512…4096 byte-identically. But `prepare_report` opens with `"w"`, so a resumed
+  run truncates `eps_<ε>.rpt`/`.rpt.csv` to only the sizes it produced. Add the
+  stop flag; make the report append on resume.
+- `-m` means two different things: instances in the label file for
+  `sgn extract`, signal files present for `lpc`. Unify.
+- Fixed: `sgn extract --time-ranges` containment test was inverted, and giving
+  both range filters discarded the selection verdict. This is already-pure-Rust
+  code that the C oracle never covered — the Rust-only parts need their own
+  tests, not just differential ones.
+
+---
+
+## Earlier notes: initial exploration (2020)
+
+What follows is the exploration that led here, kept for context.
 
 Some preliminary notes/exercises toward a possible
 implementation of the ECOZ2 programs in Rust.
@@ -152,9 +354,10 @@ as I moved things around a bit and focused on other stuff later on.
         (2)	DP=0.0587476	DDprv=2326.14	DD=2247.98	0.0347719
         WARN: review_cells: 17 empty cell(s) for codebook size 2048)
     
-## Performance    
+### Performance (2020)
 
-With the `lpc` program re-implemented in Rust, here's a basic performance comparison: 
+Note these predate `lpca3`; the ratio is now reversed. With the `lpc` program
+re-implemented in Rust, here's a basic performance comparison: 
 
 rust:
 

@@ -1,3 +1,28 @@
+2026-09
+
+- Starting the port of the C implementation to Rust, on branch `2026-09_port_to_rust`.  
+  See [notes.md](notes.md).
+
+- Groundwork landed in this crate:
+
+  - `src/utl/cfmt.rs`: readers for the traditional binary formats written by the
+    C (`<predictor>`, `<codebook>`, `<sequence>`, `<hmm>`). Needed by the port
+    anyway — `lpc --zrs` writes serde_cbor, so nothing on the Rust side could
+    read a C-written `.prd` until now.
+  - `ecoz2 util cmp A B`: compares two artifacts, or two trees of them,
+    dispatching on the file identifier. Float models by relative difference,
+    quantized sequences by exact symbol agreement. `--json`; exits non-zero on
+    mismatch.
+  - Fixed `sgn extract --time-ranges`: the containment test was inverted
+    (`begin_time <= range_start`), excluding every segment inside the range and
+    including ones starting before it. Also, giving both `--selection-ranges`
+    and `--time-ranges` silently discarded the selection verdict. Unit tests
+    added. Any past exercise using `--time-ranges` selected the wrong subset.
+
+- Differential harness in the sibling repo, `ecoz2-whale/exerc07-port-validation`,
+  reproducing exerc06 stage by stage. The stored 2020 artifacts reproduce today
+  at 100% symbol agreement over 2,978,976 symbols; details in notes.md.
+
 2026-08
 
 - With the release of Rust [1.98.0](https://blog.rust-lang.org/2026/08/20/Rust-1.98.0/),

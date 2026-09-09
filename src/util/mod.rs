@@ -10,7 +10,9 @@ use regex::Regex;
 
 use crate::utl;
 
-use self::EcozUtilCommand::Split;
+mod cmp;
+
+use self::EcozUtilCommand::{Cmp, Split};
 
 #[derive(StructOpt, Debug)]
 pub struct UtilMainOpts {
@@ -23,6 +25,9 @@ pub struct UtilMainOpts {
 enum EcozUtilCommand {
     #[structopt(about = "Generate train/test instance list")]
     Split(UtilSplitOpts),
+
+    #[structopt(about = "Compare ECOZ2 artifacts (files or directories)")]
+    Cmp(cmp::UtilCmpOpts),
 }
 
 #[derive(StructOpt, Debug)]
@@ -50,6 +55,7 @@ pub struct UtilSplitOpts {
 pub fn main(opts: UtilMainOpts) {
     let res = match opts.cmd {
         Split(opts) => split(opts),
+        Cmp(opts) => cmp::main(opts),
     };
 
     if let Err(err) = res {

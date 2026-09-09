@@ -14,6 +14,8 @@ use byteorder::*;
 
 use self::walkdir::WalkDir;
 
+pub mod cfmt;
+
 // first few defs to deal with files generated from C version
 
 pub const FILE_IDENT_LEN: usize = 16;

@@ -119,6 +119,27 @@ struct SgnExtractor {
     out_dir: String,
 }
 
+/// True if the instance passes the range filters given on the command line.
+///
+/// An empty filter list means "no restriction"; when both filters are given,
+/// both must hold.  A time range selects the segments *fully contained* in it,
+/// as documented for `--time-ranges`.
+fn instance_in_ranges(
+    selection_ranges: &[std::ops::Range<i32>],
+    time_ranges: &[(f32, f32)],
+    i: &InstanceInfo,
+) -> bool {
+    let in_selection =
+        selection_ranges.is_empty() || selection_ranges.iter().any(|r| r.contains(&i.selection));
+
+    let in_time = time_ranges.is_empty()
+        || time_ranges
+            .iter()
+            .any(|r| r.0 <= i.begin_time && i.end_time <= r.1);
+
+    in_selection && in_time
+}
+
 impl SgnExtractor {
     fn new(opts: SgnExtractOpts) -> SgnExtractor {
         let SgnExtractOpts {
@@ -183,22 +204,8 @@ impl SgnExtractor {
         }
     }
 
-    fn in_ranges(&mut self, i: &InstanceInfo) -> bool {
-        let in_selection = if self.selection_ranges.is_empty() {
-            true
-        } else {
-            self.selection_ranges
-                .iter()
-                .any(|r| r.contains(&i.selection))
-        };
-
-        if self.time_ranges.is_empty() {
-            in_selection
-        } else {
-            self.time_ranges
-                .iter()
-                .any(|r| i.begin_time <= r.0 && i.end_time <= r.1)
-        }
+    fn in_ranges(&self, i: &InstanceInfo) -> bool {
+        instance_in_ranges(&self.selection_ranges, &self.time_ranges, i)
     }
 
     pub fn sgn_extract(&mut self) -> Result<(), Box<dyn Error>> {
@@ -318,5 +325,55 @@ pub fn load(filename: &str) -> Sgn {
         num_samples,
         samples,
         spec,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn inst(selection: i32, begin_time: f32, end_time: f32) -> InstanceInfo {
+        InstanceInfo {
+            selection,
+            begin_time,
+            end_time,
+            type_: "A".to_string(),
+        }
+    }
+
+    #[test]
+    fn no_ranges_accepts_everything() {
+        assert!(instance_in_ranges(&[], &[], &inst(1, 263.5, 265.0)));
+    }
+
+    /// A time range selects segments fully inside it.  A segment that starts
+    /// before the range must be excluded, not included.
+    #[test]
+    fn time_range_selects_fully_contained_segments() {
+        let ranges = [(300.0f32, 1800.0f32)];
+        assert!(instance_in_ranges(&[], &ranges, &inst(1, 400.0, 500.0)));
+        assert!(instance_in_ranges(&[], &ranges, &inst(2, 300.0, 1800.0))); // inclusive
+        assert!(!instance_in_ranges(&[], &ranges, &inst(3, 263.0, 265.0))); // starts before
+        assert!(!instance_in_ranges(&[], &ranges, &inst(4, 1700.0, 1900.0))); // ends after
+        assert!(!instance_in_ranges(&[], &ranges, &inst(5, 200.0, 2000.0))); // spans it
+    }
+
+    #[test]
+    fn selection_range_is_half_open() {
+        let ranges = [10..20];
+        assert!(instance_in_ranges(&ranges, &[], &inst(10, 0.0, 1.0)));
+        assert!(instance_in_ranges(&ranges, &[], &inst(19, 0.0, 1.0)));
+        assert!(!instance_in_ranges(&ranges, &[], &inst(20, 0.0, 1.0)));
+    }
+
+    /// Both filters given: an instance must satisfy both, rather than the
+    /// selection verdict being discarded.
+    #[test]
+    fn both_filters_must_hold() {
+        let sel = [10..20];
+        let time = [(300.0f32, 1800.0f32)];
+        assert!(instance_in_ranges(&sel, &time, &inst(15, 400.0, 500.0)));
+        assert!(!instance_in_ranges(&sel, &time, &inst(99, 400.0, 500.0)));
+        assert!(!instance_in_ranges(&sel, &time, &inst(15, 100.0, 200.0)));
     }
 }
