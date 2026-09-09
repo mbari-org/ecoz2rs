@@ -360,7 +360,7 @@ mod tests {
 
     #[test]
     fn selection_range_is_half_open() {
-        let ranges = [10..20];
+        let ranges: [std::ops::Range<i32>; 1] = [10..20];
         assert!(instance_in_ranges(&ranges, &[], &inst(10, 0.0, 1.0)));
         assert!(instance_in_ranges(&ranges, &[], &inst(19, 0.0, 1.0)));
         assert!(!instance_in_ranges(&ranges, &[], &inst(20, 0.0, 1.0)));
@@ -370,7 +370,7 @@ mod tests {
     /// selection verdict being discarded.
     #[test]
     fn both_filters_must_hold() {
-        let sel = [10..20];
+        let sel: [std::ops::Range<i32>; 1] = [10..20];
         let time = [(300.0f32, 1800.0f32)];
         assert!(instance_in_ranges(&sel, &time, &inst(15, 400.0, 500.0)));
         assert!(!instance_in_ranges(&sel, &time, &inst(99, 400.0, 500.0)));

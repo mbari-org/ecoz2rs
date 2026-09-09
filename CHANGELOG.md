@@ -23,6 +23,27 @@
   reproducing exerc06 stage by stage. The stored 2020 artifacts reproduce today
   at 100% symbol agreement over 2,978,976 symbols; details in notes.md.
 
+- Port phase 1: `lpc --zrs` / `--zrsp` now run `lpca3` instead of calling the C
+  `lpca`, and write the traditional `<predictor>` format instead of serde_cbor,
+  so the Rust LPC output feeds the C VQ stages unchanged. `lpc_signals` is
+  ported too, so `--zrs` does its own class grouping, `minpc` filtering and
+  `data/predictors/<class>/<stem>.prd` naming. `prd::load` reads that format,
+  and can therefore now read files written by the C.
+
+  Against the C on 910 whale signals: predictors differ by max rel 5.5e-10, and
+  nothing downstream changes — zero symbol flips over 341,916 quantized symbols,
+  identical HMM models, identical classification (+0.00 pp).
+
+  `ecoz2 util cmp` gained `--allow-permutation`: at M>=2048 a few near-tied
+  codebook cells swap positions under a 5e-10 nudge, so it now reports rows
+  "reordered" separately from rows "changed".
+
+- `util split` takes `-s/--seed`, so a train/test partition can be regenerated
+  from the command line rather than only from a checked-in `tt-list.csv`; an
+  unseeded run reports the seed it drew, on stderr so stdout stays a clean CSV.
+  It also sorts its input now: the shuffled markers are zipped positionally
+  against a filesystem walk, whose order is not guaranteed.
+
 2026-08
 
 - With the release of Rust [1.98.0](https://blog.rust-lang.org/2026/08/20/Rust-1.98.0/),

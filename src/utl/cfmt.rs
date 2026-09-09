@@ -14,7 +14,9 @@ use std::error::Error;
 use std::fmt;
 use std::fs::File;
 use std::io::BufReader;
+use std::io::BufWriter;
 use std::io::Read;
+use std::io::Write;
 use std::path::Path;
 
 use byteorder::{LittleEndian, ReadBytesExt};
@@ -46,6 +48,10 @@ pub struct Artifact {
     pub class_name: String,
     /// Human-readable shape, e.g. `T=38265 P=20`
     pub dims: String,
+    /// Values per row, where the artifact is a stack of equal-length vectors
+    /// (`1 + P` for predictors and codebooks). Lets a comparison reason about
+    /// whole codewords rather than a flat array.
+    pub row_len: Option<usize>,
     pub sections: Vec<(&'static str, Section)>,
 }
 
@@ -119,10 +125,10 @@ pub fn load(path: &Path) -> Result<Artifact, Box<dyn Error>> {
 pub fn read_artifact<R: Read>(r: &mut R, source: &str) -> Result<Artifact, Box<dyn Error>> {
     let ident = read_ident(r)?;
     match ident.as_str() {
-        "<predictor>" => load_predictor(r),
-        "<codebook>" => load_codebook(r),
-        "<sequence>" => load_sequence(r),
-        "<hmm>" => load_hmm(r),
+        "<predictor>" => parse_predictor(r),
+        "<codebook>" => parse_codebook(r),
+        "<sequence>" => parse_sequence(r),
+        "<hmm>" => parse_hmm(r),
 
         // A `.prd` written by the current Rust `lpc --zrs` is serde_cbor, which
         // has no such header; say so plainly rather than reporting garbage.
@@ -135,7 +141,7 @@ pub fn read_artifact<R: Read>(r: &mut R, source: &str) -> Result<Artifact, Box<d
     }
 }
 
-fn load_predictor<R: Read>(r: &mut R) -> Result<Artifact, Box<dyn Error>> {
+fn parse_predictor<R: Read>(r: &mut R) -> Result<Artifact, Box<dyn Error>> {
     let class_name = read_fixed_string(r, MAX_CLASS_NAME_LEN)?;
     let p = checked_count("P", read_i32(r)?)?;
     let t = checked_count("T", read_i32(r)?)?;
@@ -144,11 +150,12 @@ fn load_predictor<R: Read>(r: &mut R) -> Result<Artifact, Box<dyn Error>> {
         kind: "predictor",
         class_name,
         dims: format!("T={} P={}", t, p),
+        row_len: Some(1 + p),
         sections: vec![("vectors", Section::Floats(values))],
     })
 }
 
-fn load_codebook<R: Read>(r: &mut R) -> Result<Artifact, Box<dyn Error>> {
+fn parse_codebook<R: Read>(r: &mut R) -> Result<Artifact, Box<dyn Error>> {
     let class_name = read_fixed_string(r, MAX_CLASS_NAME_LEN)?;
     let p = checked_count("P", read_i32(r)?)?;
     let num_vecs = checked_count("num_vecs", read_i32(r)?)?;
@@ -157,11 +164,12 @@ fn load_codebook<R: Read>(r: &mut R) -> Result<Artifact, Box<dyn Error>> {
         kind: "codebook",
         class_name,
         dims: format!("M={} P={}", num_vecs, p),
+        row_len: Some(1 + p),
         sections: vec![("vectors", Section::Floats(values))],
     })
 }
 
-fn load_sequence<R: Read>(r: &mut R) -> Result<Artifact, Box<dyn Error>> {
+fn parse_sequence<R: Read>(r: &mut R) -> Result<Artifact, Box<dyn Error>> {
     let class_name = read_fixed_string(r, MAX_CLASS_NAME_LEN)?;
     let len = read_u32(r)? as usize;
     let codebook_size = read_u32(r)?;
@@ -170,11 +178,12 @@ fn load_sequence<R: Read>(r: &mut R) -> Result<Artifact, Box<dyn Error>> {
         kind: "sequence",
         class_name,
         dims: format!("T={} M={}", len, codebook_size),
+        row_len: None,
         sections: vec![("symbols", Section::Symbols(symbols))],
     })
 }
 
-fn load_hmm<R: Read>(r: &mut R) -> Result<Artifact, Box<dyn Error>> {
+fn parse_hmm<R: Read>(r: &mut R) -> Result<Artifact, Box<dyn Error>> {
     let class_name = read_fixed_string(r, MAX_CLASS_NAME_LEN)?;
     let n = checked_count("N", read_i32(r)?)?;
     let m = checked_count("M", read_i32(r)?)?;
@@ -185,6 +194,7 @@ fn load_hmm<R: Read>(r: &mut R) -> Result<Artifact, Box<dyn Error>> {
         kind: "hmm",
         class_name,
         dims: format!("N={} M={}", n, m),
+        row_len: None,
         sections: vec![
             ("pi", Section::Floats(pi)),
             ("A", Section::Floats(a)),
@@ -195,6 +205,106 @@ fn load_hmm<R: Read>(r: &mut R) -> Result<Artifact, Box<dyn Error>> {
 
 /// File extensions understood by [`load`].
 pub const EXTENSIONS: &[&str] = &["prd", "cbook", "seq", "hmm"];
+
+// --- writing ---------------------------------------------------------------
+//
+// Byte-for-byte compatible with `write_file_ident` / `write_fixed_size_string`
+// in `ecoz2/src/utl/fileutil.c`: the identifier is NUL-padded, while a class
+// name is NUL-terminated and then padded with '_'.
+
+fn write_ident<W: Write>(w: &mut W, ident: &str) -> Result<(), Box<dyn Error>> {
+    let mut buf = vec![0u8; FILE_IDENT_LEN];
+    let b = ident.as_bytes();
+    let n = b.len().min(FILE_IDENT_LEN - 1);
+    buf[..n].copy_from_slice(&b[..n]);
+    w.write_all(&buf)?;
+    Ok(())
+}
+
+fn write_class_name<W: Write>(w: &mut W, name: &str) -> Result<(), Box<dyn Error>> {
+    let mut buf = vec![b'_'; MAX_CLASS_NAME_LEN];
+    let b = name.as_bytes();
+    let n = b.len().min(MAX_CLASS_NAME_LEN - 1);
+    buf[..n].copy_from_slice(&b[..n]);
+    buf[n] = 0;
+    w.write_all(&buf)?;
+    Ok(())
+}
+
+fn write_i32<W: Write>(w: &mut W, v: i32) -> Result<(), Box<dyn Error>> {
+    w.write_all(&v.to_le_bytes())?;
+    Ok(())
+}
+
+/// A predictor as held in memory: `vectors` has `T` rows of `1 + prediction_order`
+/// normalized autocorrelation values.
+pub struct PredictorData {
+    pub class_name: String,
+    pub prediction_order: usize,
+    pub vectors: Vec<Vec<f64>>,
+}
+
+/// Writes a `<predictor>` file in the traditional format, as `prd_save` does.
+pub fn save_predictor(path: &Path, prd: &PredictorData) -> Result<(), Box<dyn Error>> {
+    let p = prd.prediction_order;
+    let t = prd.vectors.len();
+    if t == 0 {
+        return Err(format!("{}: refusing to write an empty predictor", path.display()).into());
+    }
+    if let Some(bad) = prd.vectors.iter().position(|v| v.len() != 1 + p) {
+        return Err(format!(
+            "{}: vector {} has length {}, expected {}",
+            path.display(),
+            bad,
+            prd.vectors[bad].len(),
+            1 + p
+        )
+        .into());
+    }
+    if let Some(dir) = path.parent() {
+        std::fs::create_dir_all(dir)?;
+    }
+
+    let f = File::create(path)?;
+    let mut bw = BufWriter::new(f);
+    write_ident(&mut bw, "<predictor>")?;
+    write_class_name(&mut bw, &prd.class_name)?;
+    write_i32(&mut bw, p as i32)?;
+    write_i32(&mut bw, t as i32)?;
+    for v in &prd.vectors {
+        for x in v {
+            bw.write_all(&x.to_le_bytes())?;
+        }
+    }
+    bw.flush()?;
+    Ok(())
+}
+
+/// Reads a `<predictor>` file written by either implementation.
+pub fn load_predictor(path: &Path) -> Result<PredictorData, Box<dyn Error>> {
+    let a = load(path)?;
+    if a.kind != "predictor" {
+        return Err(format!("{}: not a predictor, but a <{}>", path.display(), a.kind).into());
+    }
+    // `dims` is "T=<t> P=<p>"; take P from it rather than re-parsing the file.
+    let p: usize = a
+        .dims
+        .split_whitespace()
+        .find_map(|kv| kv.strip_prefix("P="))
+        .and_then(|v| v.parse().ok())
+        .ok_or_else(|| format!("{}: cannot determine P", path.display()))?;
+
+    let flat = match a.sections.into_iter().next() {
+        Some((_, Section::Floats(v))) => v,
+        _ => return Err(format!("{}: unexpected predictor content", path.display()).into()),
+    };
+    let vectors = flat.chunks_exact(1 + p).map(|c| c.to_vec()).collect();
+    Ok(PredictorData {
+        class_name: a.class_name,
+        prediction_order: p,
+        vectors,
+    })
+}
 
 #[cfg(test)]
 mod tests {

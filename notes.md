@@ -124,23 +124,60 @@ Judge that stage by its classification output.
 | phase | work | status |
 |---|---|---|
 | 0 | golden corpus + differential harness; `utl::cfmt` readers; `util cmp` | **done** |
-| 1 | LPC all-Rust: `libpar`/`lpc_rs` onto `lpca3`, port `lpc_signals`, **write the C-compatible `.prd`** | next |
-| 2 | VQ: LBG/Juang, quantize, classify, report; `rayon` for `vq_learn_par` | |
+| 1 | LPC all-Rust: `libpar`/`lpc_rs` onto `lpca3`, port `lpc_signals`, write the C-compatible `.prd` | **done** |
+| 2 | VQ: LBG/Juang, quantize, classify, report; `rayon` for `vq_learn_par` | next |
 | 3 | HMM: Baum-Welch, scaled forward-backward, Viterbi, `estimateB`, B-epsilon | |
 | 4 | delete FFI, `build.rs`, submodule, `openmp-sys`; revisit packaging | |
 
 Order follows the data flow, so a hybrid pipeline always runs and each phase
 diffs against the C. Phase 3 is the delicate one: the scaling and log-domain
-arithmetic is where `-ffast-math` has been silently doing us favours.
+arithmetic is where `-ffast-math` has been silently doing us favors.
 
-Phase 1 **must** write the traditional `.prd` format. Today `lpc --zrs` writes
-`serde_cbor` via `utl::save_ser`, so the Rust LPC path cannot feed the C VQ
-path — closing that fork is a prerequisite for incremental migration, not a
-nicety.
+Phase 1 closed the format fork: `lpc --zrs` used to write `serde_cbor`, so the
+Rust LPC path could not feed the C VQ path. It now writes the traditional
+`<predictor>` format, and `prd::load` reads it, so the two implementations are
+interchangeable at that boundary.
+
+`--impl rs` in the harness runs the C for anything not yet ported rather than
+skipping it, so a complete classification result is available at every phase and
+each one can be judged on what it does to the final numbers.
 
 After phase 4, keep the C behind an off-by-default `c-oracle` Cargo feature:
 `build.rs` stays for differential tests, but nobody building or installing the
 tool needs gcc.
+
+### Phase 1 result
+
+`lpc --zrs` now runs `lpca3` and writes the traditional format. Measured on the
+quick tier (910 signals, 8 classes), Rust LPC against C LPC with everything
+downstream held identical:
+
+| stage | scale | difference |
+|---|---:|---|
+| predictors | 910 files | max rel **5.5e-10** |
+| sequences, M=32…256 | 3640 files / 341,916 symbols | **zero symbol flips** |
+| hmm models | 8 | exactly 0 |
+| classification, TRAIN and TEST | 910 | 100% full-ranking agreement, **+0.00 pp** |
+
+So the algebraic-float change perturbs the predictors at the 1e-10 level and
+changes nothing downstream at all.
+
+**One qualitative finding, which matters for phase 2.** The codebooks at M≥2048
+differ in a few dozen positions across 108 files (56 on one split, 80 on
+another — it depends on which cells end up near-tied) — and every one of them is
+a *pairwise transposition*: both codewords are present in both runs, swapped,
+matching to 3.5e-14, with their cardinalities exchanged. These are near-tied
+sibling cells from `grow_codebook`, each holding a single training vector, and a
+5e-10 nudge flips which one wins it.
+
+The codebook is therefore the same model with two labels exchanged. But the
+symbol indices it emits are not the same, so this is not automatically benign:
+it is harmless within a self-consistent pipeline and breaks any comparison that
+crosses runs. `ecoz2 util cmp` now distinguishes "rows reordered" from "rows
+changed" and reports the counts; `--allow-permutation` (or `ALLOW_PERM=1` in
+`compare.sh`) accepts it, off by default. Phase 2 should expect this whenever it
+touches VQ, and not read a raw symbol-agreement drop as a modeling difference
+without checking for it first.
 
 ### Decisions taken
 
@@ -166,7 +203,11 @@ tool needs gcc.
   Spend the effort there on `rayon` across sequences instead.
 - **Determinism.** Port RNG use to `rand`'s `ChaCha`/`StdRng`. `rand()`/`srand()`
   are libc-specific, so seeded runs are *already* not reproducible across
-  platforms; this is a fix, not a risk.
+  platforms; this is a fix, not a risk. Every source of randomness should take
+  an explicit seed and report the one it used. `hmm learn` already had `-s`;
+  `util split` now has one too, and also sorts its input, since the shuffled
+  markers are zipped positionally against a filesystem walk whose order is not
+  guaranteed.
 - **File formats: later, deliberately.** Keep reading the traditional formats
   at least for time being.
   Once there is a single writer, add an opt-in modern one — `.prd` and

@@ -1,11 +1,15 @@
 extern crate clap;
 
+use std::collections::HashMap;
 use std::error::Error;
 use std::path::PathBuf;
+use std::time::Instant;
 
 use clap::StructOpt;
 
 use crate::ecoz2_lib::lpc_signals;
+use crate::prd::Predictor;
+use crate::sgn;
 use crate::utl;
 
 mod libpar;
@@ -112,20 +116,20 @@ pub fn main_lpc(opts: LpcOpts) -> Result<(), Box<dyn Error>> {
     // println!("sgn_filenames = {:?}", sgn_filenames);
     // return Ok(()).into();
 
-    if zrsp {
-        main_lpc_par_rs(
+    if zrs || zrsp {
+        if split > 0. {
+            return Err("--split is deprecated and unsupported by the Rust implementation".into());
+        }
+        lpc_signals_rs(
             sgn_filenames,
             prediction_order,
             window_length_ms,
             offset_length_ms,
-        );
-    } else if zrs {
-        main_lpc_rs(
-            sgn_filenames,
-            prediction_order,
-            window_length_ms,
-            offset_length_ms,
-        );
+            minpc,
+            mintrpt,
+            zrsp,
+            verbose,
+        )?;
     } else {
         lpc_signals(
             prediction_order,
@@ -142,36 +146,88 @@ pub fn main_lpc(opts: LpcOpts) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn main_lpc_rs(
+/// The Rust implementation of `lpc_signals` (`ecoz2/src/lpc/lpc_signals.c`).
+///
+/// Groups the signals by class, drops classes below `minpc`, and writes each
+/// predictor to `data/predictors/<class>/<stem>.prd` in the traditional format,
+/// so the output is interchangeable with the C's.
+///
+/// The C shuffles each class's file list before processing. That only affects
+/// the TRAIN/TEST assignment under the deprecated `--split`, which this path
+/// rejects, so the shuffle is not reproduced and the outputs are identical.
+#[allow(clippy::too_many_arguments)]
+fn lpc_signals_rs(
     sgn_filenames: Vec<PathBuf>,
     prediction_order: usize,
     window_length_ms: usize,
     offset_length_ms: usize,
-) {
-    for sgn_filename in sgn_filenames {
-        lpc_rs::lpc_rs(
-            sgn_filename,
-            None,
-            prediction_order,
-            window_length_ms,
-            offset_length_ms,
-        );
+    minpc: usize,
+    mintrpt: f32,
+    parallel: bool,
+    verbose: bool,
+) -> Result<(), Box<dyn Error>> {
+    // Grouped in first-seen order, as the C's list is.
+    let mut class_order: Vec<String> = Vec::new();
+    let mut by_class: HashMap<String, Vec<PathBuf>> = HashMap::new();
+    for f in sgn_filenames {
+        let class_name = utl::class_name_of(&f);
+        if !by_class.contains_key(&class_name) {
+            class_order.push(class_name.clone());
+            by_class.insert(class_name.clone(), Vec::new());
+        }
+        by_class.get_mut(&class_name).unwrap().push(f);
     }
-}
 
-fn main_lpc_par_rs(
-    sgn_filenames: Vec<PathBuf>,
-    prediction_order: usize,
-    window_length_ms: usize,
-    offset_length_ms: usize,
-) {
-    for sgn_filename in sgn_filenames {
-        libpar::lpc_par(
-            sgn_filename,
-            None,
-            prediction_order,
-            window_length_ms,
-            offset_length_ms,
-        );
+    println!("lpc_signals: number of classes: {}", class_order.len());
+
+    for class_name in &class_order {
+        let files = &by_class[class_name];
+        if minpc > 0 && files.len() < minpc {
+            println!(
+                "class '{}': insufficient #signals={}",
+                class_name,
+                files.len()
+            );
+            continue;
+        }
+        println!("class '{}': {}", class_name, files.len());
+
+        for sgn_filename in files {
+            if verbose {
+                println!("  {}", sgn_filename.display());
+            }
+            let s = sgn::load(sgn_filename.to_str().unwrap());
+
+            let before = Instant::now();
+            let vectors = if parallel {
+                libpar::lpa_on_signal(prediction_order, window_length_ms, offset_length_ms, &s)
+            } else {
+                lpc_rs::lpa_on_signal(prediction_order, window_length_ms, offset_length_ms, &s)
+            };
+            let elapsed = before.elapsed();
+            if verbose && elapsed.as_secs_f32() >= mintrpt {
+                println!("processing took {:.2?}", elapsed);
+            }
+
+            let vectors = match vectors {
+                Some(v) => v,
+                None => {
+                    eprintln!("{}: cannot create lpc predictor", sgn_filename.display());
+                    continue;
+                }
+            };
+
+            let predictor = Predictor {
+                class_name: class_name.clone(),
+                prediction_order,
+                vectors,
+            };
+            let out = utl::output_filename(sgn_filename, "predictors", ".prd");
+            predictor.save(&out)?;
+            if verbose {
+                println!("{}: '{}': predictor saved", out.display(), class_name);
+            }
+        }
     }
+    Ok(())
 }

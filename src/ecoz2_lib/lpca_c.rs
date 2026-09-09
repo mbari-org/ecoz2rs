@@ -16,6 +16,9 @@ extern "C" {
     ) -> c_int;
 }
 
+/// Retained for `benches/my_benchmark.rs`, which compares the Rust `lpca`
+/// variants against the C one; the binary itself now uses `lpca3`.
+#[allow(dead_code)]
 pub fn lpca(x: &[f64], p: usize, r: &mut [f64], rc: &mut [f64], a: &mut [f64]) -> (i32, f64) {
     let n = x.len();
     let mut pe: c_double = 0f64;

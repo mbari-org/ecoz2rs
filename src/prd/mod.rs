@@ -2,8 +2,7 @@ extern crate clap;
 extern crate serde;
 
 use std::error::Error;
-use std::fs::File;
-use std::io::BufReader;
+use std::path::Path;
 use std::path::PathBuf;
 
 use clap::StructOpt;
@@ -11,6 +10,7 @@ use clap::StructOpt;
 use crate::ecoz2_lib::prd_show_file;
 use crate::lpc::lpca_cepstrum_rs::lpca_get_cepstrum;
 use crate::lpc::lpca_r_rs::lpca_r;
+use crate::utl::cfmt;
 
 use self::EcozPrdCommand::Show;
 
@@ -273,9 +273,30 @@ impl Predictor {
     }
 }
 
+impl Predictor {
+    /// Writes the traditional `<predictor>` format, byte-compatible with
+    /// `prd_save` in the C, so the output feeds the C `vq` stages unchanged.
+    pub fn save(&self, filename: &Path) -> Result<(), Box<dyn Error>> {
+        cfmt::save_predictor(
+            filename,
+            &cfmt::PredictorData {
+                class_name: self.class_name.clone(),
+                prediction_order: self.prediction_order,
+                vectors: self.vectors.clone(),
+            },
+        )
+    }
+}
+
+/// Reads the traditional `<predictor>` format, whichever implementation wrote it.
+///
+/// Note this used to read `serde_cbor`, which only `lpc --zrs` ever produced;
+/// that fork is closed as of the port's phase 1.
 pub fn load(filename: &str) -> Result<Predictor, Box<dyn Error>> {
-    let f = File::open(filename)?;
-    let br = BufReader::new(f);
-    let predictor = serde_cbor::from_reader(br)?;
-    Ok(predictor)
+    let d = cfmt::load_predictor(Path::new(filename))?;
+    Ok(Predictor {
+        class_name: d.class_name,
+        prediction_order: d.prediction_order,
+        vectors: d.vectors,
+    })
 }

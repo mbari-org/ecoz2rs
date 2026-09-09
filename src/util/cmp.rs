@@ -34,6 +34,14 @@ pub struct UtilCmpOpts {
     #[structopt(long, default_value = "1.0")]
     min_agreement: f64,
 
+    /// Accept a codebook whose codewords are the same but reordered.
+    ///
+    /// Near-tied cells can swap positions under a tiny numeric change. The
+    /// codebook is then equivalent as a model, but the symbol indices it emits
+    /// are relabeled, so this is off by default.
+    #[structopt(long)]
+    allow_permutation: bool,
+
     /// Emit the report as JSON
     #[structopt(long)]
     json: bool,
@@ -56,6 +64,10 @@ struct FileDiff {
     n_floats: usize,
     n_symbols: usize,
     n_symbols_diff: usize,
+    /// Rows (codewords / predictor vectors) that differ beyond tolerance
+    n_rows_diff: usize,
+    /// ...of which are present in the other file at a different index
+    n_rows_permuted: usize,
     error: Option<String>,
 }
 
@@ -68,8 +80,19 @@ impl FileDiff {
         }
     }
 
-    fn ok(&self, tolerance: f64, min_agreement: f64) -> bool {
-        self.error.is_none() && self.max_rel <= tolerance && self.agreement() >= min_agreement
+    /// True when every differing row is simply somewhere else in the other file.
+    fn only_permuted(&self) -> bool {
+        self.n_rows_diff > 0 && self.n_rows_diff == self.n_rows_permuted
+    }
+
+    fn ok(&self, tolerance: f64, min_agreement: f64, allow_permutation: bool) -> bool {
+        if self.error.is_some() || self.agreement() < min_agreement {
+            return false;
+        }
+        if self.max_rel <= tolerance {
+            return true;
+        }
+        allow_permutation && self.only_permuted()
     }
 }
 
@@ -90,6 +113,41 @@ fn rel_diff(a: f64, b: f64) -> f64 {
     } else {
         d
     }
+}
+
+/// Of the rows that differ beyond `tolerance`, how many appear in the other
+/// artifact at a different index? Used to tell a relabeled codebook apart from
+/// a numerically different one.
+fn count_permuted_rows(va: &[f64], vb: &[f64], w: usize, tolerance: f64) -> (usize, usize) {
+    if w == 0 || !va.len().is_multiple_of(w) {
+        return (0, 0);
+    }
+    let rows = va.len() / w;
+    let row = |v: &[f64], i: usize| -> Vec<f64> { v[i * w..(i + 1) * w].to_vec() };
+    let close = |x: &[f64], y: &[f64]| x.iter().zip(y).all(|(&p, &q)| rel_diff(p, q) <= tolerance);
+
+    let differing: Vec<usize> = (0..rows)
+        .filter(|&i| !close(&row(va, i), &row(vb, i)))
+        .collect();
+
+    // Match each differing row of A to an unused differing row of B. The sets
+    // are small (tens out of thousands), so the quadratic scan is fine.
+    let mut taken = vec![false; differing.len()];
+    let mut permuted = 0;
+    for &i in &differing {
+        let ai = row(va, i);
+        for (k, &j) in differing.iter().enumerate() {
+            if taken[k] || j == i {
+                continue;
+            }
+            if close(&ai, &row(vb, j)) {
+                taken[k] = true;
+                permuted += 1;
+                break;
+            }
+        }
+    }
+    (differing.len(), permuted)
 }
 
 fn compare_artifacts(a: &Artifact, b: &Artifact) -> FileDiff {
@@ -143,6 +201,20 @@ fn compare_artifacts(a: &Artifact, b: &Artifact) -> FileDiff {
         }
     }
 
+    // Row-structured artifacts: distinguish "the codewords moved" from "the
+    // codewords changed". PERMUTATION_TOL is deliberately loose relative to the
+    // 1e-9 pass tolerance -- a swapped pair still carries the ordinary noise.
+    const PERMUTATION_TOL: f64 = 1e-6;
+    if let Some(w) = a.row_len {
+        if let (Some((_, Section::Floats(va))), Some((_, Section::Floats(vb)))) =
+            (a.sections.first(), b.sections.first())
+        {
+            let (nd, np) = count_permuted_rows(va, vb, w, PERMUTATION_TOL);
+            diff.n_rows_diff = nd;
+            diff.n_rows_permuted = np;
+        }
+    }
+
     diff
 }
 
@@ -169,11 +241,20 @@ struct Summary {
     worst_file: String,
     n_symbols: usize,
     n_symbols_diff: usize,
+    n_rows_diff: usize,
+    n_rows_permuted: usize,
     kinds: Vec<String>,
 }
 
 impl Summary {
-    fn absorb(&mut self, label: &str, d: &FileDiff, tolerance: f64, min_agreement: f64) {
+    fn absorb(
+        &mut self,
+        label: &str,
+        d: &FileDiff,
+        tolerance: f64,
+        min_agreement: f64,
+        allow_permutation: bool,
+    ) {
         self.compared += 1;
         if !self.kinds.contains(&d.kind) && !d.kind.is_empty() {
             self.kinds.push(d.kind.clone());
@@ -187,12 +268,18 @@ impl Summary {
         }
         self.n_symbols += d.n_symbols;
         self.n_symbols_diff += d.n_symbols_diff;
-        if !d.ok(tolerance, min_agreement) {
+        self.n_rows_diff += d.n_rows_diff;
+        self.n_rows_permuted += d.n_rows_permuted;
+        if !d.ok(tolerance, min_agreement, allow_permutation) {
             let why = match &d.error {
                 Some(e) => e.clone(),
                 None if d.n_symbols_diff > 0 => {
                     format!("{} of {} symbols differ", d.n_symbols_diff, d.n_symbols)
                 }
+                None if d.only_permuted() => format!(
+                    "{} rows reordered (same values); pass --allow-permutation to accept",
+                    d.n_rows_diff
+                ),
                 None => format!("max rel diff {:.3e}", d.max_rel),
             };
             self.failures.push((label.to_string(), why));
@@ -225,6 +312,7 @@ pub fn main(opts: UtilCmpOpts) -> Result<(), Box<dyn Error>> {
         b,
         tolerance,
         min_agreement,
+        allow_permutation,
         json,
         verbose,
     } = opts;
@@ -245,9 +333,10 @@ pub fn main(opts: UtilCmpOpts) -> Result<(), Box<dyn Error>> {
             &d,
             tolerance,
             min_agreement,
+            allow_permutation,
         );
         if !json {
-            report_one(&a, &b, &d, tolerance, min_agreement);
+            report_one(&a, &b, &d, tolerance, min_agreement, allow_permutation);
         }
     } else {
         for entry in WalkDir::new(&a).into_iter().filter_map(|e| e.ok()) {
@@ -264,9 +353,13 @@ pub fn main(opts: UtilCmpOpts) -> Result<(), Box<dyn Error>> {
             }
             let d = compare_files(pa, &pb);
             if verbose && !json {
-                println!("  {:<48} {}", label, one_line(&d, tolerance, min_agreement));
+                println!(
+                    "  {:<48} {}",
+                    label,
+                    one_line(&d, tolerance, min_agreement, allow_permutation)
+                );
             }
-            summary.absorb(&label, &d, tolerance, min_agreement);
+            summary.absorb(&label, &d, tolerance, min_agreement, allow_permutation);
         }
         if !json {
             report_summary(&a, &b, &summary, tolerance, min_agreement);
@@ -291,7 +384,7 @@ fn verdict(ok: bool) -> ColoredString {
     }
 }
 
-fn one_line(d: &FileDiff, tolerance: f64, min_agreement: f64) -> String {
+fn one_line(d: &FileDiff, tolerance: f64, min_agreement: f64, allow_perm: bool) -> String {
     if let Some(e) = &d.error {
         return format!("{}: {}", "ERROR".red(), e);
     }
@@ -305,10 +398,21 @@ fn one_line(d: &FileDiff, tolerance: f64, min_agreement: f64) -> String {
     } else {
         format!("max rel {:.3e}", d.max_rel)
     };
-    format!("{}  {}", detail, verdict(d.ok(tolerance, min_agreement)))
+    format!(
+        "{}  {}",
+        detail,
+        verdict(d.ok(tolerance, min_agreement, allow_perm))
+    )
 }
 
-fn report_one(a: &Path, b: &Path, d: &FileDiff, tolerance: f64, min_agreement: f64) {
+fn report_one(
+    a: &Path,
+    b: &Path,
+    d: &FileDiff,
+    tolerance: f64,
+    min_agreement: f64,
+    allow_perm: bool,
+) {
     println!("A: {}", a.display());
     println!("B: {}", b.display());
     if let Some(e) = &d.error {
@@ -330,9 +434,15 @@ fn report_one(a: &Path, b: &Path, d: &FileDiff, tolerance: f64, min_agreement: f
             100.0 * d.agreement()
         );
     }
+    if d.n_rows_diff > 0 {
+        println!(
+            "  rows     {} differ, {} of them reordered rather than changed",
+            d.n_rows_diff, d.n_rows_permuted
+        );
+    }
     println!(
         "  => {}  (rel tol {:.0e}, min agreement {:.6}%)",
-        verdict(d.ok(tolerance, min_agreement)),
+        verdict(d.ok(tolerance, min_agreement, allow_perm)),
         tolerance,
         100.0 * min_agreement
     );
@@ -364,6 +474,12 @@ fn report_summary(a: &Path, b: &Path, s: &Summary, tolerance: f64, min_agreement
         println!(
             "  floats       max abs {:.3e}   max rel {:.3e}   (worst: {})",
             s.max_abs, s.max_rel, s.worst_file
+        );
+    }
+    if s.n_rows_diff > 0 {
+        println!(
+            "  rows         {} differ, {} of them reordered rather than changed",
+            s.n_rows_diff, s.n_rows_permuted
         );
     }
     if !s.failures.is_empty() {
@@ -403,6 +519,8 @@ fn print_json(a: &Path, b: &Path, s: &Summary, tolerance: f64, min_agreement: f6
         "symbols_total": s.n_symbols,
         "symbols_differing": s.n_symbols_diff,
         "symbol_agreement": s.agreement(),
+        "rows_differing": s.n_rows_diff,
+        "rows_reordered": s.n_rows_permuted,
         "tolerance": tolerance,
         "min_agreement": min_agreement,
         "ok": s.ok(),
