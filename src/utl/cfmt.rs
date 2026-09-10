@@ -407,6 +407,37 @@ pub fn load_hmm(path: &Path) -> Result<HmmData, Box<dyn Error>> {
     })
 }
 
+/// Writes an `<hmm>` file in the traditional format, as `hmm_save` does.
+pub fn save_hmm(path: &Path, h: &HmmData) -> Result<(), Box<dyn Error>> {
+    let n = h.num_states();
+    let m = h.num_symbols();
+    if h.a.len() != n || h.a.iter().any(|r| r.len() != n) {
+        return Err(format!("{}: A is not {}x{}", path.display(), n, n).into());
+    }
+    if h.b.len() != n || h.b.iter().any(|r| r.len() != m) {
+        return Err(format!("{}: B is not {}x{}", path.display(), n, m).into());
+    }
+    if let Some(dir) = path.parent() {
+        std::fs::create_dir_all(dir)?;
+    }
+    let f = File::create(path)?;
+    let mut bw = BufWriter::new(f);
+    write_ident(&mut bw, "<hmm>")?;
+    write_class_name(&mut bw, &h.class_name)?;
+    write_i32(&mut bw, n as i32)?;
+    write_i32(&mut bw, m as i32)?;
+    for v in &h.pi {
+        bw.write_all(&v.to_le_bytes())?;
+    }
+    for row in h.a.iter().chain(h.b.iter()) {
+        for v in row {
+            bw.write_all(&v.to_le_bytes())?;
+        }
+    }
+    bw.flush()?;
+    Ok(())
+}
+
 /// Writes a `<sequence>` file as `seq_save` does. `Symbol` is `unsigned short`.
 pub fn save_sequence(
     path: &Path,

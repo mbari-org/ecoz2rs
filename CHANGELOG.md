@@ -67,6 +67,21 @@
 - Fixed: `ecoz2 hmm show` panicked on every invocation, because `--hmm` derived
   a short `-h` that clap rejects as conflicting with help. Pre-existing.
 
+- Port phase 3 complete: `hmm learn --zrs` joins classify and show, so every
+  pipeline stage now has a Rust implementation.
+
+  Validated in two parts, since the C seeds its initial model from `rand()`.
+  Model type 1 (uniform) uses no randomness, and there the Rust and C models
+  agree to 1e-14 across twelve N/M/iteration/class combinations, with identical
+  Σ log(P) at every iteration. For type 3 the comparison is behavioral: the full
+  Rust pipeline differs from the full C one by 11 of 910 top-1 labels and at
+  most 0.54 pp accuracy — less than the C differs from itself when reseeded
+  (14 of 910, 0.65 pp). Two Rust runs with the same seeds are bit-identical.
+
+  Note the C logs its training trace with an off-by-one — `csv_add_line` is
+  called with `num_refinements + 1` after the increment, so index 1 is never
+  emitted. The port writes 0..n instead.
+
 2026-08
 
 - With the release of Rust [1.98.0](https://blog.rust-lang.org/2026/08/20/Rust-1.98.0/),

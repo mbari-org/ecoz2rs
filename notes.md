@@ -126,8 +126,8 @@ Judge that stage by its classification output.
 | 0 | golden corpus + differential harness; `utl::cfmt` readers; `util cmp` | **done** |
 | 1 | LPC all-Rust: `libpar`/`lpc_rs` onto `lpca3`, port `lpc_signals`, write the C-compatible `.prd` | **done** |
 | 2 | VQ: LBG/Juang, quantize, classify, report; `rayon` for `vq_learn_par` | **done** |
-| 3 | HMM: Baum-Welch, scaled forward-backward, Viterbi, `estimateB`, B-epsilon | `classify` + `show` **done**; `learn` next |
-| 4 | delete FFI, `build.rs`, submodule, `openmp-sys`; revisit packaging | |
+| 3 | HMM: Baum-Welch, scaled forward-backward, Viterbi, `estimateB`, B-epsilon | **done** |
+| 4 | delete FFI, `build.rs`, submodule, `openmp-sys`; revisit packaging | next — see "Phase 4 plan" |
 
 Order follows the data flow, so a hybrid pipeline always runs and each phase
 diffs against the C. Phase 3 is the delicate one: the scaling and log-domain
@@ -253,10 +253,10 @@ straight from the predictor and never round-trips back through `lpca_rc`.
 Also landed: `vq learn --max-codebook-size`, the backlog item, since the ladder
 was being written fresh anyway.
 
-### Phase 3 progress (HMM classify and show)
+### Phase 3 result (HMM)
 
-`hmm classify --zrs` and `hmm show --zrs` are ported; `hmm learn` still falls
-back to the C.
+All of HMM is ported: `hmm learn`, `hmm classify` and `hmm show`. Every stage of
+the pipeline now runs on Rust.
 
 `hmm classify` reproduces the **stored 2020 c12n CSV exactly** — all 910
 sequences, full `r1…r8` ranking, identical accuracy — which validates the scaled
@@ -297,11 +297,89 @@ Two bugs found, both pre-existing and unrelated to the port:
   the correct statement is that the port matches `vq_show.c`'s output, and the
   C *path* additionally emits that one wrapper line.
 
+#### hmm learn, and how it was validated
+
+Training is the one stage that cannot be compared bit for bit, because the C
+seeds `pi`, `A` and its fallback rows from `rand()`. So it was split in two.
+
+**Model type 1 (uniform) uses no randomness at all**, which makes the whole
+algorithm directly comparable. Across twelve combinations — N ∈ {2,3,5},
+M ∈ {128,256}, up to 12 refinements, four classes — the Rust and C models agree
+to **1e-14 relative**, and the Σ log(P) trace is identical at every iteration.
+That covers initialization, `estimateB` (Viterbi plus frequency counting),
+`adjust_B_epsilon`, the alpha/beta/gamma passes, both re-estimations, the
+convergence test and the writer. Only the RNG is left uncovered.
+
+**For type 3 (what the exercises use) the comparison is behavioral**, and the
+right yardstick is the C's own variance under reseeding, already measured at
+14/910 top-1 labels and 0.65 pp. Full Rust pipeline against full C:
+
+| | difference |
+|---|---|
+| top-1 labels | 11 of 910 (1.21%) |
+| accuracy | +0.54 pp on TEST, −0.28 pp on TRAIN |
+| C vs C, reseeded (for scale) | 14 of 910 (1.54%), 0.65 pp |
+
+So the port differs from the C by *less* than the C differs from itself when
+reseeded. Two independent Rust runs with the same seeds are bit-identical.
+
+One consequence for the harness: with `hmm learn` on Rust, the per-class seeds
+in the stored `.rpt` files no longer reproduce the stored models — they are
+`rand()` seeds. They still give reproducibility, just to a different stream.
+Comparing a Rust run against the 2020 oracle is therefore only exact up to the
+sequences; past that it has to be read against the reseeding band above.
+
+A bug in the C worth noting, since the trace files differ visibly: `hmm_learn.c`
+logs `csv_add_line(num_refinements + 1, ...)` *after* incrementing, so index 1
+is never emitted and a one-refinement run writes rows 0 and 2. The stored 2020
+traces show this. The port emits 0…n and does not reproduce the off-by-one.
+
+### Phase 4 plan
+
+The goal is to delete the C: `src/ecoz2_lib` (593 lines, and **every `unsafe`
+block in the crate**), `build.rs`, the `ecoz2` submodule and `openmp-sys`.
+
+**Two gaps have to be closed first.** Twelve `use crate::ecoz2_lib::…` sites
+remain, and all but two are just the non-`--zrs` branch of something already
+ported. The exceptions have no Rust implementation at all yet:
+
+- `hmm classify --predictors`. The port covers only `--sequences`. The predictor
+  path quantizes each predictor against every class codebook and scores the
+  resulting sequences, so it is mostly wiring over pieces that already exist
+  (`vq_rs::Codebook`, `vq_rs::quantize`, `hmm_rs::log_prob`) — but it is not
+  written.
+- `seq show -P` / `-Q`, still marked TODO on the Rust side. Needs
+  `hmm_log_prob` (have it) and Viterbi (have it, inside `hmm_learn_rs` — it
+  would move somewhere shared).
+
+**Then, in order:**
+
+1. Flip the flag polarity, as decided above: `--zrs` is deleted, Rust becomes
+   the default, and a `-c` opt-in exists only under `c-oracle`. `--zrsp` does
+   not survive as an implementation flag either; parallelism belongs in a
+   `--jobs`-style option or is left to rayon. In the harness this is one line in
+   `stage_flags`.
+2. Validate the whole harness with Rust as the default, C still present.
+3. Only then remove the submodule, `openmp-sys` and the default `build.rs`.
+4. Consider `#![forbid(unsafe_code)]`, and revisit the inherited caps
+   (`MAX_SEQS 4096`, `MAX_MODELS 256`, `MAX_CODEBOOK_SIZE 4096`,
+   `MAX_PREDICTION_ORDER 200`) as deliberate choices.
+
+**Sequencing matters in two places.** Do not flip the default and delete the
+submodule in the same step — a regression then has no oracle to be diagnosed
+against. And leave the C-shaped-kernel cleanup in the backlog until after the
+deletion: while the C exists, the one-for-one correspondence is what makes a
+discrepancy findable.
+
 ### Decisions taken
 
-- **Where algebraic float ops are allowed.** Relax arithmetic in reductions over
-  independent data that dominate the runtime; keep recurrences, convergence
-  tests, and anything feeding a discrete decision on strict IEEE. This is what
+- **Where algebraic float ops are allowed.** Relax arithmetic in *long*
+  reductions over independent data that dominate the runtime; keep recurrences,
+  convergence tests, and anything feeding a discrete decision on strict IEEE.
+  The distinguishing property is the dependency chain, not the loop count: a
+  short dependent recursion gains nothing from reassociation and can lose, since
+  splitting into partial sums plus a reduction tree costs setup the loop is too
+  short to amortize. This is what
   `lpca3` does — the autocorrelation is ~105k flops and reassociates freely,
   while the Levinson-Durbin recursion is ~2.5% of the work, has no
   reassociation freedom anyway (it is a dependency chain), and ends in the
@@ -315,10 +393,13 @@ Two bugs found, both pre-existing and unrelated to the port:
   hot reduction and relaxes, but the `if (dd < ddmin)` argmin must not — it *is*
   the emitted symbol, i.e. the very quantity the harness measures the port with
   — and neither must the `(DDprv - DD)/DD < eps` convergence test. In HMM,
-  relax essentially nothing: N is 3-10 so the forward-backward inner sums have
-  no headroom, the stage is memory-bound over B rather than flop-bound, and the
-  scaling factors are the whole basis of the Shen-2008 formulation's stability.
-  Spend the effort there on `rayon` across sequences instead.
+  relax nothing, and this one was measured rather than argued: switching the
+  forward-backward loops to the algebraic methods gives no speedup, and relaxing
+  all of them is ~4% *slower* at N=20. The accumulations over T in `accumulate`
+  are the one genuine long-reduction candidate there, and they gain nothing
+  either — `gamma1[t][i]` strides across separate `Vec` allocations, so the
+  reduction chases pointers and never vectorizes. Spend the effort on `rayon`
+  across sequences, and on the layout, instead.
 - **The `--zrs` flag is temporary, and its polarity will flip.** Today `--zrs`
   opts *into* the Rust implementation and the C is the default, which is the
   convention `lpc` and `prd show` already used. That is right while the port is
@@ -340,6 +421,16 @@ Two bugs found, both pre-existing and unrelated to the port:
   Note `--zrsp` (the threaded LPC variant) is a different axis and should not
   survive as an implementation flag; parallelism belongs in a `--jobs`-style
   option or is simply left to rayon.
+
+- **How to benchmark.** Interleave the variants and repeat; never compare two
+  builds from separate sequential passes. Measured here: the *same* binary timed
+  8.57 ms per HMM refinement in one pass and 11.68 ms in another, a 26% swing
+  from thermal state or background load — larger than most effects worth
+  chasing, and it silently favors whichever build ran second. An earlier
+  "algebraic ops are 23% faster" conclusion in these notes was exactly that
+  artifact, and reversed once the runs were interleaved. Isolate the loop of
+  interest by differencing two iteration counts (`-I=2` against `-I=102`), since
+  a whole run is dominated by process start and file loading.
 
 - **Determinism.** Port RNG use to `rand`'s `ChaCha`/`StdRng`. `rand()`/`srand()`
   are libc-specific, so seeded runs are *already* not reproducible across
@@ -373,7 +464,25 @@ Two bugs found, both pre-existing and unrelated to the port:
   *released* binaries should be built with is a separate question; leave it
   until the port works locally.)
 
-### Backlog (small, found while building the harness)
+### Backlog
+
+**After phase 4 — undo the C-shaped kernels.** The numeric modules (`vq_rs`,
+`vq_learn_rs`, `hmm_rs`, `hmm_learn_rs`) deliberately mirror the C: flat
+`Vec<f64>` with manual stride arithmetic (`i * w..(i + 1) * w`,
+`state * m + symbol`), index loops, and structs like `Partial` and `Refiner`
+that exist only because the C used file-scope statics. That was the right call
+while the two implementations had to be reviewed side by side — a discrepancy
+has to be findable — but the justification expires with the C, and then it is
+just debt. Note `ndarray` is already a dependency and is used by nothing but
+`mm/markov.rs`. Rough order: flat arrays with manual striding → `ndarray`;
+`Refiner`'s eight parallel scratch fields; `Partial`'s hand-written `merge`.
+
+This is also the prerequisite for the one concrete performance lead: the
+reductions over T in `hmm_learn_rs::accumulate` cannot vectorize while
+`gamma1`/`gamma2` are `Vec<Vec<..>>`, because the stride crosses allocations.
+Flatten those and the algebraic methods become worth re-testing there.
+
+**Smaller items, found while building the harness**
 
 - `vq learn --max-codebook-size` — **added in phase 2**. The C ladder always
   doubles to `MAX_CODEBOOK_SIZE`; you kill it and resume with `-B`, which is

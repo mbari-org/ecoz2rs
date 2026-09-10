@@ -18,6 +18,7 @@ use crate::ecoz2_lib::version;
 use crate::sequence;
 use crate::utl;
 
+mod hmm_learn_rs;
 mod hmm_rs;
 
 use self::EcozHmmCommand::{Classify, Learn, Show};
@@ -80,6 +81,10 @@ pub struct HmmLearnOpts {
     /// Use serialized implementation
     #[structopt(long)]
     ser: bool,
+
+    /// Use the Rust implementation
+    #[structopt(long)]
+    zrs: bool,
 
     /// Training sequences.
     /// If a single `.csv` file is given, then the "TRAIN" files indicated there will be used,
@@ -196,6 +201,7 @@ pub fn main_hmm_learn(opts: HmmLearnOpts) -> Result<(), Box<dyn Error>> {
         val_auto,
         seed,
         ser,
+        zrs,
         sequences,
         class_name,
     } = opts;
@@ -208,11 +214,23 @@ pub fn main_hmm_learn(opts: HmmLearnOpts) -> Result<(), Box<dyn Error>> {
         ".seq",
     )?;
 
-    println!("ECOZ2 C version: {}", version()?);
-
     println!("sequences: {}", seq_filenames.len());
     println!("val_auto = {}", val_auto);
 
+    if zrs {
+        return hmm_learn_rs_driver(
+            num_states,
+            type_,
+            &seq_filenames,
+            codebook_size,
+            epsilon,
+            val_auto,
+            max_iterations,
+            seed,
+        );
+    }
+
+    println!("ECOZ2 C version: {}", version()?);
     set_random_seed(seed);
 
     fn callback(_var: &str, _val: f64) {
@@ -486,5 +504,158 @@ fn hmm_classify_sequences_rs(
 
     let names: Vec<&String> = class_names.iter().collect();
     c12n.report_results(names, format!("hmm_{}", codebook_size));
+    Ok(())
+}
+
+/// The Rust implementation of `hmm learn` (`ecoz2/src/hmm/hmm_learn.c`).
+///
+/// Writes the model plus the `.rpt` and `.csv` the C emits, into the same
+/// `data/hmms/N<N>__M<M>_t<type>__a<auto>[_I<iters>]/` directory.
+#[allow(clippy::too_many_arguments)]
+fn hmm_learn_rs_driver(
+    num_states: usize,
+    model_type: usize,
+    seq_filenames: &[PathBuf],
+    codebook_size: usize,
+    epsilon: f64,
+    val_auto: f64,
+    max_iterations: i32,
+    seed: i64,
+) -> Result<(), Box<dyn Error>> {
+    use crate::utl::pf;
+    use rand::{rng, RngExt};
+    use std::io::Write;
+
+    if seq_filenames.is_empty() {
+        return Err("no training sequences".into());
+    }
+
+    // As with `util split`: an unseeded run draws one and reports it, so the
+    // result stays reproducible after the fact.
+    let seed_used: u64 = if seed < 0 {
+        rng().random()
+    } else {
+        seed as u64
+    };
+    println!("hmm_learn: seed={}", seed_used);
+
+    let mut seqs: Vec<Vec<u16>> = Vec::with_capacity(seq_filenames.len());
+    let mut model_class_name = String::new();
+    let mut m = 0usize;
+    for (r, f) in seq_filenames.iter().enumerate() {
+        let seq = sequence::load(f.to_str().unwrap())?;
+        if r == 0 {
+            // the first sequence's class names the model, as in the C
+            model_class_name = seq.class_name.clone();
+            m = seq.codebook_size as usize;
+        } else if seq.codebook_size as usize != m {
+            eprintln!("{}: not conformant.", f.display());
+            continue;
+        } else if seq.class_name != model_class_name {
+            println!(
+                "WARNING: model '{}' trained with sequence '{}'",
+                model_class_name, seq.class_name
+            );
+        }
+        seqs.push(seq.symbols);
+    }
+    if m == 0 {
+        return Err("M == 0".into());
+    }
+    if m != codebook_size {
+        println!(
+            "note: sequences carry M={}, --codebook-size said {}",
+            m, codebook_size
+        );
+    }
+
+    let dir = if max_iterations >= 0 {
+        format!(
+            "data/hmms/N{}__M{}_t{}__a{}_I{}",
+            num_states,
+            m,
+            model_type,
+            pf::g(val_auto),
+            max_iterations
+        )
+    } else {
+        format!(
+            "data/hmms/N{}__M{}_t{}__a{}",
+            num_states,
+            m,
+            model_type,
+            pf::g(val_auto)
+        )
+    };
+    std::fs::create_dir_all(&dir)?;
+    let model_path = PathBuf::from(&dir).join(format!("{}.hmm", model_class_name));
+
+    let outcome = hmm_learn_rs::learn(
+        &model_class_name,
+        num_states,
+        model_type,
+        &seqs,
+        m,
+        epsilon,
+        val_auto,
+        max_iterations,
+        seed_used,
+        &model_path,
+    )?;
+
+    // the per-iteration trace
+    let csv_path = PathBuf::from(&dir).join(format!("{}.csv", model_class_name));
+    let mut csv = std::io::BufWriter::new(std::fs::File::create(csv_path)?);
+    writeln!(
+        csv,
+        "# N={} M={} type={}  #sequences = {}  max_T={}  (seed={})",
+        num_states, m, model_type, outcome.num_seqs, outcome.max_t, seed_used
+    )?;
+    writeln!(csv, "I,Σ log(P)")?;
+    for (i, slp) in &outcome.trace {
+        writeln!(csv, "{},{}", i, pf::g(*slp))?;
+    }
+
+    // the summary, to stdout and to <model>.rpt
+    let type_name = match model_type {
+        0 => "no restriction",
+        1 => "uniform distributions",
+        2 => "cascade-2",
+        _ => "cascade-3",
+    };
+    let restriction = if epsilon == 0.0 {
+        "No".to_string()
+    } else {
+        pf::g(epsilon)
+    };
+    let summary = |prefix: &str| -> String {
+        format!(
+            "{p} Model: {}   (seed={})'\n\
+             {p} className: '{}'\n\
+             {p} N={} M={} type: {}\n\
+             {p} restriction: {}\n\
+             {p}     #sequences: {}\n\
+             {p}     auto value: {}\n\
+             {p}   #refinements: {}\n\
+             {p}       Σ log(P): {}\n",
+            model_path.display(),
+            seed_used,
+            model_class_name,
+            num_states,
+            m,
+            type_name,
+            restriction,
+            outcome.num_seqs,
+            pf::g(val_auto),
+            outcome.num_refinements,
+            pf::g(outcome.sum_log_prob),
+            p = prefix
+        )
+    };
+    println!("\n{}", summary("    "));
+    let rpt_path = model_path.with_extension("rpt");
+    std::fs::write(rpt_path, summary(""))?;
+
+    println!("=> training complete     class={}\n", model_class_name);
     Ok(())
 }
