@@ -126,7 +126,7 @@ Judge that stage by its classification output.
 | 0 | golden corpus + differential harness; `utl::cfmt` readers; `util cmp` | **done** |
 | 1 | LPC all-Rust: `libpar`/`lpc_rs` onto `lpca3`, port `lpc_signals`, write the C-compatible `.prd` | **done** |
 | 2 | VQ: LBG/Juang, quantize, classify, report; `rayon` for `vq_learn_par` | **done** |
-| 3 | HMM: Baum-Welch, scaled forward-backward, Viterbi, `estimateB`, B-epsilon | next |
+| 3 | HMM: Baum-Welch, scaled forward-backward, Viterbi, `estimateB`, B-epsilon | `classify` + `show` **done**; `learn` next |
 | 4 | delete FFI, `build.rs`, submodule, `openmp-sys`; revisit packaging | |
 
 Order follows the data flow, so a hybrid pipeline always runs and each phase
@@ -252,6 +252,50 @@ straight from the predictor and never round-trips back through `lpca_rc`.
 
 Also landed: `vq learn --max-codebook-size`, the backlog item, since the ladder
 was being written fresh anyway.
+
+### Phase 3 progress (HMM classify and show)
+
+`hmm classify --zrs` and `hmm show --zrs` are ported; `hmm learn` still falls
+back to the C.
+
+`hmm classify` reproduces the **stored 2020 c12n CSV exactly** — all 910
+sequences, full `r1…r8` ranking, identical accuracy — which validates the scaled
+forward recursion against a six-year-old oracle. `hmm show` output is identical
+to the C's on every model tried.
+
+Two notes on fidelity. The C accumulates the log-likelihood with `logl`, which
+is `long double`: 80-bit on x86, but plain `double` on aarch64, so the C itself
+is not consistent across targets there. The port uses `f64::ln` everywhere.
+
+This is a leftover rather than a design choice. `prob_t` was changed to `double`
+long ago, but the long-double *math functions* the type change did not touch
+stayed: `logl` at `hmm_prob.c:127`, `hmm_log_prob.c:74`, `hmm_genQopt.c:16,28,71`
+and `hmm_learn.c:245`, and `fabsl` at eight more sites. The `fabsl` calls have no
+effect at all — absolute value is exact at any precision — and once the scaling
+factors were introduced there was nothing left for extended precision to protect
+in the `logl` ones either. The remaining `(long double)` casts are printf
+arguments required by the `%Lg`/`%Le` conversions and compute nothing.
+
+So this is the C's *second* residual platform dependency, alongside `vq learn`
+varying with the core count: its HMM log-probabilities differ by ULPs between
+x86 and aarch64. Not worth fixing in code that is being retired — changing
+`logl` to `log` now would perturb the oracle mid-port for no gain — but worth
+knowing when comparing runs made on different machines. And
+`hmm_show_model` hands its `--format` argument straight to `printf` alongside a
+`long double`, which lets the caller inject an arbitrary conversion; the port
+parses the subset in use (`utl::pf`) and rejects the rest.
+
+Two bugs found, both pre-existing and unrelated to the port:
+
+- `ecoz2 hmm show` **panicked on every invocation**. `--hmm` derived a short
+  `-h`, which clap rejects as conflicting with help. Confirmed at HEAD before
+  any phase 3 change; fixed by dropping the short form.
+- The FFI wrappers for `vq show` and `hmm show` print a `codebook_filename = …`
+  / `hmm_show: …` line before calling into C. That is shim chatter, not part of
+  the C's own output, and the ported versions drop it. It also means an earlier
+  "byte-identical" claim about `vq show` was measured before `--zrs` was wired;
+  the correct statement is that the port matches `vq_show.c`'s output, and the
+  C *path* additionally emits that one wrapper line.
 
 ### Decisions taken
 

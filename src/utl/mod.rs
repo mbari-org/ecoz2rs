@@ -15,6 +15,7 @@ use byteorder::*;
 use self::walkdir::WalkDir;
 
 pub mod cfmt;
+pub mod pf;
 
 // first few defs to deal with files generated from C version
 

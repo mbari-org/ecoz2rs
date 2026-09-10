@@ -358,6 +358,55 @@ pub fn load_codebook(path: &Path) -> Result<VectorSet, Box<dyn Error>> {
     })
 }
 
+/// An HMM as held in memory.
+pub struct HmmData {
+    pub class_name: String,
+    /// initial state distribution, length N
+    pub pi: Vec<f64>,
+    /// state transitions, N rows of N
+    pub a: Vec<Vec<f64>>,
+    /// symbol emissions, N rows of M
+    pub b: Vec<Vec<f64>>,
+}
+
+impl HmmData {
+    pub fn num_states(&self) -> usize {
+        self.pi.len()
+    }
+    pub fn num_symbols(&self) -> usize {
+        self.b.first().map(|r| r.len()).unwrap_or(0)
+    }
+}
+
+/// Reads an `<hmm>` file, as `hmm_load` does.
+pub fn load_hmm(path: &Path) -> Result<HmmData, Box<dyn Error>> {
+    let art = load(path)?;
+    if art.kind != "hmm" {
+        return Err(format!("{}: not an hmm, but a <{}>", path.display(), art.kind).into());
+    }
+    let mut sections = art.sections.into_iter();
+    let floats = |s: Option<(&str, Section)>| -> Result<Vec<f64>, Box<dyn Error>> {
+        match s {
+            Some((_, Section::Floats(v))) => Ok(v),
+            _ => Err("unexpected hmm content".into()),
+        }
+    };
+    let pi = floats(sections.next())?;
+    let a_flat = floats(sections.next())?;
+    let b_flat = floats(sections.next())?;
+    let n = pi.len();
+    if n == 0 || a_flat.len() != n * n || !b_flat.len().is_multiple_of(n) {
+        return Err(format!("{}: inconsistent hmm dimensions", path.display()).into());
+    }
+    let m = b_flat.len() / n;
+    Ok(HmmData {
+        class_name: art.class_name,
+        pi,
+        a: a_flat.chunks_exact(n).map(|c| c.to_vec()).collect(),
+        b: b_flat.chunks_exact(m).map(|c| c.to_vec()).collect(),
+    })
+}
+
 /// Writes a `<sequence>` file as `seq_save` does. `Symbol` is `unsigned short`.
 pub fn save_sequence(
     path: &Path,

@@ -2,18 +2,23 @@ extern crate clap;
 extern crate libc;
 
 use std::error::Error;
+use std::path::Path;
 use std::path::PathBuf;
 
 use clap::StructOpt;
 use colored::*;
 
+use crate::c12n;
 use crate::ecoz2_lib::hmm_classify_predictors;
 use crate::ecoz2_lib::hmm_classify_sequences;
 use crate::ecoz2_lib::hmm_learn;
 use crate::ecoz2_lib::hmm_show;
 use crate::ecoz2_lib::set_random_seed;
 use crate::ecoz2_lib::version;
+use crate::sequence;
 use crate::utl;
+
+mod hmm_rs;
 
 use self::EcozHmmCommand::{Classify, Learn, Show};
 
@@ -129,6 +134,10 @@ pub struct HmmClassifyOpts {
     #[structopt(short = 'M', long, required = true)]
     codebook_size: usize,
 
+    /// Use the Rust implementation (sequences only, for now)
+    #[structopt(long)]
+    zrs: bool,
+
     /// Predictor files to classify.
     /// If a single `.csv` file is given, then only the ones indicated with `--tt` will be used.
     /// Otherwise, if directories are included, then all `.prd` under them will be used.
@@ -147,12 +156,20 @@ pub struct HmmClassifyOpts {
 #[derive(StructOpt, Debug)]
 pub struct HmmShowOpts {
     /// HMM model.
-    #[structopt(short, long, parse(from_os_str))]
+    ///
+    /// No short form: deriving one from the field name gives `-h`, which clap
+    /// rejects as conflicting with help, and made `hmm show` panic on every
+    /// invocation.
+    #[structopt(long, parse(from_os_str))]
     hmm: PathBuf,
 
-    /// HMM model.
+    /// Number format, a printf-like `%[-][0][width][.prec][L]{g,f,e}`.
     #[structopt(short, long, default_value = "%Lg ")]
     format: String,
+
+    /// Use the Rust implementation
+    #[structopt(long)]
+    zrs: bool,
 }
 
 pub fn main(opts: HmmMainOpts) {
@@ -228,6 +245,7 @@ pub fn main_hmm_classify(opts: HmmClassifyOpts) -> Result<(), Box<dyn Error>> {
         predictors,
         predictors_dir_template,
         codebooks,
+        zrs,
     } = opts;
 
     assert_ne!(predictors.is_empty(), sequences.is_empty());
@@ -251,6 +269,16 @@ pub fn main_hmm_classify(opts: HmmClassifyOpts) -> Result<(), Box<dyn Error>> {
             seq_filenames.len()
         );
         println!("show_ranked = {}", show_ranked);
+
+        if zrs {
+            return hmm_classify_sequences_rs(
+                &hmm_filenames,
+                &seq_filenames,
+                show_ranked,
+                classification_filename,
+                codebook_size,
+            );
+        }
 
         hmm_classify_sequences(
             hmm_filenames,
@@ -283,9 +311,180 @@ pub fn main_hmm_classify(opts: HmmClassifyOpts) -> Result<(), Box<dyn Error>> {
 }
 
 pub fn main_hmm_show(opts: HmmShowOpts) -> Result<(), Box<dyn Error>> {
-    let HmmShowOpts { hmm, format } = opts;
+    let HmmShowOpts { hmm, format, zrs } = opts;
 
-    hmm_show(hmm, format);
+    if zrs {
+        hmm_show_rs(&hmm, &format)?;
+    } else {
+        hmm_show(hmm, format);
+    }
 
+    Ok(())
+}
+
+/// The Rust implementation of `hmm show` (`hmm_show_model` in
+/// `ecoz2/src/hmm/hmm.c`).
+///
+/// The C hands `format` straight to `printf`, which lets the caller inject an
+/// arbitrary conversion; `utl::pf::render` parses the subset in use instead and
+/// rejects the rest.
+fn hmm_show_rs(filename: &Path, format: &str) -> Result<(), Box<dyn Error>> {
+    use crate::utl::cfmt;
+    use crate::utl::pf;
+
+    let hmm = cfmt::load_hmm(filename)?;
+    let n = hmm.num_states();
+    let m = hmm.num_symbols();
+    println!("className: '{}'  N={}  M={}", hmm.class_name, n, m);
+
+    // Each row is printed with its own sum, and flagged if it is not 1.
+    let row = |label: String, values: &[f64]| -> Result<(), Box<dyn Error>> {
+        print!("{}", label);
+        let mut sum = 0f64;
+        for v in values {
+            print!("{}", pf::render(format, *v)?);
+            sum += *v;
+        }
+        print!(" Σ = {}", pf::render(format, sum)?);
+        println!();
+        if (sum - 1.0).abs() > 1e-10 {
+            println!(
+                "{}",
+                format!(
+                    "***ERROR** Σ = {:e} != 1
+",
+                    sum
+                )
+                .red()
+            );
+        }
+        Ok(())
+    };
+
+    println!();
+    row("pi = ".to_string(), &hmm.pi)?;
+    println!();
+    print!("A =  ");
+    // As the C does: the label is printed once, and rows after the first start
+    // at column 0.
+    for a_row in &hmm.a {
+        row(String::new(), a_row)?;
+    }
+    println!();
+    print!("B =  ");
+    // As the C does: the label is printed once, and rows after the first start
+    // at column 0.
+    for b_row in &hmm.b {
+        row(String::new(), b_row)?;
+    }
+    Ok(())
+}
+
+/// The Rust implementation of `hmm_classify` for the direct-sequence case
+/// (`ecoz2/src/hmm/hmm_classify.c`).
+///
+/// Each sequence is scored against every model by the scaled forward
+/// recursion, and the models ranked by log-probability.
+fn hmm_classify_sequences_rs(
+    hmm_filenames: &[PathBuf],
+    seq_filenames: &[PathBuf],
+    show_ranked: bool,
+    classification_filename: Option<PathBuf>,
+    codebook_size: usize,
+) -> Result<(), Box<dyn Error>> {
+    use crate::utl::cfmt;
+    use std::io::Write;
+
+    println!("\nLoading models:");
+    let mut models: Vec<hmm_rs::Hmm> = Vec::new();
+    for (i, f) in hmm_filenames.iter().enumerate() {
+        println!("{:2}: {}", i, f.display());
+        let hmm = hmm_rs::Hmm::from_data(cfmt::load_hmm(f)?);
+        if let Some(first) = models.first() {
+            if hmm.m != first.m {
+                return Err(format!(
+                    "{}: conformity error: M={}, expected {}",
+                    f.display(),
+                    hmm.m,
+                    first.m
+                )
+                .into());
+            }
+        }
+        models.push(hmm);
+    }
+    let class_names: Vec<String> = models.iter().map(|m| m.class_name.clone()).collect();
+
+    // The per-sequence CSV, in the same shape `c12n_prepare` writes.
+    let mut c12n_file = match &classification_filename {
+        Some(path) => {
+            if let Some(dir) = path.parent() {
+                std::fs::create_dir_all(dir)?;
+            }
+            let mut f = std::io::BufWriter::new(std::fs::File::create(path)?);
+            writeln!(
+                f,
+                "# num_models={}  M={}  num_seqs={}",
+                models.len(),
+                codebook_size,
+                seq_filenames.len()
+            )?;
+            write!(f, "seq_filename,seq_class_name,correct,rank")?;
+            for r in 1..=models.len() {
+                write!(f, ",r{}", r)?;
+            }
+            writeln!(f)?;
+            Some(f)
+        }
+        None => None,
+    };
+
+    let mut c12n = c12n::C12nResults::new(class_names.clone());
+    let mut work = hmm_rs::Work::new();
+    println!();
+
+    for filename in seq_filenames {
+        let name = filename.to_str().unwrap();
+        let seq = sequence::load(name)?;
+        let class_id = match class_names.iter().position(|n| *n == seq.class_name) {
+            Some(i) => i,
+            None => continue,
+        };
+
+        let probs: Vec<f64> = models
+            .iter()
+            .map(|m| {
+                m.log_prob(&seq.symbols, &mut work)
+                    .unwrap_or(f64::NEG_INFINITY)
+            })
+            .collect();
+
+        if let Some(f) = c12n_file.as_mut() {
+            let ranked = hmm_rs::rank_descending(&probs);
+            let correct = ranked[0] == class_id;
+            // `rank` is where the correct model landed, 1-based.
+            let rank = 1 + ranked.iter().position(|&id| id == class_id).unwrap_or(0);
+            write!(
+                f,
+                "{},{},{},{}",
+                name,
+                seq.class_name,
+                if correct { "*" } else { "!" },
+                rank
+            )?;
+            for id in &ranked {
+                write!(f, ",{}", class_names[*id])?;
+            }
+            writeln!(f)?;
+        }
+
+        c12n.add_case(class_id, &seq.class_name, probs, show_ranked, || {
+            format!("\n{}: '{}'\n", name, seq.class_name)
+        });
+    }
+    println!();
+
+    let names: Vec<&String> = class_names.iter().collect();
+    c12n.report_results(names, format!("hmm_{}", codebook_size));
     Ok(())
 }

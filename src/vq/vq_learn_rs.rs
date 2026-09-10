@@ -390,7 +390,7 @@ impl Reporter {
             rpt,
             "Codebook generation\n\n{} training vectors. (ε = {})\n",
             tot_vecs,
-            super::format_g(eps)
+            crate::utl::pf::g(eps)
         )?;
 
         let csv_path = rpt_path.with_extension("rpt.csv");
@@ -399,7 +399,7 @@ impl Reporter {
             csv,
             "# {} training vectors. (ε = {})",
             tot_vecs,
-            super::format_g(eps)
+            crate::utl::pf::g(eps)
         )?;
         writeln!(csv, "M,passes,DDprm,σ,inertia")?;
         Ok(Reporter { rpt, csv })

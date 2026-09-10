@@ -13,6 +13,7 @@ use crate::ecoz2_lib::vq_quantize;
 use crate::ecoz2_lib::vq_show;
 use crate::utl;
 use crate::utl::cfmt;
+use crate::utl::pf;
 
 mod vq_learn_rs;
 mod vq_rs;
@@ -227,28 +228,6 @@ pub fn main_vq_learn(opts: VqLearnOpts) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-/// Formats a number the way C's `%g` does, since it appears in the codebook
-/// filenames and reports and must match for the artifacts to line up.
-fn format_g(v: f64) -> String {
-    let s = format!("{:e}", v);
-    // %g uses the shorter of %e and %f, and drops trailing zeros. For the
-    // exponents these epsilons live at, %f is what it picks.
-    let exp: i32 = s
-        .split('e')
-        .nth(1)
-        .and_then(|e| e.parse().ok())
-        .unwrap_or(0);
-    if (-5..6).contains(&exp) {
-        let mut t = format!("{:.*}", (5 - exp).max(0) as usize, v);
-        if t.contains('.') {
-            t = t.trim_end_matches('0').trim_end_matches('.').to_string();
-        }
-        t
-    } else {
-        s
-    }
-}
-
 /// The Rust implementation of `vq_learn` (`ecoz2/src/vq/vq_learn.i`).
 fn vq_learn_rs_driver(
     base_codebook: Option<String>,
@@ -268,7 +247,7 @@ fn vq_learn_rs_driver(
                 cb.vectors.len(),
                 cb.prediction_order,
                 cb.class_name,
-                format_g(epsilon)
+                pf::g(epsilon)
             );
             (cb.prediction_order, cb.class_name.clone(), Some(cb.vectors))
         }
@@ -278,7 +257,7 @@ fn vq_learn_rs_driver(
                 "\nCodebook generation:\n\nprediction_order={} class='{}'  epsilon={}\n",
                 p,
                 class_name,
-                format_g(epsilon)
+                pf::g(epsilon)
             );
             (p, class_name.to_string(), None)
         }
@@ -299,15 +278,11 @@ fn vq_learn_rs_driver(
         }
         vectors.extend(prd.vectors);
     }
-    println!(
-        "{} training vectors (ε={})",
-        vectors.len(),
-        format_g(epsilon)
-    );
+    println!("{} training vectors (ε={})", vectors.len(), pf::g(epsilon));
 
     let class_dir = PathBuf::from(format!("data/codebooks/{}", class_name));
     std::fs::create_dir_all(&class_dir)?;
-    let prefix = class_dir.join(format!("eps_{}", format_g(epsilon)));
+    let prefix = class_dir.join(format!("eps_{}", pf::g(epsilon)));
 
     let mut rpt = vq_learn_rs::Reporter::new(&prefix, vectors.len(), epsilon)?;
     vq_learn_rs::learn(
@@ -583,7 +558,7 @@ fn vq_show_rs(codebook: &Path, from: i32, to: i32) -> Result<(), Box<dyn Error>>
         println!(
             "{}",
             (from..=to)
-                .map(|k| format_g(refl[k]))
+                .map(|k| pf::g(refl[k]))
                 .collect::<Vec<_>>()
                 .join(",")
         );

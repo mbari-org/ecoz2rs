@@ -58,6 +58,15 @@
   Adds `vq learn --max-codebook-size`; the C always doubles to its compile-time
   maximum.
 
+- Port phase 3 (in progress): `hmm classify --zrs` and `hmm show --zrs`.
+  `hmm classify` reproduces the stored 2020 classification CSV exactly, all 910
+  sequences including the full ranking. Adds `utl::pf`, a small safe stand-in
+  for the printf formats the C accepts — `hmm show` passed its `--format`
+  straight to `printf`, which let the caller inject an arbitrary conversion.
+
+- Fixed: `ecoz2 hmm show` panicked on every invocation, because `--hmm` derived
+  a short `-h` that clap rejects as conflicting with help. Pre-existing.
+
 2026-08
 
 - With the release of Rust [1.98.0](https://blog.rust-lang.org/2026/08/20/Rust-1.98.0/),
