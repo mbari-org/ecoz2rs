@@ -279,7 +279,7 @@ impl Predictor {
     pub fn save(&self, filename: &Path) -> Result<(), Box<dyn Error>> {
         cfmt::save_predictor(
             filename,
-            &cfmt::PredictorData {
+            &cfmt::VectorSet {
                 class_name: self.class_name.clone(),
                 prediction_order: self.prediction_order,
                 vectors: self.vectors.clone(),

@@ -236,16 +236,17 @@ fn write_i32<W: Write>(w: &mut W, v: i32) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-/// A predictor as held in memory: `vectors` has `T` rows of `1 + prediction_order`
-/// normalized autocorrelation values.
-pub struct PredictorData {
+/// A stack of equal-length f64 vectors with a class name: the shape shared by
+/// `<predictor>` (T rows of normalized autocorrelation) and `<codebook>`
+/// (M rows of reflection coefficients), each row `1 + prediction_order` long.
+pub struct VectorSet {
     pub class_name: String,
     pub prediction_order: usize,
     pub vectors: Vec<Vec<f64>>,
 }
 
 /// Writes a `<predictor>` file in the traditional format, as `prd_save` does.
-pub fn save_predictor(path: &Path, prd: &PredictorData) -> Result<(), Box<dyn Error>> {
+pub fn save_predictor(path: &Path, prd: &VectorSet) -> Result<(), Box<dyn Error>> {
     let p = prd.prediction_order;
     let t = prd.vectors.len();
     if t == 0 {
@@ -281,7 +282,7 @@ pub fn save_predictor(path: &Path, prd: &PredictorData) -> Result<(), Box<dyn Er
 }
 
 /// Reads a `<predictor>` file written by either implementation.
-pub fn load_predictor(path: &Path) -> Result<PredictorData, Box<dyn Error>> {
+pub fn load_predictor(path: &Path) -> Result<VectorSet, Box<dyn Error>> {
     let a = load(path)?;
     if a.kind != "predictor" {
         return Err(format!("{}: not a predictor, but a <{}>", path.display(), a.kind).into());
@@ -299,11 +300,85 @@ pub fn load_predictor(path: &Path) -> Result<PredictorData, Box<dyn Error>> {
         _ => return Err(format!("{}: unexpected predictor content", path.display()).into()),
     };
     let vectors = flat.chunks_exact(1 + p).map(|c| c.to_vec()).collect();
-    Ok(PredictorData {
+    Ok(VectorSet {
         class_name: a.class_name,
         prediction_order: p,
         vectors,
     })
+}
+
+/// Writes a `<codebook>` in the traditional format, as `cb_save` does.
+pub fn save_codebook(path: &Path, cb: &VectorSet) -> Result<(), Box<dyn Error>> {
+    let p = cb.prediction_order;
+    if let Some(bad) = cb.vectors.iter().position(|v| v.len() != 1 + p) {
+        return Err(format!(
+            "{}: entry {} has length {}, expected {}",
+            path.display(),
+            bad,
+            cb.vectors[bad].len(),
+            1 + p
+        )
+        .into());
+    }
+    if let Some(dir) = path.parent() {
+        std::fs::create_dir_all(dir)?;
+    }
+    let f = File::create(path)?;
+    let mut bw = BufWriter::new(f);
+    write_ident(&mut bw, "<codebook>")?;
+    write_class_name(&mut bw, &cb.class_name)?;
+    write_i32(&mut bw, p as i32)?;
+    write_i32(&mut bw, cb.vectors.len() as i32)?;
+    for v in &cb.vectors {
+        for x in v {
+            bw.write_all(&x.to_le_bytes())?;
+        }
+    }
+    bw.flush()?;
+    Ok(())
+}
+
+/// Reads a `<codebook>`: M reflection vectors of `1 + P` values, as `cb_load`.
+pub fn load_codebook(path: &Path) -> Result<VectorSet, Box<dyn Error>> {
+    let a = load(path)?;
+    if a.kind != "codebook" {
+        return Err(format!("{}: not a codebook, but a <{}>", path.display(), a.kind).into());
+    }
+    let w = a
+        .row_len
+        .ok_or_else(|| format!("{}: cannot determine P", path.display()))?;
+    let flat = match a.sections.into_iter().next() {
+        Some((_, Section::Floats(v))) => v,
+        _ => return Err(format!("{}: unexpected codebook content", path.display()).into()),
+    };
+    Ok(VectorSet {
+        class_name: a.class_name,
+        prediction_order: w - 1,
+        vectors: flat.chunks_exact(w).map(|c| c.to_vec()).collect(),
+    })
+}
+
+/// Writes a `<sequence>` file as `seq_save` does. `Symbol` is `unsigned short`.
+pub fn save_sequence(
+    path: &Path,
+    class_name: &str,
+    codebook_size: usize,
+    symbols: &[u16],
+) -> Result<(), Box<dyn Error>> {
+    if let Some(dir) = path.parent() {
+        std::fs::create_dir_all(dir)?;
+    }
+    let f = File::create(path)?;
+    let mut bw = BufWriter::new(f);
+    write_ident(&mut bw, "<sequence>")?;
+    write_class_name(&mut bw, class_name)?;
+    write_i32(&mut bw, symbols.len() as i32)?;
+    write_i32(&mut bw, codebook_size as i32)?;
+    for s in symbols {
+        bw.write_all(&s.to_le_bytes())?;
+    }
+    bw.flush()?;
+    Ok(())
 }
 
 #[cfg(test)]

@@ -1,6 +1,7 @@
 extern crate clap;
 
 use std::error::Error;
+use std::path::Path;
 use std::path::PathBuf;
 
 use clap::StructOpt;
@@ -10,6 +11,10 @@ use crate::ecoz2_lib::vq_learn;
 use crate::ecoz2_lib::vq_quantize;
 use crate::ecoz2_lib::vq_show;
 use crate::utl;
+use crate::utl::cfmt;
+
+mod vq_learn_rs;
+mod vq_rs;
 
 use self::EcozVqCommand::{Classify, Learn, Quantize, Show};
 
@@ -66,6 +71,15 @@ pub struct VqLearnOpts {
     /// Only has effect if the COMET_API_KEY env var is defined.
     #[structopt(long)]
     exp_key: Option<String>,
+
+    /// Stop the codebook ladder at this size (Rust implementation only).
+    /// The C always doubles to its compile-time maximum, 4096.
+    #[structopt(long, default_value = "4096")]
+    max_codebook_size: usize,
+
+    /// Use the Rust implementation
+    #[structopt(long)]
+    zrs: bool,
 }
 
 #[derive(StructOpt, Debug)]
@@ -93,6 +107,10 @@ pub struct VqQuantizeOpts {
     /// Show file names as they are processed.
     #[structopt(short, long)]
     show_filenames: bool,
+
+    /// Use the Rust implementation
+    #[structopt(long)]
+    zrs: bool,
 }
 
 #[derive(StructOpt, Debug)]
@@ -156,6 +174,8 @@ pub fn main_vq_learn(opts: VqLearnOpts) -> Result<(), Box<dyn Error>> {
         class_name,
         predictors,
         exp_key,
+        max_codebook_size,
+        zrs,
     } = opts;
 
     if let (Some(_), Some(_)) = (&base_codebook, prediction_order) {
@@ -175,15 +195,134 @@ pub fn main_vq_learn(opts: VqLearnOpts) -> Result<(), Box<dyn Error>> {
         ".prd",
     )?;
 
-    vq_learn(
-        base_codebook,
-        prediction_order,
-        epsilon,
-        codebook_class_name,
-        prd_filenames,
-        exp_key,
+    if zrs {
+        vq_learn_rs_driver(
+            base_codebook,
+            prediction_order,
+            epsilon,
+            &codebook_class_name,
+            &prd_filenames,
+            max_codebook_size,
+        )?;
+    } else {
+        vq_learn(
+            base_codebook,
+            prediction_order,
+            epsilon,
+            codebook_class_name,
+            prd_filenames,
+            exp_key,
+        );
+    }
+
+    Ok(())
+}
+
+/// Formats a number the way C's `%g` does, since it appears in the codebook
+/// filenames and reports and must match for the artifacts to line up.
+fn format_g(v: f64) -> String {
+    let s = format!("{:e}", v);
+    // %g uses the shorter of %e and %f, and drops trailing zeros. For the
+    // exponents these epsilons live at, %f is what it picks.
+    let exp: i32 = s
+        .split('e')
+        .nth(1)
+        .and_then(|e| e.parse().ok())
+        .unwrap_or(0);
+    if (-5..6).contains(&exp) {
+        let mut t = format!("{:.*}", (5 - exp).max(0) as usize, v);
+        if t.contains('.') {
+            t = t.trim_end_matches('0').trim_end_matches('.').to_string();
+        }
+        t
+    } else {
+        s
+    }
+}
+
+/// The Rust implementation of `vq_learn` (`ecoz2/src/vq/vq_learn.i`).
+fn vq_learn_rs_driver(
+    base_codebook: Option<String>,
+    prediction_order: Option<usize>,
+    epsilon: f64,
+    class_name: &str,
+    prd_filenames: &[PathBuf],
+    max_codebook_size: usize,
+) -> Result<(), Box<dyn Error>> {
+    // With a base codebook, P and the class come from it, as in the C.
+    let (p, class_name, base_reflections) = match &base_codebook {
+        Some(bc) => {
+            let cb = cfmt::load_codebook(Path::new(bc))?;
+            println!(
+                "\nCodebook generation:\n\nbase_codebook: {}  num_vecs={} prediction_order={} class='{}'  epsilon={}\n",
+                bc,
+                cb.vectors.len(),
+                cb.prediction_order,
+                cb.class_name,
+                format_g(epsilon)
+            );
+            (cb.prediction_order, cb.class_name.clone(), Some(cb.vectors))
+        }
+        None => {
+            let p = prediction_order.ok_or("-P is required when -B is not given")?;
+            println!(
+                "\nCodebook generation:\n\nprediction_order={} class='{}'  epsilon={}\n",
+                p,
+                class_name,
+                format_g(epsilon)
+            );
+            (p, class_name.to_string(), None)
+        }
+    };
+
+    // Load all training vectors up front, as the C does.
+    let mut vectors: Vec<Vec<f64>> = Vec::new();
+    for f in prd_filenames {
+        let prd = cfmt::load_predictor(f)?;
+        if prd.prediction_order != p {
+            return Err(format!(
+                "{}: prediction order {} does not match {}",
+                f.display(),
+                prd.prediction_order,
+                p
+            )
+            .into());
+        }
+        vectors.extend(prd.vectors);
+    }
+    println!(
+        "{} training vectors (ε={})",
+        vectors.len(),
+        format_g(epsilon)
     );
 
+    let class_dir = PathBuf::from(format!("data/codebooks/{}", class_name));
+    std::fs::create_dir_all(&class_dir)?;
+    let prefix = class_dir.join(format!("eps_{}", format_g(epsilon)));
+
+    let mut rpt = vq_learn_rs::Reporter::new(&prefix, vectors.len(), epsilon)?;
+    vq_learn_rs::learn(
+        &class_name,
+        p,
+        epsilon,
+        &vectors,
+        base_reflections,
+        max_codebook_size,
+        &prefix,
+        |report, filename| {
+            println!(
+                "{}  ({} passes)  DP={} σ={} inertia={}",
+                filename.display(),
+                report.passes,
+                report.avg_distortion,
+                report.sigma,
+                report.inertia
+            );
+            if let Err(e) = rpt.add(report, filename) {
+                eprintln!("error writing report: {}", e);
+            }
+        },
+    )?;
     Ok(())
 }
 
@@ -195,6 +334,7 @@ pub fn main_vq_quantize(opts: VqQuantizeOpts) -> Result<(), Box<dyn Error>> {
         tt,
         class_name,
         show_filenames,
+        zrs,
     } = opts;
 
     let tt = tt.unwrap_or_default();
@@ -210,8 +350,74 @@ pub fn main_vq_quantize(opts: VqQuantizeOpts) -> Result<(), Box<dyn Error>> {
 
     println!("number of predictor files: {}", prd_filenames.len());
 
-    vq_quantize(codebook, prd_filenames, show_filenames);
+    if zrs {
+        vq_quantize_rs(&codebook, &prd_filenames, show_filenames)?;
+    } else {
+        vq_quantize(codebook, prd_filenames, show_filenames);
+    }
 
+    Ok(())
+}
+
+/// The Rust implementation of `vq_quantize` (`ecoz2/src/vq/vq_quantize.c`).
+///
+/// Writes `data/sequences/M<M>/<class>/<stem>.seq` in the traditional format,
+/// so the output is interchangeable with the C's.
+fn vq_quantize_rs(
+    codebook: &Path,
+    prd_filenames: &[PathBuf],
+    show_filenames: bool,
+) -> Result<(), Box<dyn Error>> {
+    let cb = cfmt::load_codebook(codebook)?;
+    let m = cb.vectors.len();
+    let quantizer = vq_rs::Codebook::from_reflections(&cb.vectors, cb.prediction_order);
+    println!("{}: {} symbols", codebook.display(), m);
+
+    let mut ddprm_total = 0f64;
+    let mut num_seqs = 0usize;
+
+    for prd_filename in prd_filenames {
+        let prd = cfmt::load_predictor(prd_filename)?;
+        if prd.prediction_order != cb.prediction_order {
+            return Err(format!(
+                "{}: prediction order {} does not match the codebook's {}",
+                prd_filename.display(),
+                prd.prediction_order,
+                cb.prediction_order
+            )
+            .into());
+        }
+
+        let (symbols, ddprm) = vq_rs::quantize(&quantizer, &prd.vectors);
+        ddprm_total += ddprm;
+        num_seqs += 1;
+
+        // The class recorded in the sequence comes from the predictor's path,
+        // as `get_class_name` does; the C does not take it from the predictor.
+        let class_name = utl::class_name_of(prd_filename);
+        if class_name.is_empty() {
+            println!("WARN {}: no className", prd_filename.display());
+        }
+        let out = utl::output_filename(prd_filename, &format!("sequences/M{}", m), ".seq");
+        cfmt::save_sequence(&out, &class_name, m, &symbols)?;
+
+        if show_filenames {
+            println!(
+                "{} className='{}' ({:1.4})",
+                out.display(),
+                class_name,
+                ddprm
+            );
+        }
+    }
+
+    if num_seqs > 0 {
+        println!(
+            "\ntotal: {} sequences; total  average distortion = {}",
+            num_seqs,
+            ddprm_total / num_seqs as f64
+        );
+    }
     Ok(())
 }
 

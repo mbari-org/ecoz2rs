@@ -398,6 +398,7 @@ dependencies = [
  "num_cpus",
  "openmp-sys",
  "rand",
+ "rayon",
  "regex",
  "serde",
  "serde-pickle",

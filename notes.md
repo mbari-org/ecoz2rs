@@ -125,7 +125,7 @@ Judge that stage by its classification output.
 |---|---|---|
 | 0 | golden corpus + differential harness; `utl::cfmt` readers; `util cmp` | **done** |
 | 1 | LPC all-Rust: `libpar`/`lpc_rs` onto `lpca3`, port `lpc_signals`, write the C-compatible `.prd` | **done** |
-| 2 | VQ: LBG/Juang, quantize, classify, report; `rayon` for `vq_learn_par` | next |
+| 2 | VQ: LBG/Juang, quantize, classify, report; `rayon` for `vq_learn_par` | learn + quantize **done**; classify and show next |
 | 3 | HMM: Baum-Welch, scaled forward-backward, Viterbi, `estimateB`, B-epsilon | |
 | 4 | delete FFI, `build.rs`, submodule, `openmp-sys`; revisit packaging | |
 
@@ -179,6 +179,75 @@ changed" and reports the counts; `--allow-permutation` (or `ALLOW_PERM=1` in
 touches VQ, and not read a raw symbol-agreement drop as a modeling difference
 without checking for it first.
 
+### Phase 2 result so far (VQ learn and quantize)
+
+`vq learn --zrs` and `vq quantize --zrs` are ported. `vq classify` and
+`vq show` are not yet, and still fall back to the C.
+
+**Agreement.** `vq learn`'s report table matches the C on all twelve codebook
+sizes — passes, DDprm, σ and inertia, every row. The codebooks themselves agree
+to 3.6e-10, and the full Rust VQ path (learn then quantize) is symbol-identical
+to the full C path:
+
+| test | scale | result |
+|---|---:|---|
+| Rust quantize vs C quantize, M=32…256 | 4 × 85,479 symbols | zero flips |
+| Rust quantize vs the **stored 2020 sequences**, using the stored 2020 codebooks | 372,372 symbols at M=2048 and M=4096 | zero flips |
+| Rust learn + Rust quantize vs C learn + C quantize | 4 × 85,479 symbols | zero flips |
+
+The middle row is the sharper one: it exercises the quantizer in isolation
+against a six-year-old C oracle, with the codebook held fixed.
+
+No codeword transpositions show up when both `vq learn` runs are given the
+*same* predictors — no near-tied cell has anything to tip it. They reappear as
+soon as the input changes: running the whole pipeline on Rust through quantize
+(Rust predictors into Rust learn) gives 72 transpositions at M≥2048, and still
+zero symbol flips at the sizes used downstream. So the phase 1 finding holds,
+and `ALLOW_PERM=1` is the right setting for any end-to-end comparison that
+retrains a codebook.
+
+End to end, C versus Rust-through-quantize on the quick tier: sequences
+identical over 341,916 symbols, HMM models bit-identical, classification
+identical on TRAIN and TEST, +0.00 pp.
+
+**Performance**, quick tier, 68,219 training vectors, 16 cores:
+
+| | C (OpenMP) | Rust (rayon) | |
+|---|---:|---:|---|
+| `vq learn`, ladder to M=4096 | 6.87 s real / 46.7 s user | **3.44 s** / 35.1 s | 2.0x wall, 1.33x less CPU |
+| `vq quantize`, M=4096 | 1.67 s / 1.55 s | **1.14 s** / 1.05 s | 1.5x, single-threaded both |
+| `lpc`, full tier | 2 s | 1 s | |
+
+Building with `-C target-cpu=native` changes none of this here (3.93 s vs
+3.44 s real on `vq learn`, identical user time): baseline aarch64 already has
+NEON and FMA, so there is nothing for it to unlock. See the revised note under
+"Decisions taken".
+
+**The C's `vq learn` depends on the core count.** It partitions the training
+vectors round-robin across `omp_get_max_threads()` and sums the per-thread
+partials in thread order, so the reduction order — and the codebook — changes
+with the machine. Measured on the quick tier: 8.4e-11 relative between 1 and 4
+threads, 9.3e-11 between 1 and 16, growing with M. No RNG is involved; this is
+purely reduction order, and it is a better explanation of the 5.9e-9 codebook
+gap against the 2020 oracle than "LBG float noise" was.
+
+The port fixes this rather than reproducing it: the Rust version splits the
+vectors into a *fixed* number of chunks, independent of available parallelism,
+and merges them in chunk order. `RAYON_NUM_THREADS=1` and `=16` give
+byte-identical codebooks. That is also why it is not bit-identical to the C, and
+should not be.
+
+**Two details that had to be right.** `pert0`/`pert1` in `grow_codebook` are
+`float` literals multiplied into a `double`, so the values actually applied are
+`0.99f32 as f64` and `1.01f32 as f64`; using the f64 literals would be 9.5e-9
+off and would send the whole ladder down a different path. And the codebook in
+the autocorrelation domain is derived from the reflections only at init and at
+each growth — inside the loop `calculate_reflections` writes each new entry
+straight from the predictor and never round-trips back through `lpca_rc`.
+
+Also landed: `vq learn --max-codebook-size`, the backlog item, since the ladder
+was being written fresh anyway.
+
 ### Decisions taken
 
 - **Where algebraic float ops are allowed.** Relax arithmetic in reductions over
@@ -201,6 +270,28 @@ without checking for it first.
   no headroom, the stage is memory-bound over B rather than flop-bound, and the
   scaling factors are the whole basis of the Shen-2008 formulation's stability.
   Spend the effort there on `rayon` across sequences instead.
+- **The `--zrs` flag is temporary, and its polarity will flip.** Today `--zrs`
+  opts *into* the Rust implementation and the C is the default, which is the
+  convention `lpc` and `prd show` already used. That is right while the port is
+  in progress: the default stays the known-good C, and the harness opts in
+  explicitly.
+
+  Flip it once, at the end of phase 3, rather than per stage — mixed polarity
+  across subcommands would be a standing source of mistakes. At that point every
+  stage has a Rust implementation and the C exists only as a differential
+  oracle, so the natural form is: no flag at all in a normal build, and a `-c`
+  opt-in that exists only under the `c-oracle` feature. `--zrs` is then deleted
+  rather than renamed; it never becomes part of the shipped interface. Phase 4
+  removes the oracle and the flag with it.
+
+  In the harness this is a one-line change: `stage_flags` in `run.sh` emits
+  `--zrs` for Rust and `""` for C today, and would emit `""` for Rust and `-c`
+  for C afterwards.
+
+  Note `--zrsp` (the threaded LPC variant) is a different axis and should not
+  survive as an implementation flag; parallelism belongs in a `--jobs`-style
+  option or is simply left to rayon.
+
 - **Determinism.** Port RNG use to `rand`'s `ChaCha`/`StdRng`. `rand()`/`srand()`
   are libc-specific, so seeded runs are *already* not reproducible across
   platforms; this is a fix, not a risk. Every source of randomness should take
@@ -208,6 +299,13 @@ without checking for it first.
   `util split` now has one too, and also sorts its input, since the shuffled
   markers are zipped positionally against a filesystem walk whose order is not
   guaranteed.
+
+  Randomness is not the only source: **parallel reductions need a fixed order
+  too**. The C's `vq learn` partitions across `omp_get_max_threads()` and sums
+  in thread order, so its codebooks depend on the core count. Every ported
+  parallel reduction should chunk by a fixed size rather than by the thread
+  count and merge in chunk order, so the result does not depend on how the work
+  is scheduled.
 - **File formats: later, deliberately.** Keep reading the traditional formats
   at least for time being.
   Once there is a single writer, add an opt-in modern one — `.prd` and
@@ -217,19 +315,24 @@ without checking for it first.
   no endianness marker, and no record of the `prob_t` width the writer used, so
   a mismatched build misreads silently.
 - **`target-cpu` when benchmarking.** `build.rs` passes `-march=native` to the
-  C while a plain `cargo build --release` leaves Rust at the baseline, so use
-  `just release-native`, or set `-C target-cpu` explicitly, for every comparison.
-  (What the *released* binaries should be built with is a separate
-  question; leave it until the port works locally.)
+  C while a plain `cargo build --release` leaves Rust at the baseline. Measured
+  on aarch64 this makes no difference — `-C target-cpu=native` moved `vq learn`
+  from 3.44 s to 3.93 s real with identical user time, i.e. noise, since
+  baseline aarch64 already has NEON and FMA. It would matter on x86_64, whose
+  baseline has no FMA at all. So state the target when quoting a Rust-vs-C
+  number, and set `-C target-cpu` explicitly before comparing there. (What the
+  *released* binaries should be built with is a separate question; leave it
+  until the port works locally.)
 
 ### Backlog (small, found while building the harness)
 
-- `vq learn --max-codebook-size`: the ladder always doubles to
-  `MAX_CODEBOOK_SIZE`. Today you kill it and resume with `-B`, which is lossless
-  — each size is saved on convergence and resuming from M=256 reproduces
-  512…4096 byte-identically. But `prepare_report` opens with `"w"`, so a resumed
-  run truncates `eps_<ε>.rpt`/`.rpt.csv` to only the sizes it produced. Add the
-  stop flag; make the report append on resume.
+- `vq learn --max-codebook-size` — **added in phase 2**. The C ladder always
+  doubles to `MAX_CODEBOOK_SIZE`; you kill it and resume with `-B`, which is
+  lossless (each size is saved on convergence, and resuming from M=256
+  reproduces 512…4096 byte-identically), so the flag was ergonomics rather than
+  a capability gap. Still open: `prepare_report` opens with `"w"`, so a resumed
+  run truncates `eps_<ε>.rpt`/`.rpt.csv` to only the sizes it produced. Make the
+  report append on resume.
 - `-m` means two different things: instances in the label file for
   `sgn extract`, signal files present for `lpc`. Unify.
 - Fixed: `sgn extract --time-ranges` containment test was inverted, and giving
