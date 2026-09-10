@@ -101,6 +101,23 @@ pub fn quantize_one(cb: &Codebook, rx: &[f64]) -> (usize, f64) {
     (i_min, ddmin)
 }
 
+/// Average distortion of a predictor against the codebook, without building
+/// the symbol sequence. This is what classification needs: `cbook_quantize` is
+/// called there with a null `seq`.
+pub fn average_distortion(cb: &Codebook, vectors: &[Vec<f64>]) -> f64 {
+    if vectors.is_empty() {
+        return 0.;
+    }
+    let ddprm: f64 = vectors
+        .iter()
+        .map(|rx| {
+            let (_, ddmin) = quantize_one(cb, rx);
+            ddmin - 1.
+        })
+        .sum();
+    ddprm / vectors.len() as f64
+}
+
 pub fn quantize(cb: &Codebook, vectors: &[Vec<f64>]) -> (Vec<u16>, f64) {
     let mut symbols = Vec::with_capacity(vectors.len());
     let mut ddprm = 0f64;

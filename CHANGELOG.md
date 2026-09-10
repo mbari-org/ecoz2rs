@@ -44,6 +44,20 @@
   It also sorts its input now: the shuffled markers are zipped positionally
   against a filesystem walk, whose order is not guaranteed.
 
+- Port phase 2: VQ in Rust — `vq learn`, `vq quantize`, `vq classify`,
+  `vq show`, each behind `--zrs`. The learn ladder matches the C's report on all
+  twelve codebook sizes, the full Rust VQ path is symbol-identical to the C's,
+  `vq classify` reproduces the confusion matrix cell for cell, and `vq show` is
+  byte-identical. 2.0x faster on `vq learn`, 1.5x on `vq quantize`.
+
+  The C's `vq learn` sums per-thread partials in thread order, so its codebooks
+  depend on the machine's core count (~9e-11 between 1 and 16 threads, growing
+  with M). The Rust version chunks by a fixed size instead, and gives identical
+  output at any `RAYON_NUM_THREADS`.
+
+  Adds `vq learn --max-codebook-size`; the C always doubles to its compile-time
+  maximum.
+
 2026-08
 
 - With the release of Rust [1.98.0](https://blog.rust-lang.org/2026/08/20/Rust-1.98.0/),

@@ -125,8 +125,8 @@ Judge that stage by its classification output.
 |---|---|---|
 | 0 | golden corpus + differential harness; `utl::cfmt` readers; `util cmp` | **done** |
 | 1 | LPC all-Rust: `libpar`/`lpc_rs` onto `lpca3`, port `lpc_signals`, write the C-compatible `.prd` | **done** |
-| 2 | VQ: LBG/Juang, quantize, classify, report; `rayon` for `vq_learn_par` | learn + quantize **done**; classify and show next |
-| 3 | HMM: Baum-Welch, scaled forward-backward, Viterbi, `estimateB`, B-epsilon | |
+| 2 | VQ: LBG/Juang, quantize, classify, report; `rayon` for `vq_learn_par` | **done** |
+| 3 | HMM: Baum-Welch, scaled forward-backward, Viterbi, `estimateB`, B-epsilon | next |
 | 4 | delete FFI, `build.rs`, submodule, `openmp-sys`; revisit packaging | |
 
 Order follows the data flow, so a hybrid pipeline always runs and each phase
@@ -179,10 +179,15 @@ changed" and reports the counts; `--allow-permutation` (or `ALLOW_PERM=1` in
 touches VQ, and not read a raw symbol-agreement drop as a modeling difference
 without checking for it first.
 
-### Phase 2 result so far (VQ learn and quantize)
+### Phase 2 result (VQ)
 
-`vq learn --zrs` and `vq quantize --zrs` are ported. `vq classify` and
-`vq show` are not yet, and still fall back to the C.
+All of VQ is ported: `vq learn`, `vq quantize`, `vq classify` and `vq show`,
+each behind `--zrs`.
+
+`vq classify` reproduces the C's confusion matrix cell for cell, with identical
+per-class accuracy and candidate-order counts; only the column padding differs,
+which is the existing `c12n` formatting that `nb` and `mm` already share.
+`vq show` output is byte-identical, `%g` formatting included.
 
 **Agreement.** `vq learn`'s report table matches the C on all twelve codebook
 sizes — passes, DDprm, σ and inertia, every row. The codebooks themselves agree
