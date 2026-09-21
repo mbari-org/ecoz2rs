@@ -7,7 +7,6 @@ use std::time::Instant;
 
 use clap::StructOpt;
 
-use crate::ecoz2_lib::lpc_signals;
 use crate::prd::Predictor;
 use crate::sgn;
 use crate::utl;
@@ -36,12 +35,6 @@ pub struct LpcOpts {
     #[structopt(short = 'm', long, default_value = "0")]
     minpc: usize,
 
-    /// Put the generated predictors into two different training
-    /// and test subsets (with the given approx ratio).
-    /// DEPRECATED.
-    #[structopt(short = 's', long, default_value = "0")]
-    split: f32,
-
     /// Signal files to process. If directories are included, then
     /// all `.wav` under them will be used.
     /// If a `.csv` is given, then it's assumed to contain columns
@@ -65,13 +58,9 @@ pub struct LpcOpts {
     #[structopt(short = 'X', default_value = "5")]
     mintrpt: f32,
 
-    /// Use Rust "parallel" implementation
+    /// Use the multi-threaded LP analysis
     #[structopt(long)]
-    zrsp: bool,
-
-    /// Use Rust implementation
-    #[structopt(long)]
-    zrs: bool,
+    par: bool,
 
     #[structopt(long)]
     verbose: bool,
@@ -91,14 +80,12 @@ pub fn main_lpc(opts: LpcOpts) -> Result<(), Box<dyn Error>> {
         window_length_ms,
         offset_length_ms,
         minpc,
-        split,
         signals,
         signals_dir_template,
         tt,
         class,
         mintrpt,
-        zrsp,
-        zrs,
+        par,
         verbose,
     } = opts;
 
@@ -116,34 +103,16 @@ pub fn main_lpc(opts: LpcOpts) -> Result<(), Box<dyn Error>> {
     // println!("sgn_filenames = {:?}", sgn_filenames);
     // return Ok(()).into();
 
-    if zrs || zrsp {
-        if split > 0. {
-            return Err("--split is deprecated and unsupported by the Rust implementation".into());
-        }
-        lpc_signals_rs(
-            sgn_filenames,
-            prediction_order,
-            window_length_ms,
-            offset_length_ms,
-            minpc,
-            mintrpt,
-            zrsp,
-            verbose,
-        )?;
-    } else {
-        lpc_signals(
-            prediction_order,
-            window_length_ms,
-            offset_length_ms,
-            minpc,
-            split,
-            sgn_filenames,
-            mintrpt,
-            verbose,
-        );
-    }
-
-    Ok(())
+    lpc_signals_rs(
+        sgn_filenames,
+        prediction_order,
+        window_length_ms,
+        offset_length_ms,
+        minpc,
+        mintrpt,
+        par,
+        verbose,
+    )
 }
 
 /// The Rust implementation of `lpc_signals` (`ecoz2/src/lpc/lpc_signals.c`).
@@ -152,9 +121,9 @@ pub fn main_lpc(opts: LpcOpts) -> Result<(), Box<dyn Error>> {
 /// predictor to `data/predictors/<class>/<stem>.prd` in the traditional format,
 /// so the output is interchangeable with the C's.
 ///
-/// The C shuffles each class's file list before processing. That only affects
-/// the TRAIN/TEST assignment under the deprecated `--split`, which this path
-/// rejects, so the shuffle is not reproduced and the outputs are identical.
+/// The C shuffled each class's file list before processing. That only affected
+/// the TRAIN/TEST assignment under its `--split` option, which `util split`
+/// supersedes, so the shuffle is not reproduced and the outputs are identical.
 #[allow(clippy::too_many_arguments)]
 fn lpc_signals_rs(
     sgn_filenames: Vec<PathBuf>,

@@ -7,7 +7,6 @@ use std::path::PathBuf;
 
 use clap::StructOpt;
 
-use crate::ecoz2_lib::prd_show_file;
 use crate::lpc::lpca_cepstrum_rs::lpca_get_cepstrum;
 use crate::lpc::lpca_r_rs::lpca_r;
 use crate::utl::cfmt;
@@ -54,10 +53,6 @@ pub struct PrdShowOpts {
     #[structopt(parse(from_os_str))]
     file: PathBuf,
 
-    /// Use Rust implementation
-    #[structopt(long)]
-    zrs: bool,
-
     /// Export the extracted data into the given file (in pickle format).
     #[structopt(long, name = "filename", parse(from_os_str))]
     pickle: Option<PathBuf>,
@@ -81,26 +76,19 @@ pub fn prd_show(opts: PrdShowOpts) -> Result<(), Box<dyn Error>> {
         from,
         to,
         file,
-        zrs,
         pickle,
     } = opts;
 
-    if zrs {
-        prd_show_rs(
-            file,
-            show_predictors,
-            show_reflections,
-            show_cepstrum,
-            from,
-            to,
-            pickle,
-        )
-    } else {
-        prd_show_file(file, show_reflections, from, to)
-    }
+    prd_show_rs(
+        file,
+        show_predictors,
+        show_reflections,
+        show_cepstrum,
+        from,
+        to,
+        pickle,
+    )
 }
-
-// NOTE: for Rust implementation (preliminary)
 
 fn prd_show_rs(
     prd_filename: PathBuf,

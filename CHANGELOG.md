@@ -1,3 +1,33 @@
+2026-09  -- 0.8.0
+
+- **Pure Rust.** The C implementation is gone. `src/ecoz2_lib`,
+  `src/comet_client`, `build.rs`, the `ecoz2` submodule, and the `cc`,
+  `openmp-sys`, `libc`, `attohttpc` and `lazy_static` dependencies are all
+  removed. Building no longer requires a C compiler or
+  `CC`. The file formats are unchanged, so artifacts stay interchangeable with
+  the C's; the C remains available at <https://github.com/ecoz2/ecoz2> and in
+  this crate up to v0.7.5.
+
+- Phase 4 of the port. `hmm classify --predictors` is implemented in Rust
+  (`hmm_classify_predictors_rs`): each `.prd` is quantized with every model's
+  own codebook and the resulting sequence scored by that model, as the C's
+  `seq_provider` predictor path does. This was the last subcommand with no Rust
+  implementation.
+
+- Removed, being C-only:
+
+  - the `cversion` subcommand,
+  - `hmm learn --ser` (it toggled the C's OpenMP),
+  - `lpc --split` (deprecated; use `util split`),
+  - `vq learn --exp-key` and the comet.ml logging behind it.
+
+- `--zrs` is removed from every subcommand — Rust is now the only
+  implementation. `lpc --zrsp` becomes `lpc --par`, which is what it selected
+  all along: the multi-threaded LP analysis.
+
+- The `lpca_c` benchmark arm went with the submodule. `lpca1`/`lpca2`/`lpca3`
+  remain.
+
 2026-09
 
 - Starting the port of the C implementation to Rust, on branch `2026-09_port_to_rust`.  

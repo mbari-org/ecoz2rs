@@ -6,20 +6,14 @@ extern crate colored;
 extern crate itertools;
 extern crate ndarray;
 extern crate num_cpus;
-extern crate openmp_sys;
 extern crate serde;
 extern crate serde_json;
-
-#[macro_use]
-extern crate lazy_static;
 
 use clap::Parser;
 use clap::StructOpt;
 
 mod c12n;
-mod comet_client;
 mod csvutil;
-mod ecoz2_lib;
 mod hmm;
 mod lpc;
 mod mm;
@@ -36,9 +30,6 @@ mod vq;
 #[structopt(global_setting(clap::AppSettings::ColoredHelp))]
 #[clap(version, about = "ECOZ2 System", long_about = None)]
 enum Ecoz {
-    #[structopt(about = "Show version of C code")]
-    Cversion,
-
     #[structopt(about = "Basic csv selection info")]
     CsvShow(csvutil::CsvShowOpts),
 
@@ -72,10 +63,6 @@ enum Ecoz {
 
 fn main() {
     match Ecoz::parse() {
-        Ecoz::Cversion => {
-            println!("ecoz2/C {}", ecoz2_lib::version().unwrap());
-        }
-
         Ecoz::CsvShow(opts) => {
             csvutil::main_csv_show(opts);
         }

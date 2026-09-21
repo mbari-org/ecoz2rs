@@ -127,7 +127,7 @@ Judge that stage by its classification output.
 | 1 | LPC all-Rust: `libpar`/`lpc_rs` onto `lpca3`, port `lpc_signals`, write the C-compatible `.prd` | **done** |
 | 2 | VQ: LBG/Juang, quantize, classify, report; `rayon` for `vq_learn_par` | **done** |
 | 3 | HMM: Baum-Welch, scaled forward-backward, Viterbi, `estimateB`, B-epsilon | **done** |
-| 4 | delete FFI, `build.rs`, submodule, `openmp-sys`; revisit packaging | next — see "Phase 4 plan" |
+| 4 | port `hmm classify --predictors`; delete FFI, `build.rs`, submodule, `openmp-sys` | **done** — see "Phase 4 result" |
 
 Order follows the data flow, so a hybrid pipeline always runs and each phase
 diffs against the C. Phase 3 is the delicate one: the scaling and log-domain
@@ -142,9 +142,12 @@ interchangeable at that boundary.
 skipping it, so a complete classification result is available at every phase and
 each one can be judged on what it does to the final numbers.
 
-After phase 4, keep the C behind an off-by-default `c-oracle` Cargo feature:
-`build.rs` stays for differential tests, but nobody building or installing the
-tool needs gcc.
+The `c-oracle` plan below — keeping the C behind an off-by-default Cargo
+feature — was **dropped** at phase 4. With the differential harness having
+validated every stage, a retained oracle bought little against the cost of
+keeping `build.rs`, the submodule and gcc alive in the tree. The C remains
+available where it always was: [ecoz2](https://github.com/ecoz2/ecoz2), and in
+this crate's own history up to v0.7.5.
 
 ### Phase 1 result
 
@@ -334,6 +337,46 @@ logs `csv_add_line(num_refinements + 1, ...)` *after* incrementing, so index 1
 is never emitted and a one-refinement run writes rows 0 and 2. The stored 2020
 traces show this. The port emits 0…n and does not reproduce the off-by-one.
 
+### Phase 4 result (the C is gone)
+
+Decided against the `c-oracle` feature: with every stage validated the retained
+oracle was not worth keeping `build.rs`, the submodule and gcc alive. Straight
+cutover to pure Rust instead.
+
+Deleted: `src/ecoz2_lib` (593 lines), `src/comet_client`, `build.rs`, the
+`ecoz2` submodule and `.gitmodules`, and the `cc`, `openmp-sys`, `libc`, `attohttpc` and `lazy_static`
+dependencies. `cargo build` no longer needs a C compiler and no longer sets
+`CC`; CI and the release workflow drop `submodules: recursive` along with it.
+
+One gap had to be closed first: `hmm classify --predictors` had no Rust
+implementation. It is now `hmm_classify_predictors_rs`, which mirrors the C's
+`seq_provider` predictor path — each `.prd` quantized with every model's own
+codebook (codebook `r` belongs to model `r`, positional, as the C asserts by
+class name), each resulting sequence scored by that model. The class comes from
+the predictor's recorded `className`, not from its path, which is where this
+differs from `vq quantize`; and an unmodelled class is reported once, as the C's
+`not_loaded_models` list does. The per-instance c12n CSV writer is now shared
+with the sequences path (`C12nCsv`).
+
+`seq show -P` / `-Q` stay TODO. They were never a regression here: the
+`ecoz2_seq_show_files` call had been commented out for years, so those flags
+were already no-ops before the C left.
+
+Also removed, being C-only: the `cversion` subcommand, `set_random_seed`,
+`hmm learn --ser` (it toggled the C's OpenMP), and `lpc --split` (deprecated,
+and superseded by `util split`). `--zrs` is deleted everywhere. `lpc --zrsp`
+becomes `lpc --par`, which is what it always meant — the multi-threaded LP
+analysis, not an implementation choice.
+
+The `lpca_c` benchmark arm went with the submodule, so there is no longer an
+in-tree reference for the ~4x the C's `-ffast-math` build showed against
+`lpca1`/`lpca2`. `lpca3` closed that gap and is what ships; the historical
+numbers stay in the bench file's comment.
+
+Still open from the phase 4 plan: item 4, revisiting the inherited caps
+(`MAX_SEQS 4096`, `MAX_MODELS 256`, `MAX_CODEBOOK_SIZE 4096`,
+`MAX_PREDICTION_ORDER 200`) as deliberate choices rather than inherited ones.
+
 ### Phase 4 plan
 
 The goal is to delete the C: `src/ecoz2_lib` (593 lines, and **every `unsafe`
@@ -417,6 +460,10 @@ discrepancy findable.
   In the harness this is a one-line change: `stage_flags` in `run.sh` emits
   `--zrs` for Rust and `""` for C today, and would emit `""` for Rust and `-c`
   for C afterwards.
+
+  **Superseded at phase 4**: there is no `-c` and no `c-oracle`. `--zrs` was
+  deleted outright, with no deprecation window — it only ever existed for the
+  port — and `stage_flags` emits `""` for every stage.
 
   Note `--zrsp` (the threaded LPC variant) is a different axis and should not
   survive as an implementation flag; parallelism belongs in a `--jobs`-style

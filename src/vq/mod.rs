@@ -7,16 +7,12 @@ use std::path::PathBuf;
 use clap::StructOpt;
 
 use crate::c12n;
-use crate::ecoz2_lib::vq_classify;
-use crate::ecoz2_lib::vq_learn;
-use crate::ecoz2_lib::vq_quantize;
-use crate::ecoz2_lib::vq_show;
 use crate::utl;
 use crate::utl::cfmt;
 use crate::utl::pf;
 
 mod vq_learn_rs;
-mod vq_rs;
+pub mod vq_rs;
 
 use self::EcozVqCommand::{Classify, Learn, Quantize, Show};
 
@@ -69,19 +65,9 @@ pub struct VqLearnOpts {
     #[structopt(long, parse(from_os_str), name = "files")]
     predictors: Vec<PathBuf>,
 
-    /// Experiment key to log to comet.
-    /// Only has effect if the COMET_API_KEY env var is defined.
-    #[structopt(long)]
-    exp_key: Option<String>,
-
-    /// Stop the codebook ladder at this size (Rust implementation only).
-    /// The C always doubles to its compile-time maximum, 4096.
+    /// Stop the codebook ladder at this size.
     #[structopt(long, default_value = "4096")]
     max_codebook_size: usize,
-
-    /// Use the Rust implementation
-    #[structopt(long)]
-    zrs: bool,
 }
 
 #[derive(StructOpt, Debug)]
@@ -109,10 +95,6 @@ pub struct VqQuantizeOpts {
     /// Show file names as they are processed.
     #[structopt(short, long)]
     show_filenames: bool,
-
-    /// Use the Rust implementation
-    #[structopt(long)]
-    zrs: bool,
 }
 
 #[derive(StructOpt, Debug)]
@@ -135,10 +117,6 @@ pub struct VqClassifyOpts {
     /// Otherwise, if directories are included, then all `.prd` under them will be used.
     #[structopt(long, required = true, min_values = 1, parse(from_os_str))]
     predictors: Vec<PathBuf>,
-
-    /// Use the Rust implementation
-    #[structopt(long)]
-    zrs: bool,
 }
 
 #[derive(StructOpt, Debug)]
@@ -154,10 +132,6 @@ pub struct VqShowOpts {
     /// Codebook.
     #[structopt(parse(from_os_str))]
     codebook: PathBuf,
-
-    /// Use the Rust implementation
-    #[structopt(long)]
-    zrs: bool,
 }
 
 pub fn main(opts: VqMainOpts) {
@@ -183,9 +157,7 @@ pub fn main_vq_learn(opts: VqLearnOpts) -> Result<(), Box<dyn Error>> {
         epsilon,
         class_name,
         predictors,
-        exp_key,
         max_codebook_size,
-        zrs,
     } = opts;
 
     if let (Some(_), Some(_)) = (&base_codebook, prediction_order) {
@@ -205,27 +177,14 @@ pub fn main_vq_learn(opts: VqLearnOpts) -> Result<(), Box<dyn Error>> {
         ".prd",
     )?;
 
-    if zrs {
-        vq_learn_rs_driver(
-            base_codebook,
-            prediction_order,
-            epsilon,
-            &codebook_class_name,
-            &prd_filenames,
-            max_codebook_size,
-        )?;
-    } else {
-        vq_learn(
-            base_codebook,
-            prediction_order,
-            epsilon,
-            codebook_class_name,
-            prd_filenames,
-            exp_key,
-        );
-    }
-
-    Ok(())
+    vq_learn_rs_driver(
+        base_codebook,
+        prediction_order,
+        epsilon,
+        &codebook_class_name,
+        &prd_filenames,
+        max_codebook_size,
+    )
 }
 
 /// The Rust implementation of `vq_learn` (`ecoz2/src/vq/vq_learn.i`).
@@ -318,7 +277,6 @@ pub fn main_vq_quantize(opts: VqQuantizeOpts) -> Result<(), Box<dyn Error>> {
         tt,
         class_name,
         show_filenames,
-        zrs,
     } = opts;
 
     let tt = tt.unwrap_or_default();
@@ -334,13 +292,7 @@ pub fn main_vq_quantize(opts: VqQuantizeOpts) -> Result<(), Box<dyn Error>> {
 
     println!("number of predictor files: {}", prd_filenames.len());
 
-    if zrs {
-        vq_quantize_rs(&codebook, &prd_filenames, show_filenames)?;
-    } else {
-        vq_quantize(codebook, prd_filenames, show_filenames);
-    }
-
-    Ok(())
+    vq_quantize_rs(&codebook, &prd_filenames, show_filenames)
 }
 
 /// The Rust implementation of `vq_quantize` (`ecoz2/src/vq/vq_quantize.c`).
@@ -411,7 +363,6 @@ pub fn main_vq_classify(opts: VqClassifyOpts) -> Result<(), Box<dyn Error>> {
         codebooks,
         tt,
         predictors,
-        zrs,
     } = opts;
 
     let cb_filenames = utl::resolve_filenames(codebooks, ".cbook", "codebooks")?;
@@ -431,13 +382,7 @@ pub fn main_vq_classify(opts: VqClassifyOpts) -> Result<(), Box<dyn Error>> {
     );
     println!("show_ranked = {}", show_ranked);
 
-    if zrs {
-        vq_classify_rs(&cb_filenames, &prd_filenames, show_ranked)?;
-    } else {
-        vq_classify(cb_filenames, prd_filenames, show_ranked);
-    }
-
-    Ok(())
+    vq_classify_rs(&cb_filenames, &prd_filenames, show_ranked)
 }
 
 /// The Rust implementation of `vq_classify` (`ecoz2/src/vq/vq_classify.c`):
@@ -512,20 +457,9 @@ fn vq_classify_rs(
 }
 
 pub fn main_vq_show(opts: VqShowOpts) -> Result<(), Box<dyn Error>> {
-    let VqShowOpts {
-        from,
-        to,
-        codebook,
-        zrs,
-    } = opts;
+    let VqShowOpts { from, to, codebook } = opts;
 
-    if zrs {
-        vq_show_rs(&codebook, from, to)?;
-    } else {
-        vq_show(codebook, from, to);
-    }
-
-    Ok(())
+    vq_show_rs(&codebook, from, to)
 }
 
 /// The Rust implementation of `vq_show` (`ecoz2/src/vq/vq_show.c`): the
