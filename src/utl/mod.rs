@@ -14,6 +14,9 @@ use byteorder::*;
 
 use self::walkdir::WalkDir;
 
+pub mod cfmt;
+pub mod pf;
+
 // first few defs to deal with files generated from C version
 
 pub const FILE_IDENT_LEN: usize = 16;
@@ -260,6 +263,67 @@ pub fn list_files(directory: &Path, file_ext: &str) -> io::Result<Vec<PathBuf>> 
     Ok(list)
 }
 
+/// Replaces a filename's extension, following `camext` in the C.
+///
+/// Its quirks are preserved deliberately, so derived names match: a name with
+/// no `.` is returned unchanged, and a trailing `.` or one-character extension
+/// gets the new extension *appended* rather than substituted.
+pub fn camext(name: &str, new_ext: &str) -> String {
+    match name.rfind('.') {
+        None => name.to_string(),
+        Some(i) => {
+            if name.len() - i < 3 {
+                format!("{}{}", name, new_ext)
+            } else if new_ext.is_empty() || new_ext == "." {
+                name[..i].to_string()
+            } else if let Some(stripped) = new_ext.strip_prefix('.') {
+                format!("{}.{}", &name[..i], stripped)
+            } else {
+                format!("{}.{}", &name[..i], new_ext)
+            }
+        }
+    }
+}
+
+/// The class a signal or predictor path implies: its second-to-last component,
+/// as `get_class_name` in the C does. Empty when the path has fewer than two
+/// separators, e.g. `foo.wav` or `dir/foo.wav`.
+pub fn class_name_of(path: &Path) -> String {
+    let s = path.to_string_lossy();
+    let head = match s.rfind('/') {
+        Some(i) => &s[..i],
+        None => return String::new(),
+    };
+    match head.rfind('/') {
+        Some(i) => head[i + 1..].to_string(),
+        None => String::new(),
+    }
+}
+
+/// Where a derived artifact goes, as `get_output_filename` in the C computes
+/// it: `data/<base_dir>/<class>/<stem><ext>`.
+///
+/// Note the class defaults to `_` here while [`class_name_of`] yields an empty
+/// string for the same path; the C has the same asymmetry, and the two agree
+/// for any path with at least two separators, which is the normal case.
+pub fn output_filename(from: &Path, base_dir: &str, ext: &str) -> PathBuf {
+    let s = from.to_string_lossy();
+    let renamed = camext(&s, ext);
+    let (simple, class_name) = match renamed.rfind('/') {
+        Some(i) => {
+            let simple = renamed[i + 1..].to_string();
+            let head = &renamed[..i];
+            let class = match head.rfind('/') {
+                Some(j) => head[j + 1..].to_string(),
+                None => "_".to_string(),
+            };
+            (simple, class)
+        }
+        None => (renamed.clone(), "_".to_string()),
+    };
+    PathBuf::from(format!("data/{}/{}/{}", base_dir, class_name, simple))
+}
+
 pub fn save_ser<T: serde::Serialize>(model: &T, filename: &str) -> Result<(), Box<dyn Error>> {
     let f = File::create(filename)?;
     let bw = BufWriter::new(f);
@@ -280,4 +344,48 @@ pub fn to_pickle<T: serde::Serialize>(obj: &T, filename: &Path) -> Result<(), Bo
     let mut bw = BufWriter::new(f);
     bw.write_all(&serialized[..])?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn camext_replaces_a_normal_extension() {
+        assert_eq!(camext("00003.wav", ".prd"), "00003.prd");
+        assert_eq!(
+            camext("data/signals/A/00003.wav", ".prd"),
+            "data/signals/A/00003.prd"
+        );
+        assert_eq!(camext("x.wav", "prd"), "x.prd");
+    }
+
+    /// Quirks kept from the C so derived names stay identical.
+    #[test]
+    fn camext_quirks_match_the_c() {
+        assert_eq!(camext("noext", ".prd"), "noext"); // no '.': unchanged
+        assert_eq!(camext("x.", ".prd"), "x..prd"); // len-i < 3: appended
+        assert_eq!(camext("x.a", ".prd"), "x.a.prd"); // len-i < 3: appended
+        assert_eq!(camext("x.wav", ""), "x"); // empty ext drops it
+    }
+
+    #[test]
+    fn class_name_is_the_second_to_last_component() {
+        assert_eq!(class_name_of(Path::new("data/signals/A/00003.wav")), "A");
+        assert_eq!(class_name_of(Path::new("A/00003.wav")), "");
+        assert_eq!(class_name_of(Path::new("00003.wav")), "");
+    }
+
+    #[test]
+    fn output_filename_matches_the_c_layout() {
+        assert_eq!(
+            output_filename(Path::new("data/signals/A/00003.wav"), "predictors", ".prd"),
+            PathBuf::from("data/predictors/A/00003.prd")
+        );
+        // fewer than two separators: the C defaults the class to "_"
+        assert_eq!(
+            output_filename(Path::new("00003.wav"), "predictors", ".prd"),
+            PathBuf::from("data/predictors/_/00003.prd")
+        );
+    }
 }

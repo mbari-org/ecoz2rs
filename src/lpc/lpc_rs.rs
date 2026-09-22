@@ -1,58 +1,9 @@
 use std::f64::consts::PI;
-use std::path::PathBuf;
-use std::time::Instant;
 
-// perf note: instead of using Rust impl of lpca:
-//use super::lpca_rs::lpca;
-// use the C impl:
-use crate::ecoz2_lib::lpca_c::lpca;
-use crate::prd::Predictor;
 use crate::sgn;
-use crate::utl;
 
+use super::lpca_rs::lpca3 as lpca;
 use super::lpca_rs::lpca_save_input;
-
-pub fn lpc_rs(
-    file: PathBuf,
-    output: Option<PathBuf>,
-    prediction_order: usize,
-    window_length_ms: usize,
-    offset_length_ms: usize,
-) {
-    let filename: &str = file.to_str().unwrap();
-
-    let out_filename: &str = match output {
-        Some(ref fname) => fname.to_str().unwrap(),
-        None => "predictor.prd",
-    };
-
-    println!("Loading: {}", filename);
-    let s = sgn::load(filename);
-    s.show();
-    //sgn::save(&s, "output.wav");
-
-    let before = Instant::now();
-    let vectors = lpa_on_signal(prediction_order, window_length_ms, offset_length_ms, &s).unwrap();
-    let elapsed = before.elapsed();
-    if elapsed.as_secs() > 5 {
-        println!("processing took: {:.2?}", elapsed);
-    }
-
-    let class_name = "_".to_string();
-    let predictor = Predictor {
-        class_name,
-        prediction_order,
-        vectors,
-    };
-
-    utl::save_ser(&predictor, out_filename).unwrap();
-    println!(
-        "{} saved.  Class: '{}':  {} vectors",
-        out_filename,
-        predictor.class_name,
-        predictor.vectors.len()
-    );
-}
 
 struct LPAnalyzerSer {
     pub prediction_order: usize,
@@ -107,7 +58,11 @@ impl LPAnalyzerSer {
         self.preemphasis();
         self.apply_hamming();
 
-        if self.frame_to_be_saved == self.frame_to_be_processed {
+        // Regenerates `signal_frame.inputs`, the benchmark and lpca-agreement
+        // test input. Opt-in, so ordinary runs write nothing.
+        if std::env::var_os("ECOZ2_SAVE_LPCA_FRAME").is_some()
+            && self.frame_to_be_saved == self.frame_to_be_processed
+        {
             let filename = &"signal_frame.inputs";
             println!("saving lpca inputs, frame={}", self.frame_to_be_saved);
             lpca_save_input(&self.frame, self.prediction_order, filename);
@@ -187,7 +142,7 @@ impl LPAnalyzerSer {
     }
 }
 
-fn lpa_on_signal(
+pub fn lpa_on_signal(
     p: usize,
     window_length_ms: usize,
     offset_length_ms: usize,

@@ -41,3 +41,24 @@ pub fn lpca_r(p: usize, r: &[f64], rc: &mut [f64], a: &mut [f64]) -> (i32, f64) 
 
     (0, pe)
 }
+
+/// Rust version of `lpca_rc`: the predictor coefficients implied by a set of
+/// reflection coefficients.
+///
+/// The same Levinson-Durbin update as `lpca_r` with the autocorrelation and
+/// prediction-error parts removed, so it stays in strict IEEE for the reasons
+/// given in notes.md.
+#[inline]
+pub fn lpca_rc(p: usize, rc: &[f64], a: &mut [f64]) {
+    a[0] = 1.0f64;
+    for k in 1..=p {
+        let akk = rc[k];
+        a[k] = akk;
+        for i in 1..=k >> 1 {
+            let ai = a[i];
+            let aj = a[k - i];
+            a[i] = ai + akk * aj;
+            a[k - i] = aj + akk * ai;
+        }
+    }
+}

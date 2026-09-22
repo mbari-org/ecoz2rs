@@ -1,60 +1,12 @@
 use std::error::Error;
-use std::path::PathBuf;
 use std::sync::mpsc;
 use std::sync::Arc;
 use std::thread;
-use std::time::Instant;
 
-// perf note: instead of using Rust impl of lpca:
-//use super::lpca_rs::lpca;
-// use the C impl:
-use crate::ecoz2_lib::lpca_c::lpca;
-use crate::prd::Predictor;
 use crate::sgn;
-use crate::utl;
 
 use super::lpc_rs::create_hamming;
-
-pub fn lpc_par(
-    file: PathBuf,
-    output: Option<PathBuf>,
-    prediction_order: usize,
-    window_length_ms: usize,
-    offset_length_ms: usize,
-) {
-    let filename: &str = file.to_str().unwrap();
-    let out_filename: &str = match output {
-        Some(ref fname) => fname.to_str().unwrap(),
-        None => "predictor_par.prd",
-    };
-
-    println!("Loading: {}", filename);
-    let s = sgn::load(filename);
-    s.show();
-    //sgn::save(&s, "output.wav");
-
-    let before = Instant::now();
-    let vectors = lpa_on_signal(prediction_order, window_length_ms, offset_length_ms, &s).unwrap();
-    let elapsed = before.elapsed();
-    if elapsed.as_secs() > 5 {
-        println!("processing took: {:.2?}", elapsed);
-    }
-
-    let class_name = "_".to_string();
-    let predictor = Predictor {
-        class_name,
-        prediction_order,
-        vectors,
-    };
-
-    utl::save_ser(&predictor, out_filename).unwrap();
-    println!(
-        "{} saved.  Class: '{}':  {} vectors",
-        out_filename,
-        predictor.class_name,
-        predictor.vectors.len()
-    );
-}
+use super::lpca_rs::lpca3 as lpca;
 
 struct LPAnalyzerPar {
     pub prediction_order: usize,

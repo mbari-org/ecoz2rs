@@ -5,12 +5,8 @@ name: CI
 jobs:
   ci:
     runs-on: ubuntu-latest
-    env:
-      CC: gcc
     steps:
       - uses: actions/checkout@v7
-        with:
-          submodules: recursive
       # Materialize toolchain pinned in rust-toolchain.toml before the cache step
       - run: cargo --version
       - uses: Swatinem/rust-cache@v2

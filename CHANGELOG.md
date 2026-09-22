@@ -1,3 +1,117 @@
+2026-09  -- 0.8.0
+
+- **Pure Rust.** The C implementation is gone. `src/ecoz2_lib`,
+  `src/comet_client`, `build.rs`, the `ecoz2` submodule, and the `cc`,
+  `openmp-sys`, `libc`, `attohttpc` and `lazy_static` dependencies are all
+  removed. Building no longer requires a C compiler or
+  `CC`. The file formats are unchanged, so artifacts stay interchangeable with
+  the C's; the C remains available at <https://github.com/ecoz2/ecoz2> and in
+  this crate up to v0.7.5.
+
+- Phase 4 of the port. `hmm classify --predictors` is implemented in Rust
+  (`hmm_classify_predictors_rs`): each `.prd` is quantized with every model's
+  own codebook and the resulting sequence scored by that model, as the C's
+  `seq_provider` predictor path does. This was the last subcommand with no Rust
+  implementation.
+
+- Removed, being C-only:
+
+  - the `cversion` subcommand,
+  - `hmm learn --ser` (it toggled the C's OpenMP),
+  - `lpc --split` (deprecated; use `util split`),
+  - `vq learn --exp-key` and the comet.ml logging behind it.
+
+- `--zrs` is removed from every subcommand — Rust is now the only
+  implementation. `lpc --zrsp` becomes `lpc --par`, which is what it selected
+  all along: the multi-threaded LP analysis.
+
+- The `lpca_c` benchmark arm went with the submodule. `lpca1`/`lpca2`/`lpca3`
+  remain.
+
+2026-09
+
+- Starting the port of the C implementation to Rust, on branch `2026-09_port_to_rust`.  
+  See [notes.md](notes.md).
+
+- Groundwork landed in this crate:
+
+  - `src/utl/cfmt.rs`: readers for the traditional binary formats written by the
+    C (`<predictor>`, `<codebook>`, `<sequence>`, `<hmm>`). Needed by the port
+    anyway — `lpc --zrs` writes serde_cbor, so nothing on the Rust side could
+    read a C-written `.prd` until now.
+  - `ecoz2 util cmp A B`: compares two artifacts, or two trees of them,
+    dispatching on the file identifier. Float models by relative difference,
+    quantized sequences by exact symbol agreement. `--json`; exits non-zero on
+    mismatch.
+  - Fixed `sgn extract --time-ranges`: the containment test was inverted
+    (`begin_time <= range_start`), excluding every segment inside the range and
+    including ones starting before it. Also, giving both `--selection-ranges`
+    and `--time-ranges` silently discarded the selection verdict. Unit tests
+    added. Any past exercise using `--time-ranges` selected the wrong subset.
+
+- Differential harness in the sibling repo, `ecoz2-whale/exerc07-port-validation`,
+  reproducing exerc06 stage by stage. The stored 2020 artifacts reproduce today
+  at 100% symbol agreement over 2,978,976 symbols; details in notes.md.
+
+- Port phase 1: `lpc --zrs` / `--zrsp` now run `lpca3` instead of calling the C
+  `lpca`, and write the traditional `<predictor>` format instead of serde_cbor,
+  so the Rust LPC output feeds the C VQ stages unchanged. `lpc_signals` is
+  ported too, so `--zrs` does its own class grouping, `minpc` filtering and
+  `data/predictors/<class>/<stem>.prd` naming. `prd::load` reads that format,
+  and can therefore now read files written by the C.
+
+  Against the C on 910 whale signals: predictors differ by max rel 5.5e-10, and
+  nothing downstream changes — zero symbol flips over 341,916 quantized symbols,
+  identical HMM models, identical classification (+0.00 pp).
+
+  `ecoz2 util cmp` gained `--allow-permutation`: at M>=2048 a few near-tied
+  codebook cells swap positions under a 5e-10 nudge, so it now reports rows
+  "reordered" separately from rows "changed".
+
+- `util split` takes `-s/--seed`, so a train/test partition can be regenerated
+  from the command line rather than only from a checked-in `tt-list.csv`; an
+  unseeded run reports the seed it drew, on stderr so stdout stays a clean CSV.
+  It also sorts its input now: the shuffled markers are zipped positionally
+  against a filesystem walk, whose order is not guaranteed.
+
+- Port phase 2: VQ in Rust — `vq learn`, `vq quantize`, `vq classify`,
+  `vq show`, each behind `--zrs`. The learn ladder matches the C's report on all
+  twelve codebook sizes, the full Rust VQ path is symbol-identical to the C's,
+  `vq classify` reproduces the confusion matrix cell for cell, and `vq show` is
+  byte-identical. 2.0x faster on `vq learn`, 1.5x on `vq quantize`.
+
+  The C's `vq learn` sums per-thread partials in thread order, so its codebooks
+  depend on the machine's core count (~9e-11 between 1 and 16 threads, growing
+  with M). The Rust version chunks by a fixed size instead, and gives identical
+  output at any `RAYON_NUM_THREADS`.
+
+  Adds `vq learn --max-codebook-size`; the C always doubles to its compile-time
+  maximum.
+
+- Port phase 3 (in progress): `hmm classify --zrs` and `hmm show --zrs`.
+  `hmm classify` reproduces the stored 2020 classification CSV exactly, all 910
+  sequences including the full ranking. Adds `utl::pf`, a small safe stand-in
+  for the printf formats the C accepts — `hmm show` passed its `--format`
+  straight to `printf`, which let the caller inject an arbitrary conversion.
+
+- Fixed: `ecoz2 hmm show` panicked on every invocation, because `--hmm` derived
+  a short `-h` that clap rejects as conflicting with help. Pre-existing.
+
+- Port phase 3 complete: `hmm learn --zrs` joins classify and show, so every
+  pipeline stage now has a Rust implementation.
+
+  Validated in two parts, since the C seeds its initial model from `rand()`.
+  Model type 1 (uniform) uses no randomness, and there the Rust and C models
+  agree to 1e-14 across twelve N/M/iteration/class combinations, with identical
+  Σ log(P) at every iteration. For type 3 the comparison is behavioral: the full
+  Rust pipeline differs from the full C one by 11 of 910 top-1 labels and at
+  most 0.54 pp accuracy — less than the C differs from itself when reseeded
+  (14 of 910, 0.65 pp). Two Rust runs with the same seeds are bit-identical.
+
+  Note the C logs its training trace with an off-by-one — `csv_add_line` is
+  called with `num_refinements + 1` after the increment, so index 1 is never
+  emitted. The port writes 0..n instead.
+
 2026-08
 
 - With the release of Rust [1.98.0](https://blog.rust-lang.org/2026/08/20/Rust-1.98.0/),
