@@ -540,6 +540,16 @@ Flatten those and the algebraic methods become worth re-testing there.
   report append on resume.
 - `-m` means two different things: instances in the label file for
   `sgn extract`, signal files present for `lpc`. Unify.
+- `hmm classify --predictors-dir-template` defaults to `data/predictors`, which
+  has no `{class}`/`{selection}` placeholders. With a `tt-list.csv` every row
+  then resolves to that one literal directory and the command dies with
+  `Is a directory (os error 21)`. The usable value is
+  `data/predictors/{class}/{selection}.prd`; either make that the default or
+  reject a template with no placeholders. Predates the port — the C received
+  the same already-resolved list — and went unnoticed because the exerc07
+  harness only ever exercises `hmm classify --sequences`. Found in phase 4 while
+  validating `hmm_classify_predictors_rs`, which is the first Rust code to run
+  that path.
 - Fixed: `sgn extract --time-ranges` containment test was inverted, and giving
   both range filters discarded the selection verdict. This is already-pure-Rust
   code that the C oracle never covered — the Rust-only parts need their own
